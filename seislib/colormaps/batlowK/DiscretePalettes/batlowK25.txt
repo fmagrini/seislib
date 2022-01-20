@@ -1,0 +1,27 @@
+Scientific Colour Map Categorical Palette
+batlowK 25 Swatches
+  3   4   5	batlowK-1 #030405
+ 14  22  27	batlowK-12 #0E161B
+ 19  35  43	batlowK-22 #13232B
+ 26  51  61	batlowK-33 #1A333D
+ 37  67  74	batlowK-44 #25434A
+ 48  78  81	batlowK-54 #304E51
+ 60  88  81	batlowK-65 #3C5851
+ 71  94  78	batlowK-75 #475E4E
+ 83 101  73	batlowK-86 #536549
+ 96 107  67	batlowK-97 #606B43
+110 114  61	batlowK-107 #6E723D
+126 121  54	batlowK-118 #7E7936
+144 128  50	batlowK-129 #908032
+162 134  50	batlowK-139 #A28632
+183 141  56	batlowK-150 #B78D38
+201 145  66	batlowK-160 #C99142
+219 150  83	batlowK-171 #DB9653
+233 156 103	batlowK-182 #E99C67
+243 162 123	batlowK-192 #F3A27B
+249 169 145	batlowK-203 #F9A991
+252 176 167	batlowK-214 #FCB0A7
+253 182 186	batlowK-224 #FDB6BA
+253 189 207	batlowK-235 #FDBDCF
+252 196 227	batlowK-245 #FCC4E3
+250 204 250	batlowK-256 #FACCFA

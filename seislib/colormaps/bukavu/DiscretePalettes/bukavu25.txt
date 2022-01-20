@@ -1,0 +1,27 @@
+Scientific Colour Map Categorical Palette
+bukavu 25 Swatches
+ 26  51  51	bukavu-1 #1A3333
+ 28  61  73	bukavu-12 #1C3D49
+ 31  71  98	bukavu-22 #1F4762
+ 35  87 134	bukavu-33 #235786
+ 42 107 163	bukavu-44 #2A6BA3
+ 48 126 186	bukavu-54 #307EBA
+ 63 146 200	bukavu-65 #3F92C8
+ 82 163 201	bukavu-75 #52A3C9
+102 181 202	bukavu-86 #66B5CA
+122 199 204	bukavu-97 #7AC7CC
+153 217 210	bukavu-107 #99D9D2
+193 237 220	bukavu-118 #C1EDDC
+  1  64  38	bukavu-129 #014026
+ 12  77  28	bukavu-139 #0C4D1C
+ 37  94  18	bukavu-150 #255E12
+ 71 108  25	bukavu-160 #476C19
+105 115  40	bukavu-171 #697328
+132 120  53	bukavu-182 #847835
+154 125  66	bukavu-192 #9A7D42
+178 139  90	bukavu-203 #B28B5A
+195 162 124	bukavu-214 #C3A27C
+206 185 156	bukavu-224 #CEB99C
+218 207 193	bukavu-235 #DACFC1
+227 222 221	bukavu-245 #E3DEDD
+237 237 252	bukavu-256 #EDEDFC

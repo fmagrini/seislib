@@ -1,0 +1,25 @@
+# Compiled python modules.
+__pycache__/
+*.pyc
+*.pyd
+*.so
+
+# Setuptools/distutils distribution folder.
+dist/
+build/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+/*.egg
+
+# eclipse/PyDev
+.project
+.pydevproject
+.settings/
+
+#CLion
+.idea
+cmake-build-debug/
+
+#linux
+.directory

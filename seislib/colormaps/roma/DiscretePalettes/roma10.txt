@@ -1,0 +1,12 @@
+Scientific Colour Map Categorical Palette
+roma 10 Swatches
+126  23   0	roma-1 #7E1700
+153  82  21	roma-29 #995215
+176 128  43	roma-58 #B0802B
+200 180  85	roma-86 #C8B455
+208 227 163	roma-114 #D0E3A3
+164 229 211	roma-143 #A4E5D3
+ 93 193 211	roma-171 #5DC1D3
+ 50 146 194	roma-199 #3292C2
+ 32 100 174	roma-228 #2064AE
+  3  49 152	roma-256 #033198

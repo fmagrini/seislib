@@ -1,0 +1,12 @@
+Scientific Colour Map Categorical Palette
+batlowW 10 Swatches
+  1  25  89	batlowW-1 #011959
+ 16  63  96	batlowW-29 #103F60
+ 27  89  98	batlowW-58 #1B5962
+ 57 110  89	batlowW-86 #396E59
+100 126  67	batlowW-114 #647E43
+154 145  50	batlowW-143 #9A9132
+208 163  90	batlowW-171 #D0A35A
+238 175 145	batlowW-199 #EEAF91
+254 216 214	batlowW-228 #FED8D6
+255 254 254	batlowW-256 #FFFEFE

@@ -1,0 +1,12 @@
+Scientific Colour Map Categorical Palette
+vanimo 10 Swatches
+255 205 253	vanimo-1 #FFCDFD
+211 129 196	vanimo-29 #D381C4
+161  73 142	vanimo-58 #A1498E
+ 92  36  79	vanimo-86 #5C244F
+ 35  20  29	vanimo-114 #23141D
+ 27  30  17	vanimo-143 #1B1E11
+ 54  73  26	vanimo-171 #36491A
+ 90 124  42	vanimo-199 #5A7C2A
+133 181  77	vanimo-228 #85B54D
+190 253 165	vanimo-256 #BEFDA5

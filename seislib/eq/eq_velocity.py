@@ -1,0 +1,2177 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@author: Fabrizio Magrini
+@email1: fabrizio.magrini@uniroma3.it
+@email2: fabrizio.magrini90@gmail.com
+"""
+
+import os
+import shutil
+import itertools as it
+from collections import defaultdict
+import numpy as np
+from numpy import pi
+from numpy.fft import rfft, rfftfreq
+from scipy.interpolate import interp1d
+from scipy import signal
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+from obspy import read, read_events
+from obspy.geodetics.base import gps2dist_azimuth
+from seislib.utils import adapt_timespan, zeropad, bandpass_gaussian
+from seislib.utils import load_pickle, save_pickle, remove_file
+from seislib.utils import gaussian, skewed_normal, next_power_of_2
+from seislib.plotting import add_earth_features
+from seislib.exceptions import DispersionCurveException
+
+
+class EQVelocity:
+    """
+    Class to obtain surface-wave phase velocities from teleseismic earthquakes,
+    using the two-station method.
+    
+    
+    Attributes
+    ----------
+    src : str
+        Absolute path to the directory containing the files associated with the
+        earthquake-based recordings
+        
+    savedir : str
+        Absolute path to the directory where the results are saved
+        
+    component : str
+        Either 'Z', 'R', or 'T'
+        
+    events : list
+        List of available events to calculate the dispersion curves
+        
+    verbose : bool
+        Whether or not information on progress is printed in the console
+        
+    stations : dict
+        Coordinates of the station pairs that can be employed to retrieve
+        dispersion curves (can be accessed after calling the method
+        `prepare_data`)
+        
+    triplets : dict
+        Triplets of epicenters-receivers that can be employed to retrieve
+        dispersion curves (can be accessed after calling the method
+        `prepare_data`)
+        
+        
+    Methods
+    -------
+    get_coords_and_triplets(events, azimuth_tolerance=5, distmin=None, 
+                            distmax=2000)
+        Retrieves stations information and triplets of epicenter-receivers to 
+        be used to calculate the phase velocities
+        
+    prepare_data(azimuth_tolerance=5, distmin=None, distmax=None, 
+                 min_no_events=5, recompute=False)
+        Writes to disk the geographic coordinates of the seismic receivers and 
+        triplets of epicenters-receivers to be used for retrieving the
+        dispersion curves
+        
+    delete_unused_files()    
+        Deletes every file in the data directory which is not useful for 
+        extracting dispersion curves (i.e., those waveform-files that are not 
+        included in triplets dict)
+        
+    extract_dispcurves(refcurve, periodmin=15, periodmax=150, no_periods=75, 
+                       cmin=2.5, cmax=5, min_no_wavelengths=1.5, approach='freq', 
+                       prob_min=0.25, prior_sigma_10s=0.7, prior_sigma_200s=0.3, 
+                       plotting=False)
+        Automatic extraction of the dispersion curves for all available pairs
+        of receivers.    
+        
+    prepare_input_tomography(savedir, period, outfile='input_%.2fs.txt')
+        Prepares a .txt file for each specified period, to be used for 
+        calculating phase-velocity maps using the seislib.SeismicTomography class.   
+        
+    interpolate_dispcurves(period)
+        Interpolates the dispersion curves found at /$self.savedir/dispcurves
+        at the specified period(s). (No extrapolation is made.)
+        
+    plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
+                  edgecolor='k', projection='Mercator', color_by_network=True, 
+                  **kwargs):
+        Maps the seismic receivers for which data are available        
+        
+        
+    Class Methods
+    -------------
+    lie_on_same_gc(stla1, stlo1, stla2, stlo2, evla, evlo, azimuth_tolerance=5, 
+                   distmin=None, distmax=None):
+        Boolean function that returns True if the station pair and the epicenter 
+        lie on the same great circle path    
+        
+        
+    Example
+    -------
+    The following will calculate the dispersion curves from teleseismic
+    earthquakes recorded at a set of stations. These are stored in the directory 
+    src='/path/to/data'. The data have been downloaded using the 
+    seislib.eq.EQDownloader. The dispersion curves are extracted for vertically-
+    polarized Rayleigh waves (on the vertical - Z - component). We first define 
+    the EQVelocity instance as
+    
+        eq = EQVelocity(src, component='Z')
+        eq.prepare_data(azimuth_tolerance=7, 
+                        distmin=None, 
+                        distmax=2500, 
+                        min_no_events=8)
+        
+    If we print(an), we will obtain something like the following (where X and Y
+    are integers and depend on your data):
+        
+        >>> RAYLEIGH-WAVE VELOCITY FROM TELESEISMIC EARTHQUAKES (TWO-STATION METHOD)
+            =========================================================================
+            EVENTS: X
+            RECEIVERS: N.A.
+            TRIPLETS (EPICENTER-RECEIVERS) AVAILABLE: N.A.
+            DISPERSION CURVES RETRIEVED: Y
+            =========================================================================
+            SOURCE DIR: /path/to/data
+            SAVE DIR: /path/to/eq_velocity/Z
+        
+    (Note that the number of receivers and triplets is N.A. because we did not
+    called the `prepare_data` method yet.) Before extracting the dispersion 
+    curves, we need to run
+        
+        eq.prepare_data(azimuth_tolerance=7, 
+                        distmin=None, 
+                        distmax=2500, 
+                        min_no_events=8)
+    
+    which will extracts the geographic coordinates of each seismic receivers 
+    from the header of the sac files and prepare the triplets of epicenters-
+    receivers that will be used to obtain the dispersion curves.
+    
+    ---------------------------------------------------------------------------        
+    NOTE: The coordinates are saved at /path/to/eq_velocity/Z/stations.pickle,
+    and are stored in a dictionary object where each key corresponds to a 
+    station code ($network_code.$station_code) and each value is a tuple 
+    containing latitude and longitude of the station. 
+    
+    For example:
+        
+        { net1.sta1 : (lat1, lon1),
+          net1.sta2 : (lat2, lon2),
+          net2.sta3 : (lat3, lon3)
+          }
+        
+    The triplets of epicenter-receivers are saved at 
+    /path/to/eq_velocity/Z/triplets.pickle, and are stored in a dictionary object 
+    where each key is a tuple corresponding to a station pair and each value 
+    is a list of events that are aligned on the same great circle path
+    as the receivers (within the limits defined by the input params of 
+    `prepare_data`). 
+    For example:
+        
+        { (net1.sta1, net2.sta2) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    '1237486660.74',
+                                    '1238981562.62',
+                                    '1239825695.33'],
+            
+          (net3.sta3, net4.sta4) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    '1237486660.74',
+                                    '1238981562.62',
+                                    '1239825695.33']
+          }
+        
+    Note that each event in the list corresponds to a sub-directory of
+    the source data `src`. Also note that, as opposed to the above example, the 
+    length of the lists of events will be at least 8, since `min_no_events` in 
+    `prepare_data` was 8.
+    ---------------------------------------------------------------------------
+    
+    After the data have been "prepared", the receivers available can be 
+    displayed by typing
+        
+        eq.plot_stations()
+    
+    Now we can calculate the dispersion curves automatically, provided that we
+    pass a reference curve (i.e., ndarray of shape (n, 2), where the 1st column 
+    is period, the 2nd is phase velocity). For example:
+        
+        eq.extract_dispcurves(refcurve, 
+                              periodmin=15, 
+                              periodmax=150, 
+                              no_periods=75, 
+                              cmin=2.5, 
+                              cmax=5, 
+                              plotting=True)
+        
+    The above will calculate the dispersion curves for all combinations of
+    station pairs available in the `triplet` object (that can be inspected by
+    typing eq.triplets). The dispersion curves will be computed in the period 
+    range 15-150 s (linearly sub-divided in 75 intervals). The results (npy 
+    arrays of shape (m, 2), where the 1st column is period and the 2nd is phase 
+    velocity) will be saved to /path/to/eq_velocity/Z/dispcurves. For each
+    dispersion curve retrieved, a figure will be displayed and saved to
+    /path/to/eq_velocity/Z/figures (since plotting=True).
+    """
+    
+    
+    def __init__(self, src, savedir=None, component='Z', verbose=True):
+        """
+        Parameters
+        ----------
+        src : str
+            Absolute path to the directory containing the files associated with 
+            the earthquake-based recordings. The directory should contain,
+            for each event, a sub-directory named after the origin time of the
+            earthquake in timestamp format (see obspy.UTCDateTime.timestamp).
+            Inside each sub-directory, the seismograms associated with the
+            respective event recorded at all the available receivers should be
+            stored into sacfiles. These should be named after the trace id, 
+            i.e., net.sta.loc.cha.sac (see obspy.Trace.id). Furthermore, inside 
+            each event directory there should be either an xml containing the 
+            event coordinates (latitude, longitude), or these coordinates should 
+            be stored in the sac header of the related seismograms.
+            
+            To download the data in the proper format, it is suggested to use
+            seislib.eq.EQDownloader.
+            
+        savedir : str, optional
+            Absolute path to the directory where the results are saved. If not
+            provided, its value will be set to the parent directory of src (i.e.,
+            /$src/..). All the results will be saved in the directory
+            /$savedir/eq_velocity/$component (see the `component` parameter)
+            
+        component : str
+            Either 'Z', 'R', (corresponding to vertically and radially  polarized 
+            Rayleigh waves, respectively), or 'T' (for Love waves)
+            
+        verbose : bool
+            Whether or not information on progress is printed in the console
+        """
+        
+        self.src = src
+        savedir = os.path.dirname(src) if savedir is None else savedir
+        self.verbose = verbose
+        if component not in ['Z', 'R', 'T']:
+            msg = '`component` should be either `Z` (Rayleigh, vertical), `T`'
+            msg += ' (Love, transverse), or `R` (Rayleigh, radial), but'
+            msg += ' `%s` was passed.'%component
+            raise ValueError(msg)
+        self.component = component
+        self.savedir = os.path.join(savedir, 'eq_velocity', component)
+        os.makedirs(self.savedir, exist_ok=True)
+        self.events = sorted(os.listdir(self.src))
+        
+        
+    def __str__(self):
+        phase = 'love'if self.component=='T' else 'rayleigh'
+        if phase=='rayleigh' and self.component=='R':
+            phase = phase + ' (radial)'
+        string = '\n%s-WAVE VELOCITY FROM TELESEISMIC EARTHQUAKES'%(phase.upper())
+        string += ' (TWO-STATION METHOD)'
+        separators = len(string)
+        string += '\n%s'%('='*separators)
+        no_events = len(self.events)
+        string += '\nEVENTS: %s'%(no_events)
+        no_stations = len(self.stations) if 'stations' in self.__dict__ else 'N.A.'
+        string += '\nRECEIVERS: %s\n'%(no_stations)
+        try:
+            done = len(os.listdir(os.path.join(self.savedir, 'dispcurves')))
+        except FileNotFoundError:
+            done = 0
+        triplets = len(self.triplets) if 'triplets' in self.__dict__ else 'N.A.'
+        string += 'TRIPLETS (EPICENTER-RECEIVERS) AVAILABLE: %s\n'%(triplets)
+        string += 'DISPERSION CURVES RETRIEVED: %s'%(done)
+        string += '\n%s'%('='*separators)
+        string += '\nSOURCE DIR: %s'%self.src
+        string += '\nSAVE DIR: %s'%self.savedir
+
+        return string
+
+
+    def get_coords_and_triplets(self, events, azimuth_tolerance=5, distmin=None,
+                                distmax=None):
+        """ 
+        Retrieves stations information and triplets of epicenter-receivers
+        to be used to calculate the phase velocities
+        
+        Parameters
+        ----------
+        events : list
+            List of events (i.e., sub-directories in the data folder `src`)
+            
+        azimuth_tolerance : float, int
+            Maximum allowed deviation from the great circle path in degrees
+            
+        distmin, distmax : float, int, optional
+            Minimum and maximum allowed inter-station distance (in km). Default 
+            is None
+        
+        
+        Returns
+        -------
+        stations : dict
+            each key corresponds to a station code ($network_code.$station_code) 
+            and each value is a tuple containing latitude and longitude of the 
+            station. For example:
+                
+                { net1.sta1 : (lat1, lon1),
+                  net1.sta2 : (lat2, lon2),
+                  net2.sta3 : (lat3, lon3)
+                  }
+                
+        triplets : dict
+            each key is a tuple corresponding to a station pair and each value 
+            is a list of events that are aligned on the same great circle path
+            as the receivers (within the limits defined by the input params). 
+            For example:
+                
+                { (net1.sta1, net2.sta2) : ['1222701570.84',
+                                            '1237378863.3', 
+                                            '1237486660.74',
+                                            '1238981562.62',
+                                            '1239825695.33'],
+                    
+                  (net3.sta3, net4.sta4) : ['1222701570.84',
+                                            '1237378863.3', 
+                                            '1237486660.74',
+                                            '1238981562.62',
+                                            '1239825695.33']
+                  }
+            Note that each event in the list corresponds to a sub-directory of
+            the source data `src`.
+        """
+        
+        def get_event_coords_from_xml(eventfile):
+            event = read_events(eventfile)[0]
+            evla = event.origins[0].latitude
+            evlo = event.origins[0].longitude
+            return evla, evlo
+        
+        def get_event_coords_from_sac(sacfile):
+            tr = read(sacfile)[0]
+            evla = tr.stats.sac.evla
+            evlo = tr.stats.sac.evlo
+            return evla, evlo
+        
+        def get_station_coords(evdir, sacfile):
+            nonlocal stations
+            code = '.'.join(sacfile.split('.')[:2])
+            if code in stations:
+                return code, stations[code]
+            st = read(os.path.join(evdir, sacfile))
+            coords = st[0].stats.sac.stla, st[0].stats.sac.stlo
+            stations[code] = coords
+            return code, coords
+        
+        
+        stations = {}
+        triplets = defaultdict(list)
+        no_events = len(events)
+        iprint = no_events//10 if no_events>10 else 1
+        for ievent, event in enumerate(events, 1):
+            if self.verbose:
+                if not ievent % iprint:
+                    print('EVENTS PROCESSED: %d/%d'%(ievent, no_events))
+                
+            evdir = os.path.join(self.src, event)
+            sacfiles = sorted([i for i in os.listdir(evdir) \
+                               if i.endswith('sac') and i[-5]==self.component])
+            try:
+                evla, evlo = get_event_coords_from_xml(os.path.join(evdir, 
+                                                                    '%s.xml'%event))
+            except FileNotFoundError:
+                evla, evlo = get_event_coords_from_sac(os.path.join(evdir, 
+                                                                    sacfiles[0]))
+            for sac1, sac2 in it.combinations(sacfiles, 2):
+                sta1, (stla1, stlo1) = get_station_coords(evdir, sac1)
+                sta2, (stla2, stlo2) = get_station_coords(evdir, sac2)
+                if self.lie_on_same_gc(stla1=stla1, 
+                                       stlo1=stlo1, 
+                                       stla2=stla2, 
+                                       stlo2=stlo2, 
+                                       evla=evla, 
+                                       evlo=evlo,
+                                       azimuth_tolerance=azimuth_tolerance, 
+                                       distmin=distmin,
+                                       distmax=distmax):
+                    triplets[(sta1, sta2)].append(event)
+        return stations, triplets
+                
+               
+    @classmethod
+    def lie_on_same_gc(cls, stla1, stlo1, stla2, stlo2, evla, evlo, 
+                       azimuth_tolerance=5, distmin=None, distmax=None):
+        """
+        Boolean function. If the station pair and the epicenter lie on the same 
+        great circle path, it returns True.
+        
+        Parameters
+        ----------
+        stla1, stlo1 : float
+            Latitude and longitude of station 1
+            
+        stla2, stlo2 : float
+            Latitude and longitude of station 2
+            
+        evla, evlo : float
+            Latitude and longitude of the epicenter
+            
+        azimuth_tolerance : float, int 
+            Maximum deviation from the great circle path in degrees
+            
+        distmin, distmax : float, int, optional
+            Minimum and maximum allowed inter-station distance (in km). Default 
+            is None
+        
+        
+        Returns
+        -------
+        bool
+        """
+        
+        dist1, az1, _ = gps2dist_azimuth(stla1, stlo1, evla, evlo)
+        dist2, az2, _ = gps2dist_azimuth(stla2, stlo2, evla, evlo)  
+        if dist1 > dist2:
+            (dist1, az1), (dist2, az2) = (dist2, az2), (dist1, az1)
+        dist3, az3, _ = gps2dist_azimuth(stla2, stlo2, stla1, stlo1)
+        dist3 /= 1000
+        if distmax is not None and dist3>distmax:
+            return False    
+        if distmin is not None and dist3<distmin:
+            return False    
+        if az3-azimuth_tolerance <= az2 <= az3+azimuth_tolerance:
+            return True   
+        return False        
+        
+        
+    def prepare_data(self, azimuth_tolerance=5, distmin=None, distmax=None, 
+                     min_no_events=5, recompute=False, delete_unused_files=False):
+        """
+        Saves to disk the geographic coordinates of the seismic receivers and 
+        triplets of epicenters-receivers to be used for retrieving the
+        dispersion curves.
+        
+        Parameters
+        ----------
+        azimuth_tolerance : float, int 
+            Maximum allowed deviation from the great circle path in degrees.
+            All triplets of epicenter-receivers for which the receivers are not
+            aligned within the tolerance indicated are rejected. Larger values
+            will identify more triplets to be used in the following analysis.
+            But if this value is too large, the assumptions behind the two-
+            station method [e.g., Magrini et al. 2020] may not be met. 
+            Suggested values are between 3 and 8. Default is 5.
+            
+        distmin, distmax: float, int, optional
+            Minimum and maximum allowed inter-station distance (in km). Default 
+            is None
+            
+        min_no_events : int
+            Minimum number of events available for a given station pair to be
+            considered in the calculation of the phase velocities.
+            
+        recompute : bool
+            If True, the station coordinates and triplets will be removed from
+            disk and recalculated. Otherwise (default), if they are present,
+            they will be loaded into memory, avoiding any computation. This
+            parameter should be set to True whenever one wants to change the
+            other parameters of this function, which control the selection of
+            the epicenter-receivers triplets
+            
+        delete_unused_files : bool
+            If True, every waveform-file that is not contained in the triplets
+            object (i.e., those that are not used to extract dispersion curves
+            in the subsequent analysis) will be permanently deleted from the
+            system.
+            
+            
+        Note
+        ----
+        The geographic coordinates are saved at /$self.savedir/stations.pickle,
+        and are stored in a dictionary object where each key corresponds to a 
+        station code ($network_code.$station_code) and each value is a tuple 
+        containing latitude and longitude of the station. 
+        
+        For example:
+            
+            { net1.sta1 : (lat1, lon1),
+              net1.sta2 : (lat2, lon2),
+              net2.sta3 : (lat3, lon3)
+              }
+            
+        The triplets of epicenter-receivers are saved at 
+        /$self.savedir/triplets.pickle, and are stored in a dictionary object 
+        where each key is a tuple corresponding to a station pair and each value 
+        is a list of events that are aligned on the same great circle path
+        as the receivers (within the limits defined by the input params). 
+        For example:
+            
+            { (net1.sta1, net2.sta2) : ['1222701570.84',
+                                        '1237378863.3', 
+                                        '1237486660.74',
+                                        '1238981562.62',
+                                        '1239825695.33'],
+                
+              (net3.sta3, net4.sta4) : ['1222701570.84',
+                                        '1237378863.3', 
+                                        '1237486660.74',
+                                        '1238981562.62',
+                                        '1239825695.33']
+              }
+            
+        Note that each event in the list corresponds to a sub-directory of
+        the source data `src`.
+        
+        
+        References
+        ----------
+        Magrini et al. 2020, Arrival-angle effects on two-receiver measurements 
+            of phase velocity, GJI
+        """
+                    
+        savecoords = os.path.join(self.savedir, 'stations.pickle')
+        savetriplets = os.path.join(self.savedir, 'triplets.pickle')
+        if recompute:
+            remove_file(savecoords)
+            remove_file(savetriplets)
+        if not os.path.exists(savecoords) or not os.path.exists(savetriplets):
+            coords, triplets = self.get_coords_and_triplets(
+                    self.events, 
+                    azimuth_tolerance=azimuth_tolerance,
+                    distmin=distmin,
+                    distmax=distmax
+                    )
+            triplets = {k: v for k, v in triplets.items() if len(v)>=min_no_events}
+            save_pickle(savecoords, coords)
+            save_pickle(savetriplets, triplets)
+        else:
+            coords = load_pickle(savecoords)
+            triplets = load_pickle(savetriplets)
+        self.min_no_events = min_no_events
+        self.stations = coords
+        self.triplets = triplets
+            
+    
+    def delete_unused_files(self):
+        """ 
+        Deletes every file in the data directory which is not useful for 
+        extracting dispersion curves (i.e., those waveform-files that are not 
+        included in triplets dict).
+        
+        Note: Use it with caution. It will not be possible to restore the 
+            deleted files.
+        """
+        
+        def get_unused(sacfiles, used_codes):
+            for sac in sacfiles:
+                code = '.'.join(sac.split('.')[:2])
+                if code not in used_codes:
+                    yield sac
+        
+        def remove_folder(path):
+            shutil.rmtree(folder)
+            return 1
+        
+        def remove_files(folder, files):
+            for i, file in enumerate(files, 1):
+                os.remove(os.path.join(folder, file))
+            try:
+                return i
+            except UnboundLocalError:
+                return 0
+        
+        deleted_files = 0
+        deleted_folders = 0
+        events_used = defaultdict(set)
+        for stapair, evlist in self.triplets.items():
+            for event in evlist:
+                events_used[event] = events_used[event].union(stapair)
+        for event in sorted(events_used):
+            folder = os.path.join(self.src, event)
+            sacfiles = set([i for i in os.listdir(folder) if i.endswith('.sac')])
+            if not sacfiles:
+                deleted_folders += remove_folder(folder)
+                continue
+            
+            to_delete = list(get_unused(sacfiles, used_codes=events_used[event]))
+            if len(to_delete) == len(sacfiles):
+                deleted_folders += remove_folder(folder)
+                deleted_files += len(to_delete)
+            else:
+                deleted_files += remove_files(folder, to_delete)
+        if self.verbose:
+            print('DIRECTORIES REMOVED:', deleted_folders)
+            print('FILES REMOVED:', deleted_files)
+    
+    
+    def extract_dispcurves(self, refcurve, periodmin=15, periodmax=150, 
+                           no_periods=75, cmin=2.5, cmax=5, min_no_wavelengths=1.5,
+                           approach='freq', prob_min=0.25, prior_sigma_10s=0.7,
+                           prior_sigma_200s=0.3, plotting=False):
+        """
+        Automatic extraction of the dispersion curves for all available pairs
+        of receivers.
+        
+        The results are saved to /$self.savedir/dispcurves in .npy format,
+        and consist of ndarrays of shape (n, 2), where the 1st column is period 
+        and the 2nd phase velocity (in m/s).
+        
+        The routine iterates over all the available pair of receivers for which
+        there are epicenters aligned on the same great circle path as the
+        receivers (see the EQVelocity.prepare_data method); for each such pair
+        of stations, (i) it first extracts dispersion measurements from all the
+        event available, and then (ii) merges the dispersion measurements to
+        obtain a "probability" density distribution of the thus retrieved
+        dispersion measurements, which is function of period and phase velocity.
+        (iii) Finally, the dispersion curve is extracted from the regions of
+        greater "probability". All this is done under the hood calling the 
+        methods measure_dispersion and extract_dispcurve of the class
+        seislib.eq.TwoStationMethod.
+        
+        
+        Parameters
+        ----------
+        refcurve : ndarray of shape (n, 2)
+            Reference curve used to extract the dispersion curves. The first
+            column should be period, the second column velocity (in either
+            km/s or m/s). The reference curve is automatically converted to
+            km/s, the physical unit employed in the subsequent analysis.
+            
+        periodmin, periodmax : float
+            Minimum and maximum period analysed by the algorithm (default
+            are 15 and 150 s). The resulting dispersion curves will be limited
+            to this period range
+            
+        no_periods : int
+            Number of periods between periodmin and periodmax (included) used 
+            in the subsequent analysis. The resulting periods will be equally 
+            spaced (linearly) from each other. Default is 75
+            
+        cmin, cmax : float (in km/s)
+            Estimated velocity range spanned by the dispersion curves (default
+            values are 2.5 and 5). The resulting dispersion curves will be 
+            limited to this velocity range
+            
+        min_no_wavelengths : float
+            Ratio between the estimated wavelength of the surface-wave at a 
+            given period (lambda = period * c_ref) and interstation distance.
+            If lambda/dist > min_no_wavelength, the period in question is
+            not used to retrieve a dispersion measurement. Values < 1 are
+            suggested against. Default is 1.5
+            
+        approach : str
+            Passed to TwoStationMethod.measure_dispersion. It indicates if the 
+            dispersion measurements are extracted in the frequency domain 
+            ('freq') or in the time domain ('time'). Default is 'freq'
+            
+        prob_min : float
+            Passed to TwoStationMethod.extract_dispcurve. Minimum acceptable 
+            "probability" in the density of dispersion measurements, at a given 
+            period, below which the dispersion curve is not picked. Larger 
+            values are more restrictive. Good values are between ~0.2 and ~0.35. 
+            Default is 0.25
+            
+        prior_sigma_10s, prior_sigma_200s : float
+            Standard deviations of the Gaussians built around the reference 
+            model (refcurve) at the periods of 10 and 200 s to calculate the
+            prior probability density distribution of the dispersion measurements.
+            At each analysed period, the standard deviation is interpolated (and
+            eventually linearly extrapolated) based on these two values. Smaller
+            values give more "weight" to the reference curve in the picking of
+            the phase velocities. Defaults are 0.7 and 0.3
+            
+        plotting : bool
+            If True, a figure is created for each retrieved dispersion curve.
+            This is automatically displayed and saved in /$self.savedir/figures
+        """
+        
+        def percentage_done(no_pairs, no_done):
+            return '\nPERCENTAGE DONE: %.2f\n'%(no_done/no_pairs * 100)
+        
+        def load_done(file):
+            if os.path.exists(file):
+                return set([i.strip() for i in open(file)])
+            else:
+                return set()
+    
+        def update_done(sta1, sta2):
+            with open(save_done, 'a') as f:
+                f.write('%s_%s\n'%(sta1, sta2))
+            done.add('%s_%s'%(sta1, sta2))
+            
+        def dist_az_backaz(stations, sta1, sta2):
+            stla1, stlo1 = stations[sta1]
+            stla2, stlo2 = stations[sta2]
+            dist, az, baz = gps2dist_azimuth(stla1, stlo1, stla2, stlo2)
+            dist /= 1000.
+            return dist, az, baz  
+        
+
+        save_dispersion = os.path.join(self.savedir, 'dispersion')
+        save_pv = os.path.join(self.savedir, 'dispcurves')
+        save_tmp = os.path.join(self.savedir, 'tmp')
+        save_done = os.path.join(save_tmp, 'DONE.txt')
+        save_fig = os.path.join(self.savedir, 'figures')
+        os.makedirs(save_pv, exist_ok=True)
+        os.makedirs(save_dispersion, exist_ok=True)
+        os.makedirs(save_tmp, exist_ok=True)
+        if plotting is not None:
+            os.makedirs(save_fig, exist_ok=True)
+
+        if refcurve[0, 1] / 10 > 1:
+            refcurve = np.column_stack((refcurve[:, 0], refcurve[:, 1]/1000))
+        tsm = TwoStationMethod(refcurve=refcurve,
+                               periodmin=periodmin,
+                               periodmax=periodmax,
+                               no_periods=no_periods,
+                               cmin=cmin, 
+                               cmax=cmax, 
+                               ttol=0.3,
+                               min_no_wavelengths=min_no_wavelengths, 
+                               approach=approach)
+        for ndone, ((sta1, sta2), events) in enumerate(self.triplets.items()):
+            if not ndone % 100:
+                done = load_done(save_done)
+                if self.verbose:
+                    print(percentage_done(len(self.triplets), len(done)))
+            if '%s_%s'%(sta1, sta2) in done:
+                continue
+            if self.verbose:
+                print(sta1, '-', sta2, ':', len(events), 'EVENTS')
+            savedir = os.path.join(save_dispersion, '%s_%s'%(sta1, sta2))
+            os.makedirs(savedir, exist_ok=True)
+            for otime in events:
+                st1 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta1, self.component)))
+                st2 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta2, self.component)))
+                tsm.preprocess(st1, st2, float(otime), fs=2)
+                try:
+                    dispersion = tsm.measure_dispersion()
+                except:
+                    continue
+                if dispersion.size:
+                    file = os.path.join(savedir, '%s_%s_%s.npy'%(sta1, sta2, otime))
+                    np.save(file, dispersion)
+            if len(os.listdir(savedir)) >= self.min_no_events:
+                dist = dist_az_backaz(self.stations, sta1, sta2)[0]
+                outimg = os.path.join(save_fig, '%s_%s.png'%(sta1, sta2))
+                try:
+                    dispcurve = tsm.extract_dispcurve(refcurve,
+                                                      src=savedir,
+                                                      dist_km=dist,
+                                                      prob_min=prob_min,
+                                                      smoothing=0.3,
+                                                      plotting=plotting,
+                                                      savefig=outimg,
+                                                      sta1=sta1,
+                                                      sta2=sta2,
+                                                      prior_sigma_10s=prior_sigma_10s,
+                                                      prior_sigma_200s=prior_sigma_200s)
+                except:
+                    update_done(sta1, sta2)
+                    continue
+                    
+                dispcurve[:,1] *= 1000
+                np.save(os.path.join(save_pv, '%s_%s.npy'%(sta1, sta2)),
+                        dispcurve)
+                
+            update_done(sta1, sta2)
+                
+    
+    def prepare_input_tomography(self, savedir, period, outfile='input_%.2fs.txt'):
+        """ 
+        Prepares a .txt file for each specified period, to be used for 
+        calculating phase-velocity maps using the seislib.SeismicTomography class.
+        
+        Parameters
+        ----------
+        savedir : str
+            Absolute path to the directory where the file(s) is (are) saved.
+            If savedir does not exist, it will be created
+            
+        period : int, float, list, ndarray
+            Period (or periods) at which the dispersion curves will be 
+            interpolated (see the method `interpolate_dispcurves`)
+            
+        outfile : str
+            Format for the file names. It must include either %s or %.Xf (where
+            X is integer), since this will be replaced by each period analysed
+            (one for file)
+        """
+
+        os.makedirs(savedir, exist_ok=True)
+        period = np.array([period]) if np.isscalar(period) else np.array(period)
+        coords, measurements = self.interpolate_dispcurves(period)
+        for iperiod, p in enumerate(period):
+            save = os.path.join(savedir, outfile%p)
+            vel = measurements[:, iperiod]
+            notnan = np.flatnonzero(~np.isnan(vel))
+            if self.verbose:
+                print('Measurements at %.2fs:'%p, notnan.size)
+            np.savetxt(save, np.column_stack((coords[notnan], vel[notnan])))
+
+    
+    def interpolate_dispcurves(self, period):
+        """ 
+        Interpolates the dispersion curves found at /$self.savedir/dispcurves
+        at the specified period(s). (No extrapolation is made.)
+        
+        Parameters
+        ----------
+        period : int, float, list, ndarray
+            Period (or periods) at which the dispersion curves will be 
+            interpolated
+            
+            
+        Returns
+        -------
+        coords : ndarray of shape (n, 4)
+            Coordinates (lat1, lon1, lat2, lon2) of the station pairs for which
+            a dispersion curve has been calculated
+            
+        measurements : ndarray of shape (n, p)
+            Phase velocity calculated for station pair contained in coords at
+            the wanted period(s). p is the number of periods
+            
+        Note: `measurements` could contain nans
+        """   
+    
+        def display_progress(no_files, done, verbose=False):
+            if verbose and not done % int(0.05*no_files + 1):
+                print('FILES PROCESSED: %d/%d'%(done, no_files))
+
+        src = os.path.join(self.savedir, 'dispcurves')
+        files = [i for i in sorted(os.listdir(src)) if i.endswith('npy')]
+        files_size = len(files)
+        period_size = 1 if np.isscalar(period) else len(period)
+        measurements = np.zeros((files_size, period_size))
+        coords = np.zeros((files_size, 4))
+        for i, file in enumerate(files):
+            display_progress(no_files=files_size, done=i, verbose=self.verbose)
+            periods, vel = np.load(os.path.join(src, file)).T
+            interp_vel = interp1d(periods, vel, bounds_error=False)(period)
+            measurements[i] = interp_vel
+            pair = file.split('.npy')[0].split('_')
+            pair = ['.'.join(i.split('.')[:2]) for i in pair if '.' in i]
+            sta1, sta2 = [sta for sta in pair if sta in self.stations]
+            coords[i] = (*self.stations[sta1], *self.stations[sta2])
+        return coords, measurements
+    
+    
+    def plot_stations(self, ax=None, show=True, oceans_color='water', 
+                      lands_color='land', edgecolor='k', projection='Mercator',
+                      color_by_network=True, **kwargs):
+        """ 
+        Maps the seismic receivers for which data triplets of epicenter-receivers
+        are available.
+        
+        Parameters
+        ----------
+        ax : cartopy.mpl.geoaxes.GeoAxesSubplot
+            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
+            Otherwise, a new figure and GeoAxesSubplot instance is created
+            
+        show : bool
+            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
+            returned. Default is True
+            
+        oceans_color, lands_color : str
+            Color of oceans and lands. The arguments are ignored if ax is not
+            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            (to the argument 'facecolor'). Defaults are 'water' and 'land'
+            
+        edgecolor : str
+            Color of the boundaries between, e.g., lakes and land. The argument 
+            is ignored if ax is not None. Otherwise, it is passed to 
+            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+            is 'k' (black)
+            
+        projection : str
+            Name of the geographic projection used to create the GeoAxesSubplot.
+            (Visit the cartopy website for a list of valid projection names.)
+            If ax is not None, `projection` is ignored. Default is 'Mercator'
+            
+        color_by_network : bool
+            If True, each seismic network will have a different color in the
+            resulting map, and a legend will be displayed. Otherwise, all
+            stations will have the same color. Default is True
+            
+        kwargs : dict
+            Dictionary of additional key words that will be passed to the
+            matplotlib.pyplot.plot method.        
+            
+            
+        Returns
+        -------
+        If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
+        """
+
+        def get_coords(stations, color_by_network):
+            codes, coords = zip(*[(k, v) for k, v in stations.items() \
+                                  if '_' not in k])
+            if not color_by_network:
+                yield np.array(coords), None
+            else:
+                networks = sorted(set(code.split('.')[0] for code in codes))
+                for net in networks:
+                    idx = [i for i, code in enumerate(codes) if code.startswith(net)]
+                    yield np.array(coords)[idx], net
+            
+        if ax is None:
+            projection = eval('ccrs.%s()'%projection)
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1, projection=projection)
+            add_earth_features(ax, 
+                               oceans_color=oceans_color, 
+                               edgecolor=edgecolor,
+                               lands_color=lands_color)
+        transform = ccrs.PlateCarree()
+        marker = '^' if kwargs.get('marker', None) is None else kwargs['marker']
+        coords = np.array([i for i in self.stations.values()])
+        latmin, latmax = np.min(coords[:,0]), np.max(coords[:,0])
+        lonmin, lonmax = np.min(coords[:,1]), np.max(coords[:,1])
+        dlat = (latmax - latmin) * 0.1
+        dlon = (lonmax - lonmin) * 0.1
+        for coords, net in get_coords(self.stations, color_by_network):
+            ax.plot(*coords.T[::-1], marker=marker, lw=0, transform=transform,
+                    label=net, **kwargs) 
+        ax.set_extent((lonmin-dlon, lonmax+dlon, latmin-dlat, latmax+dlat), 
+                      transform)
+        if color_by_network:
+            ax.legend()
+        if show:
+            plt.show()
+        else:
+            return ax
+                
+        
+        
+        
+###############################################################################
+        
+        
+        
+        
+
+class TwoStationMethod:
+    """ 
+    Class two obtain two-station dispersion measurements and associated
+    dispersion curves based on teleseismic earthquakes.
+    
+    
+    Attributes
+    ----------
+    periods : ndarray of shape (n,)
+        Array of periods to extract the dispersion measurements from
+        
+    ref_vel : ndarray of shape (n,)
+        Array of reference velocities corresponding to `periods`
+        
+    ref_model : scipy.interpolate.interpolate.interp1d
+        Interpolating function. Input: period. Returns: phase velocity
+        
+    min_no_wavelegnths : float
+        Minimum number of wavelengths between two receivers, at a given period,
+        below which the dispersion measurements are not extracted
+        
+    cmin, cmax : float (in km/s)
+        Estimated velocity range spanned by the dispersion curves
+        
+    ttol : float
+        Tolerance (percentage), with respect to the reference curve, used to 
+        taper the seismograms around the expected arrival time of the surface 
+        wave (at a given period).
+    
+    gamma_f : float, int
+        Controls the width of the bandpass filters, at a given period, used 
+        to isolate the fundamental mode in the seismogram.
+        
+    gamma_w, distances : ndarrays of shape (m,), optional
+        Control the width of tapers used to taper, at a given period, the
+        cross correlations in the frequency domain
+        
+    approach : str
+        It indicates if the dispersion measurements are extracted in the 
+        frequency domain ('freq') or in the time domain ('time')
+        
+    
+    Additional Attributes (After Function Call `preprocess`)
+    --------------------------------------------------------
+    otime : float
+        Origin time of the earthquake
+        
+    dist1, dist2 : float
+        Epicentral distances at the two receivers
+        
+    dist : float
+        Inter-station distance, calculated as dist2-dist1
+        
+    dt : float
+        Time sampling of the seismograms
+        
+    fs : float
+        Sampling rate of the seismograms
+        
+    data1, data2 : ndarray of shape (n,)
+        Preprocessed seismograms
+        
+    times : ndarray of shape (n,)
+        Array of times corresponding to the two seismograms, starting at the
+        origin time
+        
+    periods_masked : ndarray of shape (n,)
+        Subset of `periods`, where the wavelength is such that there is a
+        number of wavelenghts between the two receivers > `min_no_wavelength`
+    
+    
+    Methods
+    -------
+    frequency_w_and_alphaf(period)
+        Retrieves frequency, angular frequency, and alpha_f at a given period
+    
+    build_taper(center_idx, taper_size, data_size, taper_type=signal.tukey, 
+                alpha=0.1)
+        Defines the taper used for tapering the seismograms
+        
+    times_for_taper(dist, ref_vel, tolerance)
+        Identifies the starttime and endtime of the tapers to be applied to the 
+        seismograms
+    
+    taper_from_times(tmin, tmax, taper_p=0.2)
+        Retrieves the tapers to be applied to the seismograms
+    
+    adapt_startime_to_t(data, dt, starttime, origintime, power_2_sized=True)
+        Zeropadds data in order to make the start time coincide with the event 
+        origin time
+        
+    adapt_times(tr1, tr2)
+        Zero-pads and slices the two traces so that their startting and ending 
+        times coincide
+        
+    preprocess(st1, st2, otime, fs=2)
+        Read sac infos and prepare to pv extraction. The sac headers must be 
+        compiled with traces and event information
+
+    freq_domain_dispersion(taper_p=0.2)
+        Extract dispersion measurements using a frequency-domain approach
+        
+    time_domain_dispersion(taper_p=0.2)
+        Extract dispersion measurements using a time-domain approach.
+        
+    measure_dispersion(taper_p=0.2)
+        Extract dispersion measurements using either a time-domain or a 
+        frequency-domain approach, depending on the attribute `approach`
+        
+    
+    Class Methods
+    -------------
+    convert_to_kms(dispcurve)
+        Converts from m/s to km/s the dispersion curve (if necessary).
+
+    extract_dispcurve(refcurve, src, dist_km, prob_min=0.25, smoothing=0.3,
+                      min_derivative=-0.01, prior_sigma_10s=0.7, 
+                      prior_sigma_200s=0.3, plotting=False, savefig=None, 
+                      sta1=None, sta2=None)
+        Extraction of the dispersion curve from a given set of dispersion
+        measurements
+        
+    
+    Example
+    -------
+    
+    In the following we will calculate a dispersion curve based on several
+    earthquakes recorded at two receivers (sta1, sta2) on the vertical 
+    components (Z). The seismograms (two per earthquake) are stored in several
+    folders (one per earthquake), named after the origin time of the earthquake
+    (in the obspy.UTCDateTime.timestamp format). The seismic data must be in 
+    the .sac format, with the information on the epicentral distance (dist) 
+    compiled in the header. It is assumed that the receivers and the epicenter
+    lie on the same great-circle path. The data are stored in the directory 
+    /path/to/data.
+    
+    We will retrieve dispersion measurements for 75 periods linearly spaced
+    between 15 and 150s. We assume that in this period range surface waves travel
+    in the velocity range 2.5 - 5 km/s. We need to pass a reference curve
+    consisting of 2 columns (1st: period, 2nd: phase velocity in either km/s or
+    m/s), that will be used in the subsequent analysis. We will only employ 
+    periods for which the ratio between expected wavelength (based on the
+    reference curve) and inter-station distance is not smaller than 1.5.
+    
+    First, we initialize the TwoStationMethod class as
+    
+        tsm = TwoStationMethod(refcurve=refcurve,
+                               periodmin=15,
+                               periodmax=150,
+                               no_periods=75,
+                               cmin=2.5, 
+                               cmax=5, 
+                               min_no_wavelengths=1.5)
+        
+    Then, we use this class obtain dispersion measurements for all events
+    available in the data directory. (We are assuming that we only have folders
+    corresponding to events that are aligned on the same great circle path as
+    the epicenter. For a more automatic processing of station pairs and events,
+    see the method `prepare_data` of the EQVelocity class.) We will store all
+    the dispersion measurements in the folder /path/to/savedir/dispersion, in
+    the npy format.
+    
+        
+        src = /path/to/data
+        dispersion_dir = /path/to/savedir/dispersion
+        
+        events = os.listdir(src)
+        for origin_time in events:
+            st1 = read(os.path.join(src, origin_time, '%s*'%sta1))
+            st2 = read(os.path.join(src, origin_time, '%s*'%sta2))
+            
+            tsm.preprocess(st1, st2, float(origin_time))
+            dispersion = tsm.measure_dispersion()
+            
+            outfile = os.path.join(dispersion_dir, 
+                                   '%s_%s_%s.npy'%(sta1, sta2, origin_time))
+            np.save(outfile, dispersion)
+                 
+            
+    Now that all the dispersion measurements have been extracted, we can
+    calculate a dispersion curve based on them. (dist_km is inter-station 
+    distance in km). The results will displayed in the console.
+            
+    
+        dispcurve = tsm.extract_dispcurve(refcurve=refcurve,
+                                          src=dispersion_dir,
+                                          dist_km=dist_km,
+                                          plotting=True,
+                                          sta1=sta1,
+                                          sta2=sta2)
+    """
+    
+    
+    def __init__(self, refcurve, periodmin=15, periodmax=150, no_periods=75, 
+                 cmin=2.5, cmax=5, ttol=0.3, min_no_wavelengths=1.5, 
+                 approach='freq', gamma_f=14, gamma_w=None, distances=None):
+        """
+        Parameters
+        ----------
+        refcurve : ndarray of shape (n, 2)
+            Reference curve used to extract the dispersion curves. The first
+            column should be period, the second column velocity (in either
+            km/s or m/s). The reference curve is automatically converted to
+            km/s, the physical unit employed in the subsequent analysis.
+            
+        periodmin, periodmax : float
+            Minimum and maximum period analysed by the algorithm (default
+            are 15 and 150 s). The resulting dispersion curves will be limited
+            to this period range
+            
+        no_periods : int
+            Number of periods between periodmin and periodmax (included) used 
+            in the subsequent analysis. The resulting periods will be equally 
+            spaced (linearly) from each other. Default is 75
+            
+        cmin, cmax : float (in km/s)
+            Estimated velocity range spanned by the dispersion curves (default
+            values are 2.5 and 5). The resulting dispersion curves will be 
+            limited to this velocity range
+            
+        ttol : float
+            Tolerance, with respect to the reference curve, used to taper the 
+            seismograms around the expected arrival time of the surface wave 
+            (at a given period). In practice, at a given period, everything 
+            outside of the time range given by tmin and tmax (see below) is set 
+            to zero through a taper. tmin and tmax are defined as
+            
+                tmin = dist / (ref_vel + ref_vel*ttol)
+                tmax = dist / (ref_vel - ref_vel*ttol),
+                
+            where dist is inter-station distance. Default is 0.3, i.e., 30% of
+            the reference velocity
+            
+        min_no_wavelengths : float
+            Ratio between the estimated wavelength of the surface-wave at a 
+            given period (lambda = period * c_ref) and interstation distance.
+            If lambda/dist > min_no_wavelength, the period in question is
+            not used to retrieve a dispersion measurement. Values < 1 are
+            suggested against. Default is 1.5
+            
+        approach : str
+            Passed to TwoStationMethod.measure_dispersion. It indicates if the 
+            dispersion measurements are extracted in the frequency domain 
+            ('freq') or in the time domain ('time'). Default is 'freq'
+            
+        gamma_f : float, int
+            Controls the width of the bandpass filters, at a given period, used 
+            to isolate the fundamental mode in the seismogram. For technical 
+            details, refer to Soomro et al. (2016)
+            
+        gamma_w, distances : ndarrays of shape (m,), optional
+            Control the width of tapers used to taper, at a given period, the
+            cross correlations in the frequency domain (these two parameters 
+            are ignored if `approach` is 'time'). `distances` should be in km. 
+            If not given, they will be automatically set to
+            
+                gamma_w = np.linspace(5, 50, 100)
+                distances = np.linspace(100, 3000, 100)
+                
+            These two arrays are used as interpolators to calculate `gamma`
+            based on the inter-station distance. `gamma` is the parameter that
+            actually controls the width of the tapers, and is defined as
+            
+                gamma = np.interp(dist, distances, gamma_w)
+                
+            For technical details, refer to Soomro et al. (2016)         
+        
+             
+        References
+        ----------
+        Soomro et al. (2016), Phase velocities of Rayleigh and Love waves in 
+            central and northern Europe from automated, broad-band, interstation 
+            measurements, GJI
+        """
+                    
+        self.periods = np.linspace(periodmin, periodmax, no_periods, dtype='float32')
+        refcurve = self.convert_to_kms(refcurve)
+        self.ref_model = interp1d(refcurve[:,0], 
+                                  refcurve[:,1],
+                                  bounds_error=False, 
+                                  fill_value='extrapolate')
+        self.ref_vel = self.ref_model(self.periods)
+        self.min_no_wavelengths = min_no_wavelengths
+        self.cmin = cmin
+        self.cmax = cmax
+        self.ttol = ttol
+        self.gamma_f = gamma_f
+        if gamma_w is None or distances is None:
+            self.gamma_w = np.linspace(5, 50, 100)
+            self.distances = np.linspace(100, 3000, 100)
+        else:
+            self.gamma_w = gamma_w
+            self.distances = distances
+
+        self.approach = approach.lower().replace(' ', '')
+        if self.approach not in ['time', 'freq']:
+            string = '`%s` not supported: `approach` should be either `freq` or \
+            `time`'%approach
+            raise NotImplementedError(string)
+                
+    
+    def frequency_w_and_alphaf(self, period):
+        """ 
+        Retrieves frequency, angular frequency, and alpha_f at a given period
+        
+        Parameters
+        ----------
+        period : float
+        
+        
+        Returns
+        -------
+        frequency : float
+            Inverse of period
+            
+        w : float
+            Angular frequency, i.e. 2pi * frequency
+            
+        alpha_f : float
+            Controls the width of the bandpass filters, at a given period, used 
+            to isolate the fundamental mode in the seismogram. It is a function
+            of `gamma_f` (See the `__init__` documentation). For technical 
+            details, refer to Soomro et al. (2016)
+            
+            
+        References
+        ----------
+        Soomro et al. (2016), Phase velocities of Rayleigh and Love waves in 
+            central and northern Europe from automated, broad-band, interstation 
+            measurements, GJI
+        """
+        
+        frequency = 1 / period
+        w = 2 * pi * frequency
+        alpha_f = w * self.dt * self.gamma_f**2       
+        return frequency, w, alpha_f
+    
+    
+    def build_taper(self, center_idx, taper_size, data_size, 
+                    taper_type=signal.tukey, alpha=0.1):
+        """ Defines the taper used for tapering the seismograms
+        
+        Parameters
+        ----------
+        center_idx : int 
+            Index of corresponding to the center of the taper
+            
+        taper_size : int
+            Lenght of the taper. The taper will be centred onto `taper_idx` and
+            extend around the center by taper_size/2
+            
+        data_size :
+            Length of the data, which corresponds to the final size of the 
+            taper
+            
+        taper_type : func
+            Taper function. Default is scipy.signal.tukey
+            
+        alpha : float 
+            Shape parameter of the taper window. (See SciPy documentation)
+        
+        
+        Returns
+        -------
+        taper : numpy.ndarray
+        """
+        
+        l_idx = center_idx - taper_size//2
+        u_idx = center_idx + taper_size//2 + 1
+        idx = list(range(l_idx, u_idx))
+        taper = np.zeros(data_size)
+        taper[idx] = taper_type(len(idx), alpha=alpha)
+        return taper
+
+
+    def times_for_taper(self, dist, ref_vel, tolerance):
+        """ 
+        Identifies the starttime and endtime of the tapers to be applied to the 
+        seismograms
+        
+        Parameters
+        ----------
+        dist : int, float
+            Inter-station distance (in km)
+            
+        ref_vel : float
+            Reference velocity (at a given period in km/s)
+            
+        tolerance : float
+            Tolerance, with respect to ref_vel, used to identify the starting
+            and ending time of the taper
+            
+            
+        Returns
+        -------
+        tmin, tmax : float
+            Starting and ending time of the taper
+        """ 
+        
+        tmin = int(dist / (ref_vel + ref_vel*tolerance))
+        tmax = int(dist / (ref_vel - ref_vel*tolerance))
+        return tmin, tmax
+    
+    
+    def taper_from_times(self, tmin, tmax, taper_p=0.2):
+        """ Retrieves the tapers to be applied to the seismograms
+        
+        Parameters
+        ----------
+        tmin, tmax : float
+            Starting and ending time of the taper
+            
+        taper_p : float
+            Shape parameter of the taper. Default is 0.2
+        
+        
+        Returns
+        -------
+        taper : np.ndarray of shape (n,)
+        """
+        
+        idx = np.where((self.times>tmin) & (self.times<tmax))[0]
+        taper = self.build_taper(center_idx=(np.max(idx) + np.min(idx)) // 2, 
+                                 taper_size=len(idx), 
+                                 data_size=self.times.size, 
+                                 alpha=taper_p)       
+        return taper
+        
+    
+    def adapt_startime_to_t(self, data, dt, starttime, origintime, 
+                            power_2_sized=True):
+        """ 
+        Zeropadds data in order to make the start time coincide with the event 
+        origin time
+        
+        Parameters
+        ----------
+        data : numpy.ndarray
+        
+        dt : float 
+            Time sampling interval
+            
+        starttime : float (obspy.core.utcdatetime.UTCDateTime.timestamp)
+            Starttime of the waveform
+        
+        origintime : float (obspy.core.utcdatetime.UTCDateTime.timestamp)
+            Origin time of the earthquake
+            
+        power_2_sized : bool
+            If True, the returned data size will be a power of 2. This allows
+            to take the Fourier transform more efficiently
+        
+        
+        Returns
+        -------
+        numpy.ndarray
+        """
+        
+        time_difference = origintime - starttime
+        if time_difference != 0:
+            quotient, remainder = divmod(time_difference, dt)
+            if remainder > dt/2:
+                quotient += 1
+            if quotient < 0:
+                data = np.concatenate((np.zeros(int(-quotient)), data))
+            else:
+                data = data[int(quotient):]
+                
+        if power_2_sized:
+            n = next_power_of_2(data.size)
+            data = np.concatenate((data, np.zeros(n-data.size)))
+            
+        return data
+
+
+    def adapt_times(self, tr1, tr2):
+        """ 
+        Zero-pads and slices the two traces so that their startting and ending 
+        times coincide
+        
+        Parameters
+        ----------
+        tr1, tr2 : obspy.Trace
+        
+        
+        Returns
+        -------
+        tr1, tr2 : obspy.Trace
+            Modified copy of the original input
+        """
+        
+        tstarts = [tr1.stats.starttime, tr2.stats.starttime]
+        tends = [tr1.stats.endtime, tr2.stats.endtime]
+        if len(set([t.timestamp for t in tstarts])) == 1 \
+        and len(set([t.timestamp for t in tends])) == 1:
+            return tr1, tr2
+        
+        tstart = min(tstarts)
+        tend = max(tends)
+        tr1 = zeropad(tr1, tstart, tend)
+        assert np.all(tr1.data == tr1.slice(tr1.stats.starttime, tr1.stats.endtime).data)
+        tr2 = zeropad(tr2, tstart, tend)
+        assert np.all(tr2.data == tr2.slice(tr2.stats.starttime, tr2.stats.endtime).data)
+        
+        tr1, tr2 = adapt_timespan(tr1, tr2)
+        assert tr1.stats.starttime.timestamp == tr2.stats.starttime.timestamp
+        return tr1, tr2
+            
+
+    def preprocess(self, st1, st2, otime, fs=2):
+        """
+        Read sac infos and prepare to pv extraction. The sac headers must be 
+        compiled with traces and event information
+        
+        Parameters
+        ----------
+        st1, st2 : obspy.core.stream.Stream
+        
+        otime : float (obspy.core.utcdatetime.UTCDateTime.timestamp)
+            Event origin time
+            
+        fs : int
+            Sampling rate
+                            
+        taper_p : float
+            Percentage taper to apply to the streams.
+        """
+        
+        self.otime = otime
+        tr1, tr2 = st1[0], st2[0]
+        if tr1.stats.sac.dist > tr2.stats.sac.dist:
+            tr1, tr2 = tr2, tr1
+            
+        self.dist1 = tr1.stats.sac.dist
+        self.dist2 = tr2.stats.sac.dist
+        self.dist = self.dist2 - self.dist1    
+        
+        if tr1.stats.sampling_rate != fs:
+            tr1 = tr1.interpolate(sampling_rate=fs, method="weighted_average_slopes")
+        if tr2.stats.sampling_rate != fs:
+            tr2 = tr2.interpolate(sampling_rate=fs, method="weighted_average_slopes")
+        self.dt = tr1.stats.delta
+        self.fs = tr1.stats.sampling_rate
+        
+        tr1.taper(max_percentage=0.05)
+        tr2.taper(max_percentage=0.05)     
+        tr1, tr2 = self.adapt_times(tr1, tr2)
+        starttime = tr1.stats.starttime.timestamp
+        
+        self.data1 = self.adapt_startime_to_t(data=tr1.data, 
+                                              dt=self.dt, 
+                                              starttime=starttime,
+                                              origintime=self.otime, 
+                                              power_2_sized=True)
+        self.data2 = self.adapt_startime_to_t(data=tr2.data, 
+                                              dt=self.dt, 
+                                              starttime=starttime,
+                                              origintime=self.otime, 
+                                              power_2_sized=True)
+        self.times = np.arange(0, self.data1.size*self.dt, self.dt)           
+        lambda_min = self.ref_vel * self.periods * self.min_no_wavelengths
+        mask = lambda_min < self.dist
+        self.periods_masked = self.periods[mask]
+    
+
+    def freq_domain_dispersion(self, taper_p=0.2):
+        """
+        Extract dispersion measurements using a frequency-domain approach.
+        
+        Parameters
+        ----------
+        taper_p : float
+            Taper percentage
+                
+        
+        Returns
+        -------
+        solutions : ndarray of shape (n, 2)
+            The 1st column is period, the 2nd is phase velocity. Note that, in
+            general, at a given period more than one phase-velocity measurement
+            will be present in solutions, because of the 2pi phase ambiguity
+            [e.g., Soomro et al. 2016, Magrini et al. 2020]. All phase velocities
+            outside the velocity range cmin-cmax (see __init__ documentation)
+            are discarded
+            
+            
+        References
+        ----------
+        Magrini et al. 2020, Arrival-angle effects on two-receiver measurements 
+            of phase velocity, GJI
+            
+        Soomro et al. (2016), Phase velocities of Rayleigh and Love waves in 
+            central and northern Europe from automated, broad-band, interstation 
+            measurements, GJI
+        """        
+        
+        dist = self.dist
+        gamma = np.interp(dist, self.distances, self.gamma_w) 
+        freq = rfftfreq(len(self.times), self.dt)
+        velocities = []
+        frequencies = []
+        
+        periods = self.periods_masked
+        indexes = reversed(range(len(periods)))
+        for idx, period in zip(indexes, sorted(periods)[::-1]):               
+            frequency, w, alpha_f = self.frequency_w_and_alphaf(period)
+            alpha_w = w * self.dt * gamma**2 
+            ref_vel = self.ref_model(period)
+            
+            tmin1, tmax1 = self.times_for_taper(self.dist1, ref_vel, self.ttol)
+            tmin2, tmax2 = self.times_for_taper(self.dist2, ref_vel, self.ttol)         
+            taper_u1 = self.taper_from_times(tmin1, tmax1, taper_p=taper_p)
+            taper_u2 = self.taper_from_times(tmin2, tmax2, taper_p=taper_p)
+            u1 = bandpass_gaussian(self.data1, self.dt, period, alpha_f) * taper_u1
+            u2 = bandpass_gaussian(self.data2, self.dt, period, alpha_f) * taper_u2           
+            
+            xcorr = signal.correlate(u2, u1, 'full')[u1.size - 1:]
+            t_max = self.times[np.argmax(xcorr)]
+            if t_max == 0:
+                continue
+                  
+            taper_xcorr = np.exp(-w**2 * (self.times - t_max)**2 / (4*alpha_w))
+            xcorr *= taper_xcorr
+            
+            xcorr_w = np.conj(rfft(xcorr))
+            phi = np.unwrap(np.angle(xcorr_w))
+            phi_interp = np.interp(frequency, freq, phi)       
+    ##################BECAUSE#################################################
+    #irfft(U1 * np.exp(-1j*(phi))) == irfft(U1 * np.exp(-1j*(phi+2*pi))) == u2
+    ##########################################################################   
+            for i in range(-16, 17, 2):
+                c_w = w*dist / (phi_interp + i*pi)
+                if self.cmin <= c_w <= self.cmax:
+                    velocities.append(c_w)
+                    frequencies.append(1 / period)
+
+        solutions = np.column_stack((1/np.asarray(frequencies), velocities))
+        return solutions
+
+
+    def time_domain_dispersion(self, taper_p=0.2):
+        """
+        Extract dispersion measurements using a time-domain approach.
+        
+        Parameters
+        ----------
+        taper_p : float
+            Taper percentage
+                
+        
+        Returns
+        -------
+        solutions : ndarray of shape (n, 2)
+            The 1st column is period, the 2nd is phase velocity. Note that, in
+            general, at a given period more than one phase-velocity measurement
+            will be present in solutions, because of the 2pi phase ambiguity
+            [e.g., Soomro et al. 2016, Magrini et al. 2020]. All phase velocities
+            outside the velocity range cmin-cmax (see __init__ documentation)
+            are discarded
+            
+            
+        References
+        ----------
+        Magrini et al. 2020, Arrival-angle effects on two-receiver measurements 
+            of phase velocity, GJI
+            
+        Soomro et al. (2016), Phase velocities of Rayleigh and Love waves in 
+            central and northern Europe from automated, broad-band, interstation 
+            measurements, GJI
+        """   
+        
+        dist = self.dist
+        velocities = []
+        frequencies = []
+        
+        periods = self.periods_masked
+        indexes = reversed(range(len(periods)))
+        for idx, period in zip(indexes, sorted(periods)[::-1]):                   
+            frequency, w, alpha_f = self.frequency_w_and_alphaf(period)
+            
+            ref_vel = self.ref_model(period)
+            tmin1, tmax1 = self.times_for_taper(self.dist1, ref_vel, self.ttol)
+            tmin2, tmax2 = self.times_for_taper(self.dist2, ref_vel, self.ttol)            
+            taper_u1 = self.taper_from_times(tmin1, tmax1, taper_p=taper_p)
+            taper_u2 = self.taper_from_times(tmin2, tmax2, taper_p=taper_p)
+            u1 = bandpass_gaussian(self.data1, self.dt, period, alpha_f) * taper_u1
+            u2 = bandpass_gaussian(self.data2, self.dt, period, alpha_f) * taper_u2
+            
+            xcorr = signal.correlate(u2, u1, 'full')[u1.size - 1:]
+            xcorr /= np.nanmax(xcorr)
+            args_max = signal.find_peaks(xcorr, height=1e-3)[0]
+            t_maxima = self.times[args_max]
+            for t_max in t_maxima:
+                c_w = dist / t_max
+                if c_w<self.cmin or c_w>self.cmax:
+                    continue
+                velocities.append(c_w)
+                frequencies.append(1 / period)
+            
+        solutions = np.column_stack((1/np.asarray(frequencies), velocities)) 
+        return solutions
+    
+    
+    def measure_dispersion(self, taper_p=0.2):
+        """ 
+        Extract dispersion measurements using either a time-domain or a 
+        frequency-domain approach, depending on the parameter `approach` passed
+        in the initialization of the class (see __init__ documentation). The 
+        function will call either `time_domain_dispersion` or 
+        `freq_domain_dispersion`, respectively
+        
+        Parameters
+        ----------
+        taper_p : float
+            Taper percentage
+        """
+        def approach(string):   
+            nonlocal self
+            if string == 'time': 
+                return self.time_domain_dispersion
+            if string == 'freq': 
+                return self.freq_domain_dispersion
+                       
+        method = approach(self.approach)
+        return method(taper_p=taper_p)
+    
+    
+    @classmethod
+    def convert_to_kms(cls, dispcurve):
+        """ Converts from m/s to km/s the dispersion curve (if necessary).
+        
+        Parameters
+        ----------
+        dispcurve : ndarray of shape (n, 2)
+            The first column (typically frequency or period) is ignored. The
+            second column should be velocity. If the first value of velocity
+            divided by 10 is greater than 1, the second column is divided by
+            1000. Otherwise, the dispersion curve is left unchanged.
+            
+            
+        Returns
+        -------
+        dispcurve : ndarray of shape (n, 2)
+        """
+        
+        if dispcurve[0, 1] / 10 > 1:
+            dispcurve = np.column_stack((dispcurve[:, 0], dispcurve[:, 1]/1000))
+        return dispcurve
+    
+    
+    @classmethod
+    def extract_dispcurve(cls, refcurve, src, dist_km, prob_min=0.25, smoothing=0.3,
+                          min_derivative=-0.01, prior_sigma_10s=0.7, prior_sigma_200s=0.3, 
+                          plotting=False, savefig=None, sta1=None, sta2=None):
+        """ 
+        Extraction of the dispersion curve from a given set of dispersion
+        measurements. These (one per earthquake) should be stored in a directory
+        in npy files.
+        
+        The algorithm will (i) first gather all the dispersion measurments in a
+        unique ndarray of shape (n, 2), where the 1st column is period and
+        the 2nd is phase velocity. From this ensemble, (ii) it will then create 
+        a 2-D image representing the density of measurements, via a method 
+        similar to a kernel-density estimate (KDE). This image (of shape (k, l)
+        and henceforth referred to as 'P_obs'), is normalized at each period by 
+        the maximum at the same period. (iii) A second image, call it 'P_ref', 
+        is obtained from the reference curve: the weights given to each pixel at 
+        a given period are defined by a Gaussian function centred onto the
+        reference velocity at the same period, so that they decrease with 
+        distance from the reference velocity. As in P_obs, the image has a shape
+        of (k, l) and is normalized at each period by the maximum. (iv) Element-
+        wise multiplication of P_ref and P_obs yields a third image, call it 
+        'P_cond', which can be interpreted as the probability to measure a
+        dispersion curve at given period and velocity given the dispersion
+        observations and the a-priori knowledge of the reference curve. (v) The
+        dispersion curve is picked starting from the longest periods, where
+        the phase ambiguity is less pronounced, and is driven by two quality
+        parameters: `min_derivative` (so as to avoid velocity decreasing with
+        period) and `prob_min` (areas in P_cond characterized by values smaller
+        than `prob_min` are not considered).
+        
+        Parameters
+        ----------
+        refcurve : ndarray of shape (n, 2)
+            Reference curve used to extract the dispersion curves. The first
+            column should be period, the second column velocity (in either
+            km/s or m/s). The reference curve is automatically converted to
+            km/s, the physical unit employed in the subsequent analysis.
+            
+        src : str
+            Absolute path to the directory containing the dispersion measurements
+        
+        dist_km : float
+            Inter-station distance (in km)
+            
+        prob_min : float
+            "probability" in P_cond, at a given period, below which the 
+            dispersion curve is not picked. Larger values are more restrictive. 
+            Good values are between ~0.2 and ~0.35. Default is 0.25
+            
+        prior_sigma_10s, prior_sigma_200s : float
+            Standard deviations of the Gaussians built around the reference 
+            model (refcurve) at the periods of 10 and 200 s to calculate P_ref.
+            At each analysed period, the standard deviation is interpolated (and
+            eventually linearly extrapolated) based on these two values. Smaller
+            values give more "weight" to the reference curve in the picking of
+            the phase velocities. Defaults are 0.7 and 0.3
+            
+        smoothing : float
+            Final smoothing applied to the dispersion curve. The smoothing is
+            performed using scipy.signal.savgol_filter. This parameters allows
+            for defining the window_length passed to the SciPy function, via
+            
+                window_length = int(len(dispcurve) * smoothing)
+                
+            Default is 0.3
+            
+        min_derivative : float
+            Minimum derivative of phase-velocity as a function of period. If
+            exceeded, a quality selection will truncate the dispersion curve.
+            To avoid the presence of gaps in the final dispersion curves, if 
+            they are present due to this truncation, the branch of dispersion 
+            curve associated with the largest probability (calculated from 
+            P_cond) is returned, the other(s) are discarded. 
+            
+            Default is -0.01. Smaller values are less restrictive
+        
+        plotting : bool
+            If True, a figure is created for each retrieved dispersion curve
+        
+        savefig : str, optional
+            Absolute path to the output image. Ignored if `plotting` is False
+        
+        sta1, sta2 : str, optional
+            Station codes of the two receivers used to calculate the dispersion
+            curve. If `plotting` is True, they are displayed in title of the
+            title of the resulting figure. Otherwise they are ignored
+            
+        
+        Returns
+        -------
+        dispcurve : ndarray of shape (m, 2)
+            Dispersion curve, where he 1st column is period and the second
+            is phase velocity in km/s
+            
+            
+        Exceptions
+        ----------
+        If the calculation of the dispersion curve fails, a DispersionCurve
+        Exception is raised.
+        """
+    
+        def load_dispersion_measurements(src):
+            data = []
+            for file in os.listdir(src):
+                data.append(np.load(os.path.join(src, file)))
+            return np.vstack(data)    
+        
+        def dv_cycle_jump(frequency, velocity, dist):
+            return np.abs( velocity - 1 / (1/(dist*frequency) + 1/velocity) )
+        
+        def get_weight_field(points, X, Y, dist, rel_ellipse_width=3, 
+                             rel_ellipse_height=0.5):
+            
+            weight_field = np.zeros_like(X)
+            # assuming that the x axis is equally spaced
+            ell_width = rel_ellipse_width*np.diff(X[0])[0]  
+            for period, velocity in points:
+                # The ellipse
+                ell_center = (period, velocity)
+                ell_height = (rel_ellipse_height * dv_cycle_jump(1/period,
+                                                                 velocity,
+                                                                 dist))
+                            
+                xct = X - ell_center[0]
+                yct = Y - ell_center[1]             
+                rad_cc = (xct**2 / (ell_width/2)**2) + (yct**2 / (ell_height/2)**2)
+                weight_field[rad_cc<=1] += np.cos(np.pi/2 * rad_cc[rad_cc<=1])
+                
+            return weight_field
+        
+        def posterior_prob(data, dist):
+            periods = np.unique(data[:,0])
+            velocities = data[:,1]
+            period_min = np.min(periods)
+            cmin, cmax = np.min(velocities), np.max(velocities)
+            min_dv_cycle = dv_cycle_jump(1./period_min, cmin, dist)
+            c = np.arange(cmin, cmax, min_dv_cycle/10.)
+            X, Y = np.meshgrid(periods, c)
+            weight_field = get_weight_field(points=data, 
+                                            X=X, 
+                                            Y=Y, 
+                                            dist=dist,
+                                            rel_ellipse_width=5,
+                                            rel_ellipse_height=0.5)
+            p_post = weight_field / np.abs(weight_field).max()
+            return periods, c, (X, Y), p_post
+        
+        def prior_prob(period, c, ref_model, p_post, prior_sigma_10s=0.7, 
+                       prior_sigma_200s=0.3):
+            
+            def sigma(period):
+                x = np.linspace(10, 200)
+                y = np.geomspace(prior_sigma_10s, prior_sigma_200s)
+                interp = interp1d(x, y, bounds_error=False, fill_value='extrapolate')
+                return interp(period)
+            
+            refvel = ref_model(period)
+            p_prior = np.zeros(p_post.shape)
+            
+            for i, mu in enumerate(refvel):
+                prior = gaussian(c, mu, sigma(period[i]))
+                p_prior[:, i] = prior / prior.max()
+            return p_prior
+        
+        def get_probabilistic_velocity(prob, vel, min_rel_height=1.5, 
+                                       prominence=0.05):
+            peaks = signal.find_peaks(prob, prominence=prominence)[0]
+            if peaks.size == 1:
+                return vel[peaks[0]], prob[peaks[0]]
+            if peaks.size > 1:
+                amp = prob[peaks]
+                argmax = np.argmax(amp)
+                notmax = [i for i in range(amp.size) if i!=argmax]
+                if np.all(amp[argmax] > min_rel_height * amp[notmax]):
+                    return vel[peaks[argmax]], amp[argmax]
+            return None, None
+
+        def get_dispcurve(period, c, p_cond, smoothing=0.3, min_derivative=-0.01):
+            
+            def get_first_picks(period, c, p_cond):
+                probabilities = []
+                periods = []
+                dispcurve = []
+                for iperiod in range(period.size-1, -1, -1):
+                    prob = p_cond[:, iperiod]
+                    if np.max(prob) < 0.6:
+                        if len(dispcurve) >= 3:
+                            return iperiod, periods, dispcurve, probabilities
+                        else:
+                            continue
+                    velocity, probability = get_probabilistic_velocity(prob=prob, 
+                                                                       vel=c, 
+                                                                       min_rel_height=2)
+                    if velocity is not None:
+                        dispcurve.insert(0, velocity)
+                        periods.insert(0, period[iperiod])
+                        probabilities.insert(0, probability)
+                    else:
+                        if len(dispcurve)>=3:
+                            return iperiod, periods, dispcurve, probabilities
+                return iperiod, periods, dispcurve, probabilities
+            
+            def get_remaining_picks(ref_model, period, c, p_cond, iperiod, periods, 
+                                    dispcurve, probabilities):
+
+                if iperiod == 0:
+                    return periods, dispcurve, probabilities
+                smoothing_window = c.size // 20
+                if not smoothing_window % 2:
+                        smoothing_window += 1
+                
+                for iperiod in range(iperiod, -1, -1):
+                    prob = p_cond[:, iperiod]
+                    dy = ref_model(periods[1]) - ref_model(periods[0])
+                    dx = periods[1] - periods[0]
+                    derivative_c =  dy / dx
+                    
+                    dperiod = abs(period[iperiod] - periods[0])
+                    c_pred = dispcurve[0] - derivative_c * dperiod
+#                    prob_prior = gaussian(c, c_pred, 0.15)
+                    prob_prior = skewed_normal(c, c_pred, 0.2, -5)
+                    iloc = np.argmin(np.abs(c - c_pred))
+                    prob_prior = np.roll(prob_prior, iloc - np.argmax(prob_prior))
+                    prob_cond = prob_prior/prob_prior.max() * prob
+                    prob_cond = signal.savgol_filter(prob_cond, smoothing_window, 2)
+                    velocity, probability = get_probabilistic_velocity(prob=prob_cond, 
+                                                                       vel=c, 
+                                                                       min_rel_height=1.3,
+                                                                       prominence=0.025)
+                    if velocity is not None:
+                        dispcurve.insert(0, velocity)
+                        periods.insert(0, period[iperiod])
+                        probabilities.insert(0, probability)
+                    else:
+                        break
+                return periods, dispcurve, probabilities
+                
+            def quality_selection(periods, vel, probability, min_derivative=-0.01):
+                
+                def select_segment(periods, vel, probability, inans):
+                    segments = []
+                    measurements = []
+                    for iperiod in range(len(periods)):
+                        if iperiod not in inans:
+                            measurements.append((periods[iperiod], 
+                                                 vel[iperiod], 
+                                                 probability[iperiod]))
+                        else:
+                            if measurements:
+                                segments.append(np.array(measurements))
+                                measurements = []
+                    if measurements:
+                        segments.append(np.array(measurements))
+                    
+                    best_prob = 0.6
+                    best_segment = None
+                    for isegment, segment in enumerate(segments):
+                        prob = np.mean(segment[:,2])
+                        if prob > best_prob:
+                            best_segment = isegment
+                            best_prob = prob
+                    if best_segment is None:
+                        raise DispersionCurveException
+                    return segments[best_segment]                  
+                
+                derivative = np.gradient(vel) / np.gradient(periods)
+                inans = np.flatnonzero(derivative < min_derivative)
+                p, v, prob = select_segment(periods, vel, probability, inans).T
+                dp = min(np.diff(p))
+                inans = np.flatnonzero(np.diff(p) > dp*10)
+                if inans:
+                    p, v, _ = select_segment(p, v, prob, inans).T
+                return np.column_stack((p, v))
+            
+            
+            def quality_check_first_picks(ref_model, periods, vel):
+                dy = vel[-1] - vel[0]
+                dx = periods[-1] - periods[0]
+                derivative_obs = dy / dx
+                dy_ref = ref_model(periods[-1]) - ref_model(periods[0])
+                derivative_ref = dy_ref / dx
+                if derivative_obs > derivative_ref * 5:
+                    raise DispersionCurveException
+                
+            iperiod, periods, dispcurve, prob = get_first_picks(period, c, p_cond)
+            quality_check_first_picks(ref_model, periods, dispcurve)
+            periods, dispcurve, prob = get_remaining_picks(ref_model=ref_model,
+                                                           period=period, 
+                                                           c=c, 
+                                                           p_cond=p_cond, 
+                                                           iperiod=iperiod,
+                                                           periods=periods,
+                                                           dispcurve=dispcurve,
+                                                           probabilities=prob)
+            smoothing_window = int(len(dispcurve) * smoothing)
+            if not smoothing_window % 2:
+                smoothing_window += 1
+            dispcurve = signal.savgol_filter(dispcurve, 
+                                             window_length=max(smoothing_window, 3), 
+                                             polyorder=2)
+            return quality_selection(periods, dispcurve, prob, min_derivative=min_derivative)
+        
+
+        def plot(data, mesh, p_prior, p_post, p_cond, p_cond_filtered, dispcurve, 
+                 dist, no_earthquakes, sta1=None, sta2=None, savefig=None):
+            suptitle = 'Dist: %.2f km No. Earthquakes: %d'%(dist, no_earthquakes)
+            if sta1 is not None and sta2 is not None:
+                suptitle = '%s - %s '%(sta1, sta2) + suptitle
+            xlim = np.min(mesh[0][0]), np.max(mesh[0][0])
+            ylim = np.min(mesh[1][:, 0]), np.max(mesh[1][:, 0])
+            
+            plt.figure()
+            plt.subplot(2, 2, 1)
+            plt.pcolormesh(*mesh, p_prior)
+            plt.plot(refcurve[:,0], refcurve[:,1], 'b', label='Reference')
+            plt.ylim(*ylim)
+            plt.xlim(*xlim)
+            plt.ylabel('Velocity [km/s]')
+            plt.legend(loc='upper right')
+            plt.title('Prior')
+            
+            plt.subplot(2, 2, 2)
+            plt.pcolormesh(*mesh, p_post)
+            plt.plot(data[:,0], data[:,1], 'ro', ms=0.5, label='Obs. Dispersion')
+            plt.ylim(*ylim)
+            plt.xlim(*xlim)
+            plt.legend()
+            plt.title('Density of observations')
+            
+            plt.subplot(2, 2, 3)
+            plt.pcolormesh(*mesh, p_cond)
+            plt.plot(dispcurve[:,0], dispcurve[:,1], 'r', label='Retrieved')
+            plt.ylim(*ylim)
+            plt.xlim(*xlim)
+            plt.ylabel('Velocity [km/s]')
+            plt.xlabel('Period [s]')
+            plt.legend(loc='upper right')
+            plt.title('Conditioned')
+            
+            plt.subplot(2, 2, 4)
+            plt.pcolormesh(*mesh, p_cond_filtered)
+            plt.plot(refcurve[:,0], refcurve[:,1], 'b', label='Reference')
+            plt.plot(dispcurve[:,0], dispcurve[:,1], 'r', label='Retrieved')
+            plt.xlim(*xlim)
+            plt.ylim(*ylim)
+            plt.xlabel('Period [s]')
+            plt.legend(loc='upper right')
+            plt.title('Conditioned filtered')
+            
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.93)
+            plt.suptitle(suptitle, y=0.98)
+            if savefig is not None:
+                plt.savefig(savefig, dpi=(150))
+            plt.show()
+
+
+        refcurve = cls.convert_to_kms(refcurve)
+        ref_model = interp1d(refcurve[:,0], 
+                             refcurve[:,1],
+                             bounds_error=False, 
+                             fill_value='extrapolate')
+        data = load_dispersion_measurements(src)
+        period, c, mesh, p_post = posterior_prob(data, dist_km)
+        p_prior = prior_prob(period=period, 
+                             c=c, 
+                             ref_model=ref_model, 
+                             p_post=p_post, 
+                             prior_sigma_10s=prior_sigma_10s, 
+                             prior_sigma_200s=prior_sigma_200s)
+        p_cond = p_prior * p_post
+        p_cond_filtered = np.where(p_cond<prob_min, 0, p_cond)
+        dispcurve = get_dispcurve(period, c, p_cond_filtered, smoothing,
+                                  min_derivative=min_derivative)
+        if plotting:
+            plot(data=data, 
+                 mesh=mesh, 
+                 p_prior=p_prior, 
+                 p_post=p_post, 
+                 p_cond=p_cond, 
+                 p_cond_filtered=p_cond_filtered, 
+                 dispcurve=dispcurve, 
+                 dist=dist_km,
+                 no_earthquakes=len(os.listdir(src)), 
+                 sta1=sta1,
+                 sta2=sta2, 
+                 savefig=savefig)
+        return dispcurve
+
+
+#%%
+#if __name__ == '__main__':
+#    home = '/media/fabrizio/Seagate Expansion Drive/asia/two_station/'
+#    src = os.path.join(home, 'data')
+#    refcurve = np.load(os.path.join(home, 'refcurve_USA.npy'))
+#    eq = EQVelocity(src, component='Z')
+#    eq.prepare_data(azimuth_tolerance=7, 
+#                    distmin=100, 
+#                    distmax=2000, 
+#                    min_no_events=10)
+#    print(eq)
+#    eq.extract_dispcurves(refcurve, 
+#                          periodmin=15, 
+#                          periodmax=150, 
+#                          no_periods=75, 
+#                          cmin=2.5, 
+#                          cmax=5, 
+#                          ttol=0.3, 
+#                          min_no_wavelengths=1.5, 
+#                          approach='freq', 
+#                          plotting=True)
+    
+############## EXAMPLE ###################
+#from eq_dispersion import love_prem as refcurve
+#eq = EQVelocity(src='/media/fabrizio/Seagate Expansion Drive/two_station_example/data',
+#                component='T')
+#eq.extract_dispcurves(refcurve, 
+#                      periodmin=15, 
+#                      periodmax=150, 
+#                      no_periods=75, 
+#                      cmin=2.5, 
+#                      cmax=5, 
+#                      ttol=0.3, 
+#                      min_no_wavelengths=1, 
+#                      approach='freq', 
+#                      plotting=True)
+#
+#
+
+#from matplotlib import rcParams
+#rcParams['figure.figsize'] = (10, 8)
+#def dist_az_backaz(stations, sta1, sta2):
+#    stla1, stlo1 = stations[sta1]
+#    stla2, stlo2 = stations[sta2]
+#    dist, az, baz = gps2dist_azimuth(stla1, stlo1, stla2, stlo2)
+#    dist /= 1000.
+#    return dist, az, baz
+###
+#dispersion = '/media/fabrizio/Seagate Expansion Drive/asia/two_station/eq_velocity/Z/dispersion'
+#home = '/media/fabrizio/Seagate Expansion Drive/asia/two_station/'
+#src = os.path.join(home, 'data')
+#refcurve = np.load(os.path.join(home, 'refcurve_USA.npy'))
+#eq = EQVelocity(src, component='Z')
+#eq.prepare_data(azimuth_tolerance=7, 
+#                distmin=None, 
+#                distmax=2500, 
+#                min_no_events=8)
+####
+####
+#tsm = TwoStationMethod(refcurve=refcurve)
+#sta1 = 'AU.BOXOZ'
+#sta2 = 'GE.PLAI'
+#dist = dist_az_backaz(eq.stations, sta1, sta2)[0]
+#pv = tsm.extract_dispcurve(refcurve=refcurve, 
+#                           src=os.path.join(dispersion, '%s_%s'%(sta1, sta2)), 
+#                           dist_km=dist,
+#                           prior_sigma_10s=0.7, 
+#                           prior_sigma_200s=0.3,
+#                           sta1=sta1,
+#                           sta2=sta2,
+#                           prob_min=0.25,
+#                           plotting=True)
+#print('Min Period:', min(pv[:,0]))
+###
+#
+#
+#
+#
+

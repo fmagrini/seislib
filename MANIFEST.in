@@ -1,0 +1,13 @@
+include MANIFEST.in
+include README.md
+include LICENSE.txt
+include seislib/*.py
+include seislib/an/*.py
+include seislib/clib/*.pyx
+include seislib/clib/*.pxd
+include seislib/eq/*.py
+include seislib/exceptions/*.py
+include seislib/plotting/*.py
+include seislib/tomography/*.py
+include seislib/utils/*.py
+recursive-include seislib/colormaps *

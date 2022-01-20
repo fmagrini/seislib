@@ -1,0 +1,52 @@
+Scientific Colour Map Categorical Palette
+vanimo 50 Swatches
+255 205 253	vanimo-1 #FFCDFD
+247 190 242	vanimo-6 #F7BEF2
+240 176 232	vanimo-11 #F0B0E8
+230 160 220	vanimo-17 #E6A0DC
+222 147 210	vanimo-22 #DE93D2
+215 134 200	vanimo-27 #D786C8
+207 122 191	vanimo-32 #CF7ABF
+199 111 181	vanimo-37 #C76FB5
+189  99 170	vanimo-43 #BD63AA
+180  90 161	vanimo-48 #B45AA1
+171  81 152	vanimo-53 #AB5198
+161  73 142	vanimo-58 #A1498E
+150  65 132	vanimo-63 #964184
+136  57 119	vanimo-69 #883977
+124  50 107	vanimo-74 #7C326B
+110  44  96	vanimo-79 #6E2C60
+ 97  38  84	vanimo-84 #612654
+ 84  33  72	vanimo-89 #542148
+ 69  28  59	vanimo-95 #451C3B
+ 57  25  49	vanimo-100 #391931
+ 47  23  40	vanimo-105 #2F1728
+ 40  21  33	vanimo-110 #281521
+ 34  20  28	vanimo-115 #22141C
+ 29  20  23	vanimo-121 #1D1417
+ 26  20  20	vanimo-126 #1A1414
+ 25  22  18	vanimo-131 #191612
+ 25  24  17	vanimo-136 #191811
+ 27  29  17	vanimo-142 #1B1D11
+ 29  34  18	vanimo-147 #1D2212
+ 33  41  19	vanimo-152 #212913
+ 37  48  20	vanimo-157 #253014
+ 43  57  22	vanimo-162 #2B3916
+ 50  68  25	vanimo-168 #324419
+ 56  77  27	vanimo-173 #384D1B
+ 63  86  30	vanimo-178 #3F561E
+ 69  96  33	vanimo-183 #456021
+ 76 105  36	vanimo-188 #4C6924
+ 84 116  39	vanimo-194 #547427
+ 90 124  42	vanimo-199 #5A7C2A
+ 96 133  46	vanimo-204 #60852E
+103 142  50	vanimo-209 #678E32
+110 151  55	vanimo-214 #6E9737
+119 163  63	vanimo-220 #77A33F
+127 174  71	vanimo-225 #7FAE47
+136 186  81	vanimo-230 #88BA51
+146 198  93	vanimo-235 #92C65D
+156 210 107	vanimo-240 #9CD26B
+169 226 127	vanimo-246 #A9E27F
+179 239 146	vanimo-251 #B3EF92
+190 253 165	vanimo-256 #BEFDA5

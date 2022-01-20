@@ -1,0 +1,12 @@
+Scientific Colour Map Categorical Palette
+bam 10 Swatches
+101   2  75	bam-1 #65024B
+158  60 133	bam-29 #9E3C85
+201 112 178	bam-58 #C970B2
+228 174 214	bam-86 #E4AED6
+245 227 239	bam-114 #F5E3EF
+239 243 229	bam-143 #EFF3E5
+193 218 162	bam-171 #C1DAA2
+124 168  86	bam-199 #7CA856
+ 69 123  42	bam-228 #457B2A
+ 13  76   0	bam-256 #0D4C00

@@ -1,0 +1,12 @@
+Scientific Colour Map Categorical Palette
+fes 10 Swatches
+ 13  13  13	fes-1 #0D0D0D
+ 64  64  64	fes-29 #404040
+109 109 109	fes-58 #6D6D6D
+151 151 151	fes-86 #979797
+206 206 206	fes-114 #CECECE
+ 46  80  32	fes-143 #2E5020
+117 100  42	fes-171 #75642A
+182 131  77	fes-199 #B6834D
+211 194 170	fes-228 #D3C2AA
+237 237 252	fes-256 #EDEDFC

@@ -1,0 +1,102 @@
+Scientific Colour Map Categorical Palette
+vanimo 100 Swatches
+255 205 253	vanimo-1 #FFCDFD
+250 196 247	vanimo-4 #FAC4F7
+247 190 242	vanimo-6 #F7BEF2
+243 182 236	vanimo-9 #F3B6EC
+240 176 232	vanimo-11 #F0B0E8
+235 168 226	vanimo-14 #EBA8E2
+232 162 222	vanimo-16 #E8A2DE
+227 154 216	vanimo-19 #E39AD8
+222 147 210	vanimo-22 #DE93D2
+219 142 206	vanimo-24 #DB8ECE
+215 134 200	vanimo-27 #D786C8
+211 129 196	vanimo-29 #D381C4
+207 122 191	vanimo-32 #CF7ABF
+203 118 187	vanimo-34 #CB76BB
+199 111 181	vanimo-37 #C76FB5
+194 105 176	vanimo-40 #C269B0
+190 101 172	vanimo-42 #BE65AC
+185  95 167	vanimo-45 #B95FA7
+182  91 163	vanimo-47 #B65BA3
+177  86 158	vanimo-50 #B1569E
+171  81 152	vanimo-53 #AB5198
+167  78 148	vanimo-55 #A74E94
+161  73 142	vanimo-58 #A1498E
+157  70 138	vanimo-60 #9D468A
+150  65 132	vanimo-63 #964184
+146  62 128	vanimo-65 #923E80
+139  58 121	vanimo-68 #8B3A79
+131  54 114	vanimo-71 #833672
+126  51 110	vanimo-73 #7E336E
+118  48 103	vanimo-76 #763067
+113  45  98	vanimo-78 #712D62
+105  42  91	vanimo-81 #692A5B
+100  39  86	vanimo-83 #642756
+ 92  36  79	vanimo-86 #5C244F
+ 84  33  72	vanimo-89 #542148
+ 79  32  68	vanimo-91 #4F2044
+ 71  29  61	vanimo-94 #471D3D
+ 66  28  57	vanimo-96 #421C39
+ 59  26  51	vanimo-99 #3B1A33
+ 55  25  47	vanimo-101 #37192F
+ 49  23  42	vanimo-104 #31172A
+ 44  22  37	vanimo-107 #2C1625
+ 41  21  35	vanimo-109 #291523
+ 37  20  31	vanimo-112 #25141F
+ 35  20  29	vanimo-114 #23141D
+ 32  20  26	vanimo-117 #20141A
+ 30  20  24	vanimo-119 #1E1418
+ 28  20  22	vanimo-122 #1C1416
+ 27  20  21	vanimo-125 #1B1415
+ 26  21  20	vanimo-127 #1A1514
+ 25  22  19	vanimo-130 #191613
+ 25  22  18	vanimo-132 #191612
+ 25  24  17	vanimo-135 #191811
+ 26  26  17	vanimo-138 #1A1A11
+ 26  27  17	vanimo-140 #1A1B11
+ 27  30  17	vanimo-143 #1B1E11
+ 28  32  17	vanimo-145 #1C2011
+ 30  36  18	vanimo-148 #1E2412
+ 31  38  18	vanimo-150 #1F2612
+ 34  42  19	vanimo-153 #222A13
+ 36  47  20	vanimo-156 #242F14
+ 38  50  21	vanimo-158 #263215
+ 42  55  22	vanimo-161 #2A3716
+ 44  59  23	vanimo-163 #2C3B17
+ 47  64  24	vanimo-166 #2F4018
+ 50  68  25	vanimo-168 #324419
+ 54  73  26	vanimo-171 #36491A
+ 58  79  28	vanimo-174 #3A4F1C
+ 60  83  29	vanimo-176 #3C531D
+ 64  88  31	vanimo-179 #40581F
+ 67  92  32	vanimo-181 #435C20
+ 71  98  33	vanimo-184 #476221
+ 73 101  35	vanimo-186 #496523
+ 77 107  36	vanimo-189 #4D6B24
+ 81 112  38	vanimo-192 #517026
+ 84 116  39	vanimo-194 #547427
+ 87 121  41	vanimo-197 #577929
+ 90 124  42	vanimo-199 #5A7C2A
+ 94 129  45	vanimo-202 #5E812D
+ 96 133  46	vanimo-204 #60852E
+100 138  48	vanimo-207 #648A30
+104 144  51	vanimo-210 #689033
+107 147  53	vanimo-212 #6B9335
+111 153  56	vanimo-215 #6F9938
+114 157  59	vanimo-217 #729D3B
+119 163  63	vanimo-220 #77A33F
+124 170  67	vanimo-223 #7CAA43
+127 174  71	vanimo-225 #7FAE47
+133 181  77	vanimo-228 #85B54D
+136 186  81	vanimo-230 #88BA51
+142 193  88	vanimo-233 #8EC158
+146 198  93	vanimo-235 #92C65D
+152 205 101	vanimo-238 #98CD65
+158 213 110	vanimo-241 #9ED56E
+162 218 117	vanimo-243 #A2DA75
+169 226 127	vanimo-246 #A9E27F
+173 231 134	vanimo-248 #ADE786
+179 239 146	vanimo-251 #B3EF92
+183 245 153	vanimo-253 #B7F599
+190 253 165	vanimo-256 #BEFDA5
