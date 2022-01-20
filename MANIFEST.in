@@ -11,3 +11,4 @@ include seislib/plotting/*.py
 include seislib/tomography/*.py
 include seislib/utils/*.py
 recursive-include seislib/colormaps *
+prune seislib/clib/*cpp
