@@ -22,11 +22,27 @@ from Cython.Distutils import build_ext
 from Cython.Build import cythonize
 import numpy
 import os
+import platform
+
 
 names = ['_math', '_spherical_geometry', '_tomography']
 sources = ['%s.pyx'%name for name in names]
 extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp" ]
-extra_link_args=['-fopenmp']
+
+platform_name = platform.system()
+
+
+if platform_name.lower() == 'darwin':
+    versions = os.listdir('/usr/local/Cellar/gcc/')
+    version = max(versions, key=lambda i: int(i.split('.')[0]))
+    version_int = version.split('.')[0]
+    path = '/usr/local/Cellar/gcc/%s/lib/gcc/%s'%(version, version_int)
+    os.environ['CC'] = 'gcc-%s'%version_int
+    os.environ['CXX'] = 'g++-%s'%version_int
+    extra_link_args=['-Wl,-rpath,%s'%path]
+
+else:
+    extra_link_args=['-fopenmp']
 
 
 for name, source in zip(names, sources):

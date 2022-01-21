@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from obspy import read
 from obspy.geodetics.base import gps2dist_azimuth
 import matplotlib.pyplot as plt
-from seislib.utils import rotate_stream, load_pickle, save_pickle
+from seislib.utils import rotate_stream, load_pickle, save_pickle, remove_file
 from seislib.an import noisecorr, velocity_filter, extract_dispcurve
 from seislib.plotting import plot_stations
 
@@ -57,7 +57,7 @@ class AmbientNoiseVelocity:
         Retrieves the geographic coordinates and the starting and ending time
         associated with each continuous seismogram
         
-    prepare_data()
+    prepare_data(recompute=False)
         Saves to disk the geographic coordinates and the starting and ending 
         time associated with each continuous seismogram
         
@@ -76,8 +76,8 @@ class AmbientNoiseVelocity:
         at the specified frequency   
         
     plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', color_by_network=True, 
-                  legend_dict={}, **kwargs):
+                  edgecolor='k', projection='Mercator', resolution='110m',
+                  color_by_network=True, legend_dict={}, **kwargs)
         Maps the seismic receivers for which data are available        
         
         
@@ -318,7 +318,7 @@ class AmbientNoiseVelocity:
         return times, coords
 
             
-    def prepare_data(self):
+    def prepare_data(self, recompute=False):
         """ 
         Saves to disk the geographic coordinates and the starting and ending 
         time associated with each continuous seismogram. These are saved to
@@ -353,11 +353,24 @@ class AmbientNoiseVelocity:
         considered in the calculation of phase velocities both the horizontal
         components (N and E, e.g. BHN and BHE) should be available. These will
         be rotated so as to analyse the transverse (T, for Love) and radial (R,
-        for radially-polarized Rayleigh waves) components.
+        for radially-polarized Rayleigh waves) components
+        
+        
+        Parameters
+        ----------
+        recompute : bool
+            If True, the station coordinates and times will be removed from
+            disk and recalculated. Otherwise (default), if they are present,
+            they will be loaded into memory, avoiding any computation. This
+            parameter should be set to True whenever one has added files to
+            the source directory
         """
         
         savecoords = os.path.join(self.savedir, 'stations.pickle')
         savetimes = os.path.join(self.savedir, 'timespans.pickle')
+        if recompute:
+            remove_file(savecoords)
+            remove_file(savetimes)
         if not os.path.exists(savecoords) or not os.path.exists(savetimes):
             times, coords = self.get_times_and_coords(self.files)
             save_pickle(savecoords, coords)
@@ -720,7 +733,8 @@ class AmbientNoiseVelocity:
     
     def plot_stations(self, ax=None, show=True, oceans_color='water', 
                       lands_color='land', edgecolor='k', projection='Mercator',
-                      color_by_network=True, legend_dict={}, **kwargs):
+                      resolution='110m', color_by_network=True, legend_dict={}, 
+                      **kwargs):
         """ Maps the seismic receivers for which data are available
         
         Parameters
@@ -749,6 +763,12 @@ class AmbientNoiseVelocity:
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
             
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+
+            
         color_by_network : bool
             If True, each seismic network will have a different color in the
             resulting map, and a legend will be displayed. Otherwise, all
@@ -773,6 +793,7 @@ class AmbientNoiseVelocity:
                              lands_color=lands_color, 
                              edgecolor=edgecolor, 
                              projection=projection,
+                             resolution=resolution,
                              color_by_network=color_by_network, 
                              legend_dict=legend_dict,
                              **kwargs)      

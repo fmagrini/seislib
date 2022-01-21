@@ -53,6 +53,7 @@ pkg_metadata = dict(
         author_email="fabrizio.magrini90@gmail.com",
         license="MIT",
         packages=find_packages(),
+        python_requires=">=3.6",
         keywords="Seismic Imaging, Surface Waves, Seismic Ambient Noise, Earthquake Seismology, Tomographic Inversion",
         configuration=configuration,
         install_requires=['obspy>=1.1.0',
