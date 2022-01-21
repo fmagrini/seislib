@@ -1,11 +1,10 @@
 include MANIFEST.in
 include README.md
 include LICENSE.txt
-global-include
+global-include *
 recursive-include seislib *
 recursive-include seislib/colormaps *
 prune */__pycache__
 global-exclude *.cpp
 global-exclude *.c
 global-exclude *.so
-
