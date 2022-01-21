@@ -107,14 +107,14 @@ class SeismicTomography:
     plot_rays(ax=None, show=True, stations_color='r', gc_paths_color='k',
               oceans_color='water', lands_color='land', edgecolor='k',
               alpha_stations=None, alpha_paths=0.3, projection='Mercator', 
-              map_boundaries=None, bound_map=True, **kwargs)
+              resolution='110m', map_boundaries=None, bound_map=True, **kwargs)
         Utility function to display the great circle paths associated with pairs
         of data coordinates
         
     plot_colored_rays(ax=None, show=True, cmap=scm.roma, vmin=None, vmax=None, 
                       stations_color='k', oceans_color='lightgrey', 
                       lands_color='w', edgecolor='k', stations_alpha=None, 
-                      paths_alpha=None, projection='Mercator', 
+                      paths_alpha=None, projection='Mercator', resolution='110m',
                       map_boundaries=None, bound_map=True, paths_width=1, 
                       colorbar=True, cbar_dict={}, **kwargs):
         Utility function to display the great-circle paths associated with pairs
@@ -143,7 +143,7 @@ class SeismicTomography:
 
     plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
              bound_map=True, colorbar=True, show=True, style='colormesh', 
-             add_features=False, cbar_dict={}, **kwargs)
+             add_features=False, resolution='110m', cbar_dict={}, **kwargs)
         Utility function to display the lateral variations of some quantity on 
         a equal-area grid
         
@@ -1341,7 +1341,7 @@ class SeismicTomography:
     @classmethod
     def plot_map(cls, mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
                  bound_map=True, colorbar=True, show=True, style='colormesh', 
-                 add_features=False, cbar_dict={}, **kwargs):
+                 add_features=False, resolution='110m', cbar_dict={}, **kwargs):
         """ 
         Utility function to display the lateral variations of some quantity on 
         a equal-area grid
@@ -1388,6 +1388,11 @@ class SeismicTomography:
             If True, natural Earth features will be added to the GeoAxesSubplot.
             Default is False. If `ax` is None, it is automatically set to True
             
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+            
         cbar_dict : dict
             Keyword arguments passed to matplotlib.colorbar.ColorbarBase
             
@@ -1413,6 +1418,7 @@ class SeismicTomography:
                                  show=show, 
                                  style=style, 
                                  add_features=add_features, 
+                                 resolution=resolution,
                                  cbar_dict=cbar_dict,
                                  **kwargs)
 
@@ -1517,8 +1523,8 @@ class SeismicTomography:
     def plot_rays(self, ax=None, show=True, stations_color='r', 
                   paths_color='k', oceans_color='water', lands_color='land', 
                   edgecolor='k', stations_alpha=None, paths_alpha=0.3, 
-                  projection='Mercator', map_boundaries=None, bound_map=True, 
-                  paths_width=0.2, **kwargs):
+                  projection='Mercator', resolution='110m', map_boundaries=None, 
+                  bound_map=True, paths_width=0.2, **kwargs):
         """ 
         Utility function to display the great-circle paths associated with pairs
         of data coordinates
@@ -1560,7 +1566,12 @@ class SeismicTomography:
             Name of the geographic projection used to create the GeoAxesSubplot.
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
-            
+     
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+        
         map_boundaries : list or tuple of floats, shape (4,), optional
             Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
             the map
@@ -1586,6 +1597,7 @@ class SeismicTomography:
                                   stations_alpha=stations_alpha, 
                                   paths_alpha=paths_alpha, 
                                   projection=projection, 
+                                  resolution=resolution,
                                   map_boundaries=map_boundaries, 
                                   bound_map=bound_map, 
                                   paths_width=paths_width, 
@@ -1595,7 +1607,7 @@ class SeismicTomography:
     def plot_colored_rays(self, ax=None, show=True, cmap=scm.roma, vmin=None, 
                           vmax=None, stations_color='k', oceans_color='lightgrey', 
                           lands_color='w', edgecolor='k', stations_alpha=None, 
-                          paths_alpha=None, projection='Mercator', 
+                          paths_alpha=None, projection='Mercator', resolution='110m',
                           map_boundaries=None, bound_map=True, paths_width=1, 
                           colorbar=True, cbar_dict={}, **kwargs):
         """ 
@@ -1656,6 +1668,11 @@ class SeismicTomography:
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
             
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+            
         map_boundaries : list or tuple of floats, shape (4,), optional
             Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
             the map
@@ -1695,6 +1712,7 @@ class SeismicTomography:
                                           stations_alpha=stations_alpha, 
                                           paths_alpha=paths_alpha, 
                                           projection=projection, 
+                                          resolution=resolution,
                                           map_boundaries=map_boundaries, 
                                           bound_map=bound_map, 
                                           paths_width=paths_width, 

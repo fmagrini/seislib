@@ -26,7 +26,7 @@ from obspy import UTCDateTime as UTC
 from obspy.signal.invsim import cosine_taper
 from obspy.geodetics.base import gps2dist_azimuth
 from seislib import EqualAreaGrid
-from seislib.utils import load_pickle, save_pickle, resample
+from seislib.utils import load_pickle, save_pickle, remove_file, resample
 from seislib.plotting import add_earth_features
 from seislib.plotting import colormesh, contour, contourf
 from seislib.plotting import plot_stations, plot_map
@@ -70,7 +70,7 @@ class AmbientNoiseAttenuation:
     get_stations_coords(files)
         Retrieves the geographic coordinates associated with each receiver
         
-    prepare_data()
+    prepare_data(recompute=False)
         Retrieves and saves on disk the geographic coordinates
         
     parameterize(cell_size, overlap=0.5, min_no_stations=6, plotting=True)
@@ -96,8 +96,8 @@ class AmbientNoiseAttenuation:
         inversion
      
     plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', color_by_network=True, 
-                  legend_dict={}, **kwargs):
+                  edgecolor='k', projection='Mercator', resolution='110m', 
+                  color_by_network=True, legend_dict={}, **kwargs):
         Maps the seismic receivers for which data are available        
         
     
@@ -105,7 +105,7 @@ class AmbientNoiseAttenuation:
     -------------
     plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
              bound_map=True, colorbar=True, show=True, style='colormesh', 
-             add_features=False, cbar_dict={}, **kwargs)
+             add_features=False, resolution='110m', cbar_dict={}, **kwargs)
         Displays an attenuation map
     
     colormesh(mesh, c, ax, **kwargs):
@@ -336,7 +336,7 @@ class AmbientNoiseAttenuation:
         return coords
     
                 
-    def prepare_data(self):
+    def prepare_data(self, recompute=False):
         """ 
         Saves to disk the geographic coordinates associated with each receiver. 
         These are saved to $self.savedir/stations.pickle
@@ -350,9 +350,21 @@ class AmbientNoiseAttenuation:
               net1.sta2 : (lat2, lon2),
               net2.sta3 : (lat3, lon3)
               }
+            
+        
+        Parameters
+        ----------
+        recompute : bool
+            If True, the station coordinates and times will be removed from
+            disk and recalculated. Otherwise (default), if they are present,
+            they will be loaded into memory, avoiding any computation. This
+            parameter should be set to True whenever one has added files to
+            the source directory
         """
 
-        savefile = os.path.join(self.savedir, 'stations.pickle') 
+        savefile = os.path.join(self.savedir, 'stations.pickle')
+        if recompute:
+            remove_file(savefile)
         if not os.path.exists(savefile):
             coords = self.get_stations_coords(self.files)
             save_pickle(savefile, coords)
@@ -1357,7 +1369,7 @@ class AmbientNoiseAttenuation:
     @classmethod
     def plot_map(cls, mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
                  bound_map=True, colorbar=True, show=True, style='colormesh', 
-                 add_features=False, cbar_dict={}, **kwargs):
+                 add_features=False, resolution='110m', cbar_dict={}, **kwargs):
         """ 
         Displays an attenuation map
         
@@ -1403,6 +1415,11 @@ class AmbientNoiseAttenuation:
             If True, natural Earth features will be added to the GeoAxesSubplot.
             Default is False. If `ax` is None, it is automatically set to True
             
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+            
         cbar_dict : dict
             Keyword arguments passed to matplotlib.colorbar.ColorbarBase
          
@@ -1430,6 +1447,7 @@ class AmbientNoiseAttenuation:
                         show=show, 
                         style=style, 
                         add_features=add_features, 
+                        resolution=resolution,
                         norm=norm,
                         cmap=cmap,
                         cbar_dict=cbar_dict,
@@ -1536,7 +1554,8 @@ class AmbientNoiseAttenuation:
     
     def plot_stations(self, ax=None, show=True, oceans_color='water', 
                       lands_color='land', edgecolor='k', projection='Mercator',
-                      color_by_network=True, legend_dict={}, **kwargs):
+                      resolution='110m', color_by_network=True, legend_dict={}, 
+                      **kwargs):
         """ Maps the seismic receivers for which data are available
         
         Parameters
@@ -1564,6 +1583,11 @@ class AmbientNoiseAttenuation:
             Name of the geographic projection used to create the GeoAxesSubplot.
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
+         
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
             
         color_by_network : bool
             If True, each seismic network will have a different color in the
@@ -1589,6 +1613,7 @@ class AmbientNoiseAttenuation:
                              lands_color=lands_color, 
                              edgecolor=edgecolor, 
                              projection=projection,
+                             resolution=resolution,
                              color_by_network=color_by_network, 
                              legend_dict=legend_dict,
                              **kwargs)

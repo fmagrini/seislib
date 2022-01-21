@@ -16,13 +16,12 @@ from numpy.fft import rfft, rfftfreq
 from scipy.interpolate import interp1d
 from scipy import signal
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
 from obspy import read, read_events
 from obspy.geodetics.base import gps2dist_azimuth
 from seislib.utils import adapt_timespan, zeropad, bandpass_gaussian
 from seislib.utils import load_pickle, save_pickle, remove_file
 from seislib.utils import gaussian, skewed_normal, next_power_of_2
-from seislib.plotting import add_earth_features
+from seislib.plotting import plot_stations, plot_events
 from seislib.exceptions import DispersionCurveException
 
 
@@ -73,6 +72,10 @@ class EQVelocity:
         Writes to disk the geographic coordinates of the seismic receivers and 
         triplets of epicenters-receivers to be used for retrieving the
         dispersion curves
+       
+    get_events_used()
+        Retrieves the events id for which triplets of epicenter-receivers are
+        available to extract dispersion measurements
         
     delete_unused_files()    
         Deletes every file in the data directory which is not useful for 
@@ -95,12 +98,16 @@ class EQVelocity:
         at the specified period(s). (No extrapolation is made.)
         
     plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', color_by_network=True, 
-                  **kwargs):
+                  edgecolor='k', projection='Mercator', resolution='110m',
+                  color_by_network=True, legend_dict={}, **kwargs)
         Maps the seismic receivers for which data are available        
         
+    plot_events(ax=None, show=True, oceans_color='water', lands_color='land', 
+                edgecolor='k', projection='Mercator', resolution='110m', 
+                min_size=5, max_size=150, **kwargs):
+        Maps the seismic events used to obtain dispersion measurements
         
-    Class Methods
+        Class Methods
     -------------
     lie_on_same_gc(stla1, stlo1, stla2, stlo2, evla, evlo, azimuth_tolerance=5, 
                    distmin=None, distmax=None):
@@ -145,22 +152,29 @@ class EQVelocity:
                         distmax=2500, 
                         min_no_events=8)
     
-    which will extracts the geographic coordinates of each seismic receivers 
-    from the header of the sac files and prepare the triplets of epicenters-
-    receivers that will be used to obtain the dispersion curves.
+    which will extracts the geographic coordinates of each seismic receivers
+    from the header of the sac files, those of the seismic events, and prepare 
+    the triplets of epicenters-receivers that will be used to obtain the 
+    dispersion curves.
     
     ---------------------------------------------------------------------------        
-    NOTE: The coordinates are saved at /path/to/eq_velocity/Z/stations.pickle,
-    and are stored in a dictionary object where each key corresponds to a 
-    station code ($network_code.$station_code) and each value is a tuple 
-    containing latitude and longitude of the station. 
-    
-    For example:
+    NOTE: The geographic coordinates of the seismic receivers are saved at 
+    /$self.savedir/stations.pickle, and are stored in a dictionary object 
+    where each key corresponds to a station code ($network_code.$station_code) 
+    and each value is a tuple containing latitude and longitude of the station. 
         
+    For example:
+            
         { net1.sta1 : (lat1, lon1),
           net1.sta2 : (lat2, lon2),
           net2.sta3 : (lat3, lon3)
-          }
+            }
+            
+    The geographic coordinates of the events are saved at 
+    /$self.savedir/events.pickle, and have a similar structure to the above:
+    each key corresponds to an event origin time (in 
+    obspy.UTCDateTime.timestamp format), and each value is (lat, lon, mag) of 
+    the earthquake, where mag is magnitude.
         
     The triplets of epicenter-receivers are saved at 
     /path/to/eq_velocity/Z/triplets.pickle, and are stored in a dictionary object 
@@ -183,16 +197,20 @@ class EQVelocity:
                                     '1239825695.33']
           }
         
-    Note that each event in the list corresponds to a sub-directory of
-    the source data `src`. Also note that, as opposed to the above example, the 
+    Note that each event origin time corresponds to a sub-directory of
+    the source data (`src`). Also note that, as opposed to the above example, the 
     length of the lists of events will be at least 8, since `min_no_events` in 
     `prepare_data` was 8.
     ---------------------------------------------------------------------------
     
-    After the data have been "prepared", the receivers available can be 
-    displayed by typing
+    After the data have been "prepared", the receivers and events available can 
+    be displayed by typing
         
         eq.plot_stations()
+        
+    and
+    
+        eq.plot_events()
     
     Now we can calculate the dispersion curves automatically, provided that we
     pass a reference curve (i.e., ndarray of shape (n, 2), where the 1st column 
@@ -294,8 +312,8 @@ class EQVelocity:
     def get_coords_and_triplets(self, events, azimuth_tolerance=5, distmin=None,
                                 distmax=None):
         """ 
-        Retrieves stations information and triplets of epicenter-receivers
-        to be used to calculate the phase velocities
+        Retrieves stations and events information, and the triplets of 
+        epicenter-receivers to be used to calculate the phase velocities
         
         Parameters
         ----------
@@ -321,7 +339,16 @@ class EQVelocity:
                   net1.sta2 : (lat2, lon2),
                   net2.sta3 : (lat3, lon3)
                   }
-                
+        
+        events_info : dict
+            each key corresponds to an event origin time and each value is a 
+            tuple containing latitude, longitude, and magnitude of the event.
+                    
+                    { '1222701570.84' : (lat1, lon1, mag1),
+                      '1237486660.74' : (lat2, lon2, mag2),
+                      '1239825695.33' : (lat3, lon3, mag3)
+                      }        
+                    
         triplets : dict
             each key is a tuple corresponding to a station pair and each value 
             is a list of events that are aligned on the same great circle path
@@ -348,13 +375,15 @@ class EQVelocity:
             event = read_events(eventfile)[0]
             evla = event.origins[0].latitude
             evlo = event.origins[0].longitude
-            return evla, evlo
+            mag = event.magnitudes[0].mag
+            return evla, evlo, mag
         
         def get_event_coords_from_sac(sacfile):
             tr = read(sacfile)[0]
             evla = tr.stats.sac.evla
             evlo = tr.stats.sac.evlo
-            return evla, evlo
+            mag = tr.stats.sac.mag
+            return evla, evlo, mag
         
         def get_station_coords(evdir, sacfile):
             nonlocal stations
@@ -368,6 +397,7 @@ class EQVelocity:
         
         
         stations = {}
+        events_info = {}
         triplets = defaultdict(list)
         no_events = len(events)
         iprint = no_events//10 if no_events>10 else 1
@@ -380,11 +410,14 @@ class EQVelocity:
             sacfiles = sorted([i for i in os.listdir(evdir) \
                                if i.endswith('sac') and i[-5]==self.component])
             try:
-                evla, evlo = get_event_coords_from_xml(os.path.join(evdir, 
-                                                                    '%s.xml'%event))
+                evla, evlo, mag = get_event_coords_from_xml(
+                        os.path.join(evdir, '%s.xml'%event)
+                        )
             except FileNotFoundError:
-                evla, evlo = get_event_coords_from_sac(os.path.join(evdir, 
-                                                                    sacfiles[0]))
+                evla, evlo, mag = get_event_coords_from_sac(
+                        os.path.join(evdir, sacfiles[0])
+                        )
+            events_info[event] = (evla, evlo, mag)
             for sac1, sac2 in it.combinations(sacfiles, 2):
                 sta1, (stla1, stlo1) = get_station_coords(evdir, sac1)
                 sta2, (stla2, stlo2) = get_station_coords(evdir, sac2)
@@ -398,7 +431,8 @@ class EQVelocity:
                                        distmin=distmin,
                                        distmax=distmax):
                     triplets[(sta1, sta2)].append(event)
-        return stations, triplets
+                    
+        return stations, events_info, triplets
                 
                
     @classmethod
@@ -450,9 +484,9 @@ class EQVelocity:
     def prepare_data(self, azimuth_tolerance=5, distmin=None, distmax=None, 
                      min_no_events=5, recompute=False, delete_unused_files=False):
         """
-        Saves to disk the geographic coordinates of the seismic receivers and 
-        triplets of epicenters-receivers to be used for retrieving the
-        dispersion curves.
+        Saves to disk the geographic coordinates of the seismic receivers and of
+        the seismic events, along with the triplets of epicenters-receivers to 
+        be used for retrieving the dispersion curves.
         
         Parameters
         ----------
@@ -490,10 +524,10 @@ class EQVelocity:
             
         Note
         ----
-        The geographic coordinates are saved at /$self.savedir/stations.pickle,
-        and are stored in a dictionary object where each key corresponds to a 
-        station code ($network_code.$station_code) and each value is a tuple 
-        containing latitude and longitude of the station. 
+        The geographic coordinates of the seismic receivers are saved at 
+        /$self.savedir/stations.pickle, and are stored in a dictionary object 
+        where each key corresponds to a station code ($network_code.$station_code) 
+        and each value is a tuple containing latitude and longitude of the station. 
         
         For example:
             
@@ -502,6 +536,12 @@ class EQVelocity:
               net2.sta3 : (lat3, lon3)
               }
             
+        The geographic coordinates of the events are saved at 
+        /$self.savedir/events.pickle, and have a similar structure to the above:
+        each key corresponds to an event origin time (in 
+        obspy.UTCDateTime.timestamp format), and each value is (lat, lon, mag) 
+        of the epicenter, where mag is the magnitude of the event.
+
         The triplets of epicenter-receivers are saved at 
         /$self.savedir/triplets.pickle, and are stored in a dictionary object 
         where each key is a tuple corresponding to a station pair and each value 
@@ -532,28 +572,58 @@ class EQVelocity:
             of phase velocity, GJI
         """
                     
-        savecoords = os.path.join(self.savedir, 'stations.pickle')
-        savetriplets = os.path.join(self.savedir, 'triplets.pickle')
+        save_stations = os.path.join(self.savedir, 'stations.pickle')
+        save_events = os.path.join(self.savedir, 'events.pickle')
+        save_triplets = os.path.join(self.savedir, 'triplets.pickle')
         if recompute:
-            remove_file(savecoords)
-            remove_file(savetriplets)
-        if not os.path.exists(savecoords) or not os.path.exists(savetriplets):
-            coords, triplets = self.get_coords_and_triplets(
+            remove_file(save_stations)
+            remove_file(save_events)
+            remove_file(save_triplets)
+        exist_stations = os.path.exists(save_stations)
+        exist_events = os.path.exists(save_events)
+        exist_triplets = os.path.exists(save_triplets)
+        if not exist_stations or not exist_events or not exist_triplets:
+            stations, events_info, triplets = self.get_coords_and_triplets(
                     self.events, 
                     azimuth_tolerance=azimuth_tolerance,
                     distmin=distmin,
                     distmax=distmax
                     )
             triplets = {k: v for k, v in triplets.items() if len(v)>=min_no_events}
-            save_pickle(savecoords, coords)
-            save_pickle(savetriplets, triplets)
+            save_pickle(save_stations, stations)
+            save_pickle(save_events, events_info)
+            save_pickle(save_triplets, triplets)
         else:
-            coords = load_pickle(savecoords)
-            triplets = load_pickle(savetriplets)
+            stations = load_pickle(save_stations)
+            events_info = load_pickle(save_events)
+            triplets = load_pickle(save_triplets)
         self.min_no_events = min_no_events
-        self.stations = coords
+        self.stations = stations
+        self.events_info = events_info
         self.triplets = triplets
             
+    
+    def get_events_used(self):
+        """ 
+        Retrieves the events id for which triplets of epicenter-receivers are
+        available to extract dispersion measurements
+        
+        Returns
+        -------
+        events_used : dict
+            Dictionary object where each key corresponds to an event (origin
+            time in obspy.UTCDateTime.timestamp format, i.e., the name of the
+            respective directory in self.src), and the associated values 
+            include all the station codes that exploit that event to extract
+            a dispersion measurement
+        
+        """
+        events_used = defaultdict(set)
+        for stapair, evlist in self.triplets.items():
+            for event in evlist:
+                events_used[event] = events_used[event].union(stapair)
+        return events_used
+    
     
     def delete_unused_files(self):
         """ 
@@ -585,10 +655,7 @@ class EQVelocity:
         
         deleted_files = 0
         deleted_folders = 0
-        events_used = defaultdict(set)
-        for stapair, evlist in self.triplets.items():
-            for event in evlist:
-                events_used[event] = events_used[event].union(stapair)
+        events_used = self.get_events_used()
         for event in sorted(events_used):
             folder = os.path.join(self.src, event)
             sacfiles = set([i for i in os.listdir(folder) if i.endswith('.sac')])
@@ -862,10 +929,9 @@ class EQVelocity:
     
     def plot_stations(self, ax=None, show=True, oceans_color='water', 
                       lands_color='land', edgecolor='k', projection='Mercator',
-                      color_by_network=True, **kwargs):
-        """ 
-        Maps the seismic receivers for which data triplets of epicenter-receivers
-        are available.
+                      resolution='110m', color_by_network=True, legend_dict={}, 
+                      **kwargs):
+        """ Maps the seismic receivers for which data are available
         
         Parameters
         ----------
@@ -893,61 +959,119 @@ class EQVelocity:
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
             
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+            
         color_by_network : bool
             If True, each seismic network will have a different color in the
             resulting map, and a legend will be displayed. Otherwise, all
             stations will have the same color. Default is True
-            
-        kwargs : dict
-            Dictionary of additional key words that will be passed to the
-            matplotlib.pyplot.plot method.        
+        
+        legend_dict : dict, optional
+            Dictionary of keyword arguments passed to matplotlib.pyplot.legend
+        
+        kwargs : 
+            Additional keyword arguments passed to matplotlib.pyplot.plot 
             
             
         Returns
         -------
         If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
         """
-
-        def get_coords(stations, color_by_network):
-            codes, coords = zip(*[(k, v) for k, v in stations.items() \
-                                  if '_' not in k])
-            if not color_by_network:
-                yield np.array(coords), None
-            else:
-                networks = sorted(set(code.split('.')[0] for code in codes))
-                for net in networks:
-                    idx = [i for i, code in enumerate(codes) if code.startswith(net)]
-                    yield np.array(coords)[idx], net
-            
-        if ax is None:
-            projection = eval('ccrs.%s()'%projection)
-            fig = plt.figure()
-            ax = fig.add_subplot(1, 1, 1, projection=projection)
-            add_earth_features(ax, 
-                               oceans_color=oceans_color, 
-                               edgecolor=edgecolor,
-                               lands_color=lands_color)
-        transform = ccrs.PlateCarree()
-        marker = '^' if kwargs.get('marker', None) is None else kwargs['marker']
-        coords = np.array([i for i in self.stations.values()])
-        latmin, latmax = np.min(coords[:,0]), np.max(coords[:,0])
-        lonmin, lonmax = np.min(coords[:,1]), np.max(coords[:,1])
-        dlat = (latmax - latmin) * 0.1
-        dlon = (lonmax - lonmin) * 0.1
-        for coords, net in get_coords(self.stations, color_by_network):
-            ax.plot(*coords.T[::-1], marker=marker, lw=0, transform=transform,
-                    label=net, **kwargs) 
-        ax.set_extent((lonmin-dlon, lonmax+dlon, latmin-dlat, latmax+dlat), 
-                      transform)
-        if color_by_network:
-            ax.legend()
-        if show:
-            plt.show()
-        else:
-            return ax
+        
+        return plot_stations(stations=self.stations,
+                             ax=ax, 
+                             show=show, 
+                             oceans_color=oceans_color, 
+                             lands_color=lands_color, 
+                             edgecolor=edgecolor, 
+                             projection=projection,
+                             resolution=resolution,
+                             color_by_network=color_by_network, 
+                             legend_dict=legend_dict,
+                             **kwargs)      
                 
         
+    def plot_events(self, ax=None, show=True, oceans_color='water', lands_color='land', 
+                    edgecolor='k', projection='Mercator', resolution='110m', 
+                    min_size=5, max_size=150, legend_dict={}, **kwargs):
+        """ Creates a map of epicenters
         
+        Parameters
+        ----------
+        lat, lon : ndarray of shape (n,)
+            Latitude and longitude of the epicenters
+            
+        mag : ndarray of shape(n,), optional
+            If not given, the size of each on the map will be constant
+        
+        ax : cartopy.mpl.geoaxes.GeoAxesSubplot
+            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
+            Otherwise, a new figure and GeoAxesSubplot instance is created
+            
+        show : bool
+            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
+            returned. Default is True
+            
+        oceans_color, lands_color : str
+            Color of oceans and lands. The arguments are ignored if ax is not
+            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            (to the argument 'facecolor'). Defaults are 'water' and 'land'
+            
+        edgecolor : str
+            Color of the boundaries between, e.g., lakes and land. The argument 
+            is ignored if ax is not None. Otherwise, it is passed to 
+            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+            is 'k' (black)
+            
+        projection : str
+            Name of the geographic projection used to create the GeoAxesSubplot.
+            (Visit the cartopy website for a list of valid projection names.)
+            If ax is not None, `projection` is ignored. Default is 'Mercator'
+        
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+        
+        min_size, max_size : int, float
+            Minimum and maximum size of the epicenters on the map. These are used
+            to interpolate all magnitudes associated with each event, so as to
+            scale them appropriately on the map. (The final "sizes" are passed to
+            the argument `s` of matplotlib.pyplot.scatter)
+                
+        legend_dict : dict
+            Keyword arguments passed to matplotlib.pyplot.legend
+            
+        kwargs : 
+            Additional keyword arguments passed to matplotlib.pyplot.scatter
+            
+            
+        Returns
+        -------
+        If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
+        """
+        
+        events_used = self.get_events_used().keys()
+        events_info = np.array([j for i, j in self.events_info.items() \
+                                if i in events_used])
+        lat, lon, mag = events_info.T
+        return plot_events(lat=lat,
+                           lon=lon,
+                           mag=mag,
+                           ax=ax, 
+                           show=show, 
+                           oceans_color=oceans_color, 
+                           lands_color=lands_color, 
+                           edgecolor=edgecolor, 
+                           projection=projection,
+                           resolution=resolution, 
+                           min_size=min_size,
+                           max_size=max_size,
+                           legend_dict=legend_dict, 
+                           **kwargs)
         
 ###############################################################################
         

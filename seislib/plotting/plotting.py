@@ -6,6 +6,7 @@
 @email2: fabrizio.magrini90@gmail.com
 """
 
+from collections.abc import Iterable
 import numpy as np
 from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
@@ -307,8 +308,9 @@ def contour(mesh, c, ax, smoothing=None, **kwargs):
 
 def plot_stations(stations, ax=None, show=True, oceans_color='water', 
                   lands_color='land', edgecolor='k', projection='Mercator',
-                  color_by_network=True, legend_dict={}, **kwargs):
-    """ Maps the seismic receivers for which data are available
+                  resolution='110m', color_by_network=True, legend_dict={}, 
+                  **kwargs):
+    """ Creates a maps of seismic receivers
     
     Parameters
     ----------
@@ -348,7 +350,12 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         Name of the geographic projection used to create the GeoAxesSubplot.
         (Visit the cartopy website for a list of valid projection names.)
         If ax is not None, `projection` is ignored. Default is 'Mercator'
-        
+    
+    resolution : str
+        Resolution of the Earth features displayed in the figure. Passed to
+        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'
+    
     color_by_network : bool
         If True, each seismic network will have a different color in the
         resulting map, and a legend will be displayed. Otherwise, all
@@ -382,8 +389,8 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         coords = np.array([i for i in stations.values()])
         latmin, latmax = np.min(coords[:,0]), np.max(coords[:,0])
         lonmin, lonmax = np.min(coords[:,1]), np.max(coords[:,1])
-        dlat = (latmax - latmin) * 0.02
-        dlon = (lonmax - lonmin) * 0.02
+        dlat = (latmax - latmin) * 0.03
+        dlon = (lonmax - lonmin) * 0.03
         lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
         lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
         latmin = latmin-dlat if latmin-dlat > -90 else latmin
@@ -395,13 +402,15 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         projection = eval('ccrs.%s()'%projection)
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
+        transform = ccrs.PlateCarree()
+        map_boundaries = get_map_boundaries(stations)
         add_earth_features(ax, 
+                           scale=resolution,
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
-    transform = ccrs.PlateCarree()
-    marker = '^' if kwargs.get('marker', None) is None else kwargs['marker']
-    map_boundaries = get_map_boundaries(stations)
+    
+    marker = kwargs.pop('marker', '^')
     for coords, net in get_coords(stations, color_by_network):
         ax.plot(*coords.T[::-1], marker=marker, lw=0, transform=transform,
                 label=net, **kwargs) 
@@ -414,11 +423,130 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         return ax
 
 
+def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water', 
+                lands_color='land', edgecolor='k', projection='Mercator',
+                resolution='110m', min_size=5, max_size=200, legend_dict={}, 
+                **kwargs):
+    """ Creates a map of epicenters
+    
+    Parameters
+    ----------
+    lat, lon : ndarray of shape (n,)
+        Latitude and longitude of the epicenters
+        
+    mag : ndarray of shape(n,), optional
+        If not given, the size of each on the map will be constant
+    
+    ax : cartopy.mpl.geoaxes.GeoAxesSubplot
+        If not None, the receivers are plotted on the GeoAxesSubplot instance. 
+        Otherwise, a new figure and GeoAxesSubplot instance is created
+        
+    show : bool
+        If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
+        returned. Default is True
+        
+    oceans_color, lands_color : str
+        Color of oceans and lands. The arguments are ignored if ax is not
+        None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+        (to the argument 'facecolor'). Defaults are 'water' and 'land'
+        
+    edgecolor : str
+        Color of the boundaries between, e.g., lakes and land. The argument 
+        is ignored if ax is not None. Otherwise, it is passed to 
+        cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+        is 'k' (black)
+        
+    projection : str
+        Name of the geographic projection used to create the GeoAxesSubplot.
+        (Visit the cartopy website for a list of valid projection names.)
+        If ax is not None, `projection` is ignored. Default is 'Mercator'
+    
+    resolution : str
+        Resolution of the Earth features displayed in the figure. Passed to
+        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'
+    
+    min_size, max_size : int, float
+        Minimum and maximum size of the epicenters on the map. These are used
+        to interpolate all magnitudes associated with each event, so as to
+        scale them appropriately on the map. (The final "sizes" are passed to
+        the argument `s` of matplotlib.pyplot.scatter)
+            
+    legend_dict : dict
+        Keyword arguments passed to matplotlib.pyplot.legend
+        
+    kwargs : 
+        Additional keyword arguments passed to matplotlib.pyplot.scatter
+        
+        
+    Returns
+    -------
+    If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
+    """
+    
+    def get_map_boundaries(lat, lon):
+        latmin, latmax = np.min(lat), np.max(lat)
+        lonmin, lonmax = np.min(lon), np.max(lon)
+        dlat = (latmax - latmin) * 0.03
+        dlon = (lonmax - lonmin) * 0.03
+        lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
+        lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
+        latmin = latmin-dlat if latmin-dlat > -90 else latmin
+        latmax = latmax+dlat if latmax+dlat < 90 else latmax
+        return (lonmin, lonmax, latmin, latmax)
+    
+    def get_markers_size(mag, kwargs):
+        if mag is None:
+            return kwargs.pop('s', None)
+        x = np.linspace(min(mag), max(mag))
+        y = np.geomspace(min_size, max_size)
+        return np.interp(mag, x, y)
+    
+    def get_integer_magnitudes(mag):
+        magmin, magmax = min(mag), max(mag)
+        return np.round(np.geomspace(magmin, magmax, 4), 1)
+            
+    if ax is None:
+        projection = eval('ccrs.%s()'%projection)
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1, projection=projection)
+        transform = ccrs.PlateCarree()
+        map_boundaries = get_map_boundaries(lat, lon)
+        ax.set_extent(map_boundaries, transform)
+        add_earth_features(ax, 
+                           scale=resolution,
+                           oceans_color=oceans_color, 
+                           edgecolor=edgecolor,
+                           lands_color=lands_color)
+        
+    marker = kwargs.pop('marker', '*')
+    s = kwargs.pop('s', None)
+    if s is None:
+        s = get_markers_size(mag, kwargs)
+    if isinstance(s, Iterable):
+        mags_legend = get_integer_magnitudes(mag)
+        idx = [np.argmin(np.abs(mag - mag_i)) for mag_i in mags_legend]
+        idx_all = np.setdiff1d(range(len(mag)), idx)
+        ax.scatter(lon[idx_all], lat[idx_all], marker=marker, transform=transform, 
+                   s=s[idx_all], zorder=100, **kwargs) 
+        for i, mag_legend in zip(idx, mags_legend):
+            ax.scatter(lon[i], lat[i], marker=marker, transform=transform, 
+                       s=s[i], label=mag_legend, zorder=100, **kwargs) 
+        ax.legend(**legend_dict)
+    else:
+        ax.scatter(lon, lat, marker=marker, transform=transform, s=s, zorder=100,
+                   **kwargs) 
+    if show:
+        plt.show()
+    else:
+        return ax
+    
+
 def plot_rays(data_coords, ax=None, show=True, stations_color='r', 
               paths_color='k', oceans_color='water', lands_color='land', 
               edgecolor='k', stations_alpha=None, paths_alpha=0.3, 
-              projection='Mercator', map_boundaries=None, bound_map=True, 
-              paths_width=0.2, **kwargs):
+              projection='Mercator', resolution='110m', map_boundaries=None, 
+              bound_map=True, paths_width=0.2, **kwargs):
     """ 
     Utility function to display the great-circle paths associated with pairs
     of data coordinates
@@ -463,6 +591,11 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         Name of the geographic projection used to create the GeoAxesSubplot.
         (Visit the cartopy website for a list of valid projection names.)
         If ax is not None, `projection` is ignored. Default is 'Mercator'
+
+    resolution : str
+        Resolution of the Earth features displayed in the figure. Passed to
+        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'
         
     map_boundaries : list or tuple of floats, shape (4,), optional
         Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
@@ -484,8 +617,8 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         lons = np.concatenate((data[:,1], data[:, 3]))
         latmin, latmax = np.nanmin(lats), np.nanmax(lats)
         lonmin, lonmax = np.nanmin(lons), np.nanmax(lons)
-        dlon = (lonmax - lonmin) * 0.02
-        dlat = (latmax - latmin) * 0.02
+        dlon = (lonmax - lonmin) * 0.03
+        dlat = (latmax - latmin) * 0.03
         lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
         lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
         latmin = latmin-dlat if latmin-dlat > -90 else latmin
@@ -497,6 +630,7 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
         add_earth_features(ax, 
+                           scale=resolution,
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
@@ -544,7 +678,7 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
 def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
                       vmin=None, vmax=None, stations_color='k', 
                       oceans_color='lightgrey', lands_color='w', edgecolor='k', 
-                      stations_alpha=None, paths_alpha=None, 
+                      stations_alpha=None, paths_alpha=None, resolution='110m',
                       projection='Mercator', map_boundaries=None, bound_map=True, 
                       paths_width=1, colorbar=True, cbar_dict={}, **kwargs):
     """ 
@@ -605,6 +739,11 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
         (Visit the cartopy website for a list of valid projection names.)
         If ax is not None, `projection` is ignored. Default is 'Mercator'
         
+    resolution : str
+        Resolution of the Earth features displayed in the figure. Passed to
+        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'
+        
     map_boundaries : list or tuple of floats, shape (4,), optional
         Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
         the map
@@ -635,8 +774,8 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
         lons = np.concatenate((data[:,1], data[:, 3]))
         latmin, latmax = np.nanmin(lats), np.nanmax(lats)
         lonmin, lonmax = np.nanmin(lons), np.nanmax(lons)
-        dlon = (lonmax - lonmin) * 0.02
-        dlat = (latmax - latmin) * 0.02
+        dlon = (lonmax - lonmin) * 0.03
+        dlat = (latmax - latmin) * 0.03
         lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
         lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
         latmin = latmin-dlat if latmin-dlat > -90 else latmin
@@ -665,6 +804,7 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
         add_earth_features(ax, 
+                           scale=resolution,
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
@@ -716,7 +856,7 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
 
 def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
              bound_map=True, colorbar=True, show=True, style='colormesh', 
-             add_features=False, cbar_dict={}, **kwargs):
+             add_features=False, resolution='110m', cbar_dict={}, **kwargs):
     """ 
     Utility function to display the lateral variations of some quantity on 
     a equal-area grid
@@ -763,6 +903,11 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         If True, natural Earth features will be added to the GeoAxesSubplot.
         Default is False. If `ax` is None, it is automatically set to True
     
+    resolution : str
+        Resolution of the Earth features displayed in the figure. Passed to
+        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'
+    
     cbar_dict : dict
         Keyword arguments passed to matplotlib.colorbar.ColorbarBase
     
@@ -781,8 +926,8 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
     def get_map_boundaries(mesh):
         latmin, lonmin = np.min(mesh, axis=0)[::2]
         latmax, lonmax = np.max(mesh, axis=0)[1::2]
-        dlon = (lonmax - lonmin) * 0.02
-        dlat = (latmax - latmin) * 0.02
+        dlon = (lonmax - lonmin) * 0.03
+        dlat = (latmax - latmin) * 0.03
         
         lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
         lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
@@ -829,6 +974,7 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         ax = fig.add_subplot(1, 1, 1, projection=projection)        
     if add_features:
         add_earth_features(ax, 
+                           scale=resolution,
                            oceans_color='none', 
                            edgecolor='k',
                            lands_color='none')
