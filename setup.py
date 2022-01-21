@@ -63,8 +63,7 @@ pkg_metadata = dict(
                           'cartopy>=0.17.0',
                           'cython>=0.29.2'],
         classifiers=["License :: OSI Approved :: MIT License",
-                     "Programming Language :: Python :: 3"
-                     "Programming Language :: Cython"]
+                     "Programming Language :: Python :: 3"]
         )
 
 
