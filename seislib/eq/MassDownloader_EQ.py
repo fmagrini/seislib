@@ -974,51 +974,6 @@ class EQDownloader:
             
         
         
-#        
-        
-        
-        
-#%%
-
-#if __name__ == '__main__':
-#    from socket import timeout
-#    savedir = '/media/fabrizio/Seagate Expansion Drive/asia/two_station'
-#    while 1:
-#        downloader = EQDownloader(savedir=savedir, 
-#                                  inv_provider='iris',
-#                                  ev_provider='iris',
-#                                  inventory_name='iris.xml',
-#                                  sampling_rate=1,
-#                                  prefilter=(0.001, 0.005, 0.1, 0.4),
-#                                  vmin=1.5,
-#                                  vmax=5.5,
-#                                  units='disp',
-#                                  attach_response=False,
-#                                  stations_config=dict(
-#                                          channel='LH*,BH*,HH*',
-#                                          includerestricted=False,
-#                                          maxlatitude=12,
-#                                          minlatitude=-18,
-#                                          minlongitude=90,
-#                                          maxlongitude=140),
-#                                  events_config=dict(
-#                                          starttime=UTC(2000, 1, 1),
-#                                          endtime=UTC(2021, 6, 1),
-#                                          depthmax=50,
-#                                          magmin=6, 
-#                                          magmax=8.5,
-#                                          distmin=degrees2kilometers(20),
-#                                          distmax=degrees2kilometers(140),
-#                                              ),
-#                                      verbose=True)
-#        try:
-#            downloader.start()
-#            break
-#        except timeout as e:
-#            print(e)
-#            
-#    
-
 
 
 

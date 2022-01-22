@@ -1620,34 +1620,3 @@ class AmbientNoiseAttenuation:
         
         
 
-#%%
-#     
-#if __name__ == '__main__':
-    
-#    home = '/media/fabrizio/Elements1/attenuation_USA/USA'
-#    data = os.path.join(home, 'data')
-#    save = os.path.join(home, 'test_seispy')
-#    src_velocity = os.path.join(home, 'phase_velocities')
-#    
-#    an = AmbientNoiseAttenuation(src=data, savedir=save, verbose=True)
-#    print(an)
-#    an.prepare_data()
-##    
-#    an.parameterize(cell_size=2.5, overlap=0.5, min_no_stations=6, plotting=True)
-#    an.compute_ffts(fs=1, window_length=3600*6)
-#    an.compute_corr_spectra(min_no_pairs=6, 
-#                            min_no_days=30, 
-#                            ram_available=9000, #Mb
-#                            ram_split=4)
-#    an.prepare_inversion(src_velocity=src_velocity,
-#                         freqmin=1/15, 
-#                         freqmax=0.4, 
-#                         nfreq=300, 
-#                         smooth=True)
-#    an.inversion(alphamin=5e-8, alphamax=1e-4, nalpha=350, min_no_pairs=6)
-#    
-#    grid, attenuation = an.get_attenuation_map(period=4, cell_size=1)
-#    an.plot_map(grid, attenuation)
-#
-##
-

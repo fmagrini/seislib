@@ -991,68 +991,8 @@ class ANDownloader:
 
         
     
-#%%
-
-#if __name__ == '__main__':
-#    savedir = '/media/fabrizio/Seagate Expansion Drive/asia'
-#    downloader = ANDownloader(savedir=savedir, 
-#                                  inventory_name='II.xml',
-#                                  provider='iris',
-#                                  sampling_rate=1,
-#                                  prefilter=(0.005, 0.01, 0.5, 1),
-#                                  units='disp',
-#                                  attach_response=False,
-#                                  stations_config=dict(
-#                                          network='II',
-#                                          station='KAPI',
-#                                          channel='BH*',
-#                                          includerestricted=False,
-#                                          maxlatitude=12,
-#                                          minlatitude=-18,
-#                                          minlongitude=90,
-#                                          maxlongitude=140),
-#                                  verbose=True,
-#                                  reversed_iterations=True)
-#    downloader.start()
-#
 
 
 
 
-"""
-iris = Client('iris')
-gfz = Client('gfz')
-aus = Client('http://auspass.edu.au/')
-orfeus = Client('orfeus')
 
-inv_iris = iris.get_stations(channel='BH*,HH*,EH*', includerestricted=False,
-                             maxlatitude=12, minlatitude=-18, minlongitude=90,
-                             maxlongitude=140)
-inv_gfz = gfz.get_stations(channel='BH*,HH*,EH*', includerestricted=False,
-                             maxlatitude=12, minlatitude=-18, minlongitude=90,
-                             maxlongitude=140)
-
-inv_gfz = gfz.get_stations(channel='BH*,HH*,EH*', includerestricted=False,
-                             maxlatitude=12, minlatitude=-18, minlongitude=90,
-                             maxlongitude=140)
-inv_aus = aus.get_stations(channel='BH*,HH*,EH*', includerestricted=False,
-                             maxlatitude=12, minlatitude=-18, minlongitude=90,
-                             maxlongitude=140)
-inv_orfeus = orfeus.get_stations(channel='BH*,HH*,EH*', includerestricted=False,
-                             maxlatitude=12, minlatitude=-18, minlongitude=90,
-                             maxlongitude=140)
-
-
-
-iris:
-    - II
-    - IU
- #   - MS
- #   - MY
-    - TM
-    - PS
-    - XD
-
-gfz:
-    - Z6
-"""
