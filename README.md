@@ -1,6 +1,6 @@
 # **SeisLib: Seismic Imaging at Local, Regional, and Global Scale**
 
-***seislib*** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface at both local, regional, and global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
+***seislib*** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
 <p>&nbsp;</p>
 
@@ -19,11 +19,11 @@
 
 <p>&nbsp;</p>
 
-## **Inversion for 2-D Tomographic Images**
-* **Equal-area parameterizations**, suited for data sets collected at both local, regional, and global scale
+## **Least-Square Imaging of Lateral Variations in Surface-Wave Velocity**
+* **Equal-area parameterizations**, suited for data sets collected at local, regional, and global scale
 * **Adaptive parameterizations**, with finer resolution in the areas characterized by relatively high density of measurements
-* **Linearized inversion** of velocity measurements **based on the ray-theory**
-* **Fast computations** even in presence of large data sets, thanks to the use of **Cython**
+* **Linearized inversion** of velocity measurements **based on ray theory**
+* **Computational speed optimized** (via Cython) for very **large data sets**
 * Possibility to perform **L-curve analyses and resolution tests (e.g., spike, checkerboard)**
    
 ***
