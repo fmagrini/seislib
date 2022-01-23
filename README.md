@@ -24,7 +24,7 @@
 
 # ***Installation***
 
-First, make sure to have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. Having installed these three packages, you should not need about other dependences such as *numpy*, *scipy*, and *matplotlib*.
+First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. Having installed these three packages, you should not need about other dependences such as *numpy*, *scipy*, and *matplotlib*.
 
 ### Using conda (recommended)
 ```bash

@@ -35,7 +35,14 @@ Welcome to SeisLib's documentation!
    :caption: Contents:
 
 
+Contents
+========
 
+.. toctree::
+
+   installation
+   
+   
 Indices and tables
 ==================
 
