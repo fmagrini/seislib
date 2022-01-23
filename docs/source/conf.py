@@ -3,6 +3,7 @@
 # -- Project information
 
 project = 'seislib'
+copyright = '2021, Fabrizio'
 author = 'Fabrizio Magrini'
 
 release = '0.3'
