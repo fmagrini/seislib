@@ -33,10 +33,10 @@
 
 
 ## *References*
-- Boschi, L. & Dziewonski, A.M., 1999. High- and low-resolution images of the Earth's mantle: Implications of different approaches to tomographic modeling. *J. Geophys. Res.*, 104(B11)
-- Boschi, L., Magrini, F., Cammarano, F., & van der Meijde, M. 2019. On seismic ambient noise cross-correlation and surface-wave attenuation. *Geophys. J. Int.*, 219(3), 1568-1589
-- Kästle, E., Soomro, R., Weemstra, C., Boschi, L. & Meier, T., 2016. Two-receiver measurements of phase velocity: cross-validation of ambient-noise and earthquake-based observations. *Geophys. J. Int.*, 207, 1493-1512
-- Magrini, F., Diaferia, G., Boschi, L. & Cammarano, F., 2020. Arrival-angle effects on two-receiver measurements of phase velocity. *Geophys. J. Int.*, 220, 1838-1844
-- Magrini, F. & Boschi, L., 2021. Surface-wave attenuation from seismic ambient noise: numerical validation and application. *J. Geophys. Res.*, 126, e2020JB019865
-- Magrini, F., Boschi, L., Gualtieri, L., Lekić, V. & Cammarano, F., 2021. Rayleigh‑wave attenuation across the conterminous United States in the microseism frequency band. *Scientific Reports*, 11, 1-9
+- Boschi, L. & Dziewonski, A.M., 1999. [High- and low-resolution images of the Earth's mantle: Implications of different approaches to tomographic modeling.](https://doi.org/10.1029/1999JB900166) *J. Geophys. Res.*, 104(B11)
+- Boschi, L., Magrini, F., Cammarano, F., & van der Meijde, M. 2019. [On seismic ambient noise cross-correlation and surface-wave attenuation.]( https://doi.org/10.1093/gji/ggz379) *Geophys. J. Int.*, 219(3), 1568-1589
+- Kästle, E., Soomro, R., Weemstra, C., Boschi, L. & Meier, T., 2016. [Two-receiver measurements of phase velocity: cross-validation of ambient-noise and earthquake-based observations.](https://doi.org/10.1093/gji/ggw341) *Geophys. J. Int.*, 207, 1493-1512
+- Magrini, F., Diaferia, G., Boschi, L. & Cammarano, F., 2020. [Arrival-angle effects on two-receiver measurements of phase velocity.](https://doi.org/10.1093/gji/ggz560) *Geophys. J. Int.*, 220, 1838-1844
+- Magrini, F. & Boschi, L., 2021. [Surface-wave attenuation from seismic ambient noise: numerical validation and application.]( https://doi.org/10.1029/2020JB019865) *J. Geophys. Res.*, 126, e2020JB019865
+- Magrini, F., Boschi, L., Gualtieri, L., Lekić, V. & Cammarano, F., 2021. [Rayleigh‑wave attenuation across the conterminous United States in the microseism frequency band.](https://www.nature.com/articles/s41598-021-89497-6) *Scientific Reports*, 11, 1-9
 
