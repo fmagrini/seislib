@@ -2,8 +2,6 @@
 
 ***seislib*** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
-<p>&nbsp;</p>
-
 
 ## **Seismic Ambient Noise Interferometry**
 *  Automated **download** of continuous seismograms
@@ -11,13 +9,9 @@
 * Extraction of frequency-dependent **phase velocities** for both **Rayleigh and Love waves**, based on pairs of receivers
 * Retrieval of frequency-dependent **Rayleigh-wave attenuation coefficient**, based on dense seismic arrays
 
-<p>&nbsp;</p>
-
 ## **Surface-Wave Tomography based on Teleseismic Earthquakes**
 * Automated **download** of seismograms recording strong earthquakes
 * Retrieval of frequency-dependent **Rayleigh and Love phase velocities**, based on pairs of receivers lying on the same great-circle path as the epicentre (**Two-Station Method**)
-
-<p>&nbsp;</p>
 
 ## **Least-Square Imaging of Lateral Variations in Surface-Wave Velocity**
 * **Equal-area parameterizations**, suited for data sets collected at local, regional, and global scale
