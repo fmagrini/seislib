@@ -11,4 +11,5 @@ recursive-include doc *
 prune docs/build
 prune docs/source/generated
 prune */__pycache__
-
+prune */*/__pycache__
+prune */*/*/__pycache__
