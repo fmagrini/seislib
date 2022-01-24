@@ -24,9 +24,8 @@
 
 # ***Installation***
 
-First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. Having installed these three packages, you should not need about other dependences such as *numpy*, *scipy*, and *matplotlib*. We recommend installing such dependences using conda.
+First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. We recommend installing such dependences using conda.
 
-### Using conda (recommended)
 ```bash
 conda create -n seislib python=3.9 numpy=1.20
 conda install -c conda-forge obspy
