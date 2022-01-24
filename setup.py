@@ -7,7 +7,7 @@ import sys
 import os
 from setuptools import find_packages
 
-VERSION = "0.3.9"
+VERSION = "0.4.1"
 
 
 def readme():
@@ -114,7 +114,7 @@ pkg_metadata = dict(
                           'scipy>=1.3.0',
                           'matplotlib>=3.0.2',
                           'cartopy>=0.17.0',
-                          'cython>=0.29.2'],
+                          'cython>=0.29'],
         classifiers=["License :: OSI Approved :: MIT License",
                      "Programming Language :: Python :: 3",
                      "Programming Language :: Cython"]
