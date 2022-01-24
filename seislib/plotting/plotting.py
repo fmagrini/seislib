@@ -397,12 +397,12 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         latmax = latmax+dlat if latmax+dlat < 90 else latmax
         return (lonmin, lonmax, latmin, latmax)
     
-
+    
+    transform = ccrs.PlateCarree()
     if ax is None:
         projection = eval('ccrs.%s()'%projection)
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
-        transform = ccrs.PlateCarree()
         map_boundaries = get_map_boundaries(stations)
         add_earth_features(ax, 
                            scale=resolution,
@@ -505,12 +505,13 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
     def get_integer_magnitudes(mag):
         magmin, magmax = min(mag), max(mag)
         return np.round(np.geomspace(magmin, magmax, 4), 1)
-            
+    
+    
+    transform = ccrs.PlateCarree()
     if ax is None:
         projection = eval('ccrs.%s()'%projection)
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
-        transform = ccrs.PlateCarree()
         map_boundaries = get_map_boundaries(lat, lon)
         ax.set_extent(map_boundaries, transform)
         add_earth_features(ax, 
@@ -634,6 +635,7 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
+        
     transform = ccrs.PlateCarree()
     marker = kwargs.pop('marker', '^')
     
@@ -808,6 +810,7 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
+        
     transform = ccrs.PlateCarree()
     marker = kwargs.pop('marker', '^')
     vmin = vmin if vmin is not None else np.nanmin(c)
