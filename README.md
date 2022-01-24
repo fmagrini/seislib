@@ -24,24 +24,18 @@
 
 # ***Installation***
 
-First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. Having installed these three packages, you should not need about other dependences such as *numpy*, *scipy*, and *matplotlib*.
+First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. Having installed these three packages, you should not need about other dependences such as *numpy*, *scipy*, and *matplotlib*. We recommend installing such dependences using conda.
 
 ### Using conda (recommended)
 ```bash
+conda create -n seislib python=3.9 numpy=1.20
 conda install -c conda-forge obspy
 conda install -c conda-forge cartopy
-conda install -c anaconda cython>=0.29.2
+conda install -c anaconda cython
 ```
 
 
-### Using pip
-```bash
-pip install obspy
-pip install cartopy
-pip install cython>=0.29.2
-```
-
-Once the above dependences have been installed, you can proceed with the installation of ***seislib***. 
+Note that we installed Python 3.9 (rather than Python 3.10) since numpy's version 1.22 currently leads compatibility issues. Once the above dependences have been installed, you can proceed with the installation of ***seislib***. 
 
 ```
 pip install seislib
