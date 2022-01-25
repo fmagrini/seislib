@@ -280,6 +280,11 @@ class ANDownloader:
         self.savedir = savedir
         os.makedirs(savedir, exist_ok=True)
         self.staclient = Client(provider, user=user, password=password)
+        if user is not None and password is not None:
+            includerestricted = stations_config.pop('includerestricted', None)
+            if includerestricted is None:
+                includerestricted = True
+            stations_config['includerestricted'] = includerestricted
         
         self.channels = stations_config.get('channel', 'HH*').split(',')
         self.components = 3 if self.channels[0][2]=='*' else 1
