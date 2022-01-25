@@ -545,7 +545,7 @@ class AmbientNoiseVelocity:
             plt.ylabel('Phase velocity [km/s]')
             plt.xlim(freqmin, freqmax)
             plt.xlabel('Frequency [Hz]')
-            plt.legend(loc='upper right', framealpha=0.9)
+            plt.legend(loc='upper right', framealpha=0.9, handlelength=1)
             plt.grid(alpha=0.5)
             plt.title('Dispersion Curve')
 
@@ -555,7 +555,7 @@ class AmbientNoiseVelocity:
             plt.xlim(freqmin, freqmax)
             plt.xlabel('Frequency [Hz]')
             plt.grid(alpha=0.5)
-            plt.legend(loc='upper right')
+            plt.legend(loc='upper right', framealpha=0.9, handlelength=1)
             plt.title('Cross Spectrum')
 
             
@@ -778,7 +778,7 @@ class AmbientNoiseVelocity:
             Dictionary of keyword arguments passed to matplotlib.pyplot.legend
         
         kwargs : 
-            Additional keyword arguments passed to matplotlib.pyplot.plot 
+            Additional keyword arguments passed to matplotlib.pyplot.scatter 
             
             
         Returns

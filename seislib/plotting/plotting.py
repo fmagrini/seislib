@@ -365,7 +365,7 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         Keyword arguments passed to matplotlib.pyplot.legend
         
     kwargs : 
-        Additional keyword arguments passed to matplotlib.pyplot.plot
+        Additional keyword arguments passed to matplotlib.pyplot.scatter
         
         
     Returns
@@ -412,10 +412,12 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         ax.set_extent(map_boundaries, transform)
     
     marker = kwargs.pop('marker', '^')
+    zorder = kwargs.pop('zorder', 100)
+    s = kwargs.pop('s', 100)
     for coords, net in get_coords(stations, color_by_network):
         label = kwargs.pop('label', net)
-        ax.plot(*coords.T[::-1], marker=marker, lw=0, transform=transform,
-                label=label, **kwargs) 
+        ax.scatter(*coords.T[::-1], marker=marker, transform=transform, 
+                   label=label, zorder=zorder, s=s, **kwargs) 
     
     if color_by_network:
         ax.legend(**legend_dict)
@@ -523,6 +525,7 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
                            lands_color=lands_color)
         
     marker = kwargs.pop('marker', '*')
+    zorder = kwargs.pop('zorder', 100)
     s = kwargs.pop('s', None)
     if s is None:
         s = get_markers_size(mag, kwargs)
@@ -537,8 +540,8 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
                        s=s[i], label=mag_legend, zorder=100, **kwargs) 
         ax.legend(**legend_dict)
     else:
-        ax.scatter(lon, lat, marker=marker, transform=transform, s=s, zorder=100,
-                   **kwargs) 
+        ax.scatter(lon, lat, marker=marker, transform=transform, s=s, 
+                   zorder=zorder, **kwargs) 
     if show:
         plt.show()
     else:

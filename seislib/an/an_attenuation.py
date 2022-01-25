@@ -1598,7 +1598,7 @@ class AmbientNoiseAttenuation:
             Dictionary of keyword arguments passed to matplotlib.pyplot.legend
         
         kwargs : 
-            Additional keyword arguments passed to matplotlib.pyplot.plot 
+            Additional keyword arguments passed to matplotlib.pyplot.scatter 
             
             
         Returns
