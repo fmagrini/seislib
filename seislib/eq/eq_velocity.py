@@ -308,7 +308,11 @@ class EQVelocity:
 
         return string
 
-
+    
+    def __repr__(self):
+        return str(self)
+    
+    
     def get_coords_and_triplets(self, events, azimuth_tolerance=5, distmin=None,
                                 distmax=None):
         """ 

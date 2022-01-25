@@ -409,12 +409,14 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
                            oceans_color=oceans_color, 
                            edgecolor=edgecolor,
                            lands_color=lands_color)
+        ax.set_extent(map_boundaries, transform)
     
     marker = kwargs.pop('marker', '^')
     for coords, net in get_coords(stations, color_by_network):
+        label = kwargs.pop('label', net)
         ax.plot(*coords.T[::-1], marker=marker, lw=0, transform=transform,
-                label=net, **kwargs) 
-    ax.set_extent(map_boundaries, transform)
+                label=label, **kwargs) 
+    
     if color_by_network:
         ax.legend(**legend_dict)
     if show:

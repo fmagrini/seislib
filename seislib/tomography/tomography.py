@@ -867,7 +867,7 @@ class SeismicTomography:
 
     
     def lcurve(self, A=None, slowness=None, refvel=None, mesh=None, damping='roughness', 
-               n=20, damp_min=0.1, damp_max=5, logspace=True, plot=True):
+               n=20, damp_min=1e-5, damp_max=1e-1, logspace=True, show=True):
         """ L-curve analysis. The function calls iteratively the `solve` method
         
         Parameters
@@ -901,18 +901,18 @@ class SeismicTomography:
             Number of inversions performed in the analysis
             
         damp_min : float
-            Minimum damping term (default is 0.1)
+            Minimum damping term (default is 1e-5)
             
         damp_max : float
-            Maximum damping term (default is 5)
+            Maximum damping term (default is 1e-1)
             
         logspace : bool
-            If True (default), the logarithm of the damping terms is taken, and 
-            the `n` inversions are performed for the damping range 
-            numpy.logspace(damp_min, damp_max, n). False corresponds to a 
-            damping range equal to numpy.linspace(damp_min, damp_max, n)
+            If True (default), the damping range is defined to be linearly 
+            spaced in logarithmic scale between `damp_min` and `damp_max`, i.e.,
+            numpy.logspace(np.log10(damp_min), np.log10(damp_ax), n). False 
+            corresponds to numpy.linspace(damp_min, damp_max, n)
             
-        plot : bool
+        show : bool
             If True (default), the result of the analysis is displayed
         
         Returns
@@ -955,7 +955,7 @@ class SeismicTomography:
             string += ' are allowed. Roughness damping will be used instead.'
             warnings.warn(string)
         if logspace:
-            damp_range = np.logspace(damp_min, damp_max, n)
+            damp_range = np.logspace(np.log10(damp_min), np.log10(damp_max), n)
         else:
             damp_range = np.linspace(damp_min, damp_max, n)
         result = []
@@ -976,7 +976,7 @@ class SeismicTomography:
             residual_norm = np.linalg.norm(slowness - A.dot(x))
             yaxis = np.linalg.norm(x) if ndamp else np.linalg.norm(G.dot(x))
             result.append((residual_norm, yaxis))
-        if plot:
+        if show:
             ylabel = r'$||$ G $\cdot$ x $||$' if damping=='roughness' else r'$||$ x $||$'
             scale = 'log' if logspace else 'linear'
             plot(damp_range, result, ylabel, scale)
@@ -1696,8 +1696,7 @@ class SeismicTomography:
         None if show is False. Otherwise a GeoAxesSubplot instance together with an 
         instance of matplotlib.colorbar.Colorbar (if `colorbar` is True)
         """
-        
-                
+              
         return plotting.plot_colored_rays(data_coords=self.data_coords, 
                                           c=self.velocity,
                                           ax=ax, 

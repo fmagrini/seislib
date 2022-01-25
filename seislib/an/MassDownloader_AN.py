@@ -21,6 +21,7 @@ from obspy.clients.fdsn.header import FDSNNoDataException, FDSNException
 from obspy.io.mseed import InternalMSEEDError
 from http.client import IncompleteRead
 from seislib.utils import rotate_stream
+from seislib.plotting import plot_stations
 warnings.simplefilter(action='ignore')
         
 
@@ -145,6 +146,11 @@ class ANDownloader:
     endtime_for_download(station)
         Gives the last time window to be downloaded for a given station       
         
+    plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
+                  edgecolor='k', projection='Mercator', resolution='110m', 
+                  color_by_network=True, legend_dict={}, **kwargs)
+        Creates a maps of seismic receivers available for download
+        
     start()
         Starts the downloads
         
@@ -175,8 +181,12 @@ class ANDownloader:
     to False. See obspy documentation on Client.get_stations for more
     info on the possible arguments passed to `stations_config`.
         
+        from obspy import UTCDateTime as UTC
+        
         stations_config = dict(network='II',
                                channel='BH*',
+                               starttime=UTC(2020, 1, 1),
+                               endtime=UTC(2021, 1, 1),
                                includerestricted=False,
                                maxlatitude=12,
                                minlatitude=-18,
@@ -191,7 +201,7 @@ class ANDownloader:
         
     
     We initialize the ANDownloader instance, and then start it.
-    
+        
         downloader = ANDownloader(savedir=/path/to/directory, 
                                   inventory_name='II.xml',
                                   provider='iris',
@@ -795,9 +805,9 @@ class ANDownloader:
         
         Parameters
         ----------
-        kwargs : dict
-            Dictionary object whose arguments are passed to the get_stations
-            method of obspy.clients.fdsn.client.
+        kwargs :
+            Additional key word arguments passed to the get_stations method of 
+            obspy.clients.fdsn.client
             
         Returns
         -------
@@ -913,6 +923,92 @@ class ANDownloader:
         today = UTC.utcnow()
         return station.end_date if station.end_date<today else today
     
+
+    def plot_stations(self, ax=None, show=True, oceans_color='water', 
+                      lands_color='land', edgecolor='k', projection='Mercator',
+                      resolution='110m', color_by_network=True, legend_dict={}, 
+                      **kwargs):
+        """ Creates a maps of seismic receivers available for download
+        
+        Parameters
+        ----------
+        stations : dict
+            Dictionary object containing stations information. This should 
+            structured so that each key corresponds to a station code 
+            ($network_code.$station_code) and each value is a tuple containing 
+            latitude and longitude of the station. 
+            
+            For example:
+                
+                { net1.sta1 : (lat1, lon1),
+                  net1.sta2 : (lat2, lon2),
+                  net2.sta3 : (lat3, lon3)
+                  }
+        
+        ax : cartopy.mpl.geoaxes.GeoAxesSubplot
+            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
+            Otherwise, a new figure and GeoAxesSubplot instance is created
+            
+        show : bool
+            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
+            returned. Default is True
+            
+        oceans_color, lands_color : str
+            Color of oceans and lands. The arguments are ignored if ax is not
+            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            (to the argument 'facecolor'). Defaults are 'water' and 'land'
+            
+        edgecolor : str
+            Color of the boundaries between, e.g., lakes and land. The argument 
+            is ignored if ax is not None. Otherwise, it is passed to 
+            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+            is 'k' (black)
+            
+        projection : str
+            Name of the geographic projection used to create the GeoAxesSubplot.
+            (Visit the cartopy website for a list of valid projection names.)
+            If ax is not None, `projection` is ignored. Default is 'Mercator'
+        
+        resolution : str
+            Resolution of the Earth features displayed in the figure. Passed to
+            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'
+        
+        color_by_network : bool
+            If True, each seismic network will have a different color in the
+            resulting map, and a legend will be displayed. Otherwise, all
+            stations will have the same color. Default is True
+        
+        legend_dict : dict
+            Keyword arguments passed to matplotlib.pyplot.legend
+            
+        kwargs : 
+            Additional keyword arguments passed to matplotlib.pyplot.plot
+            
+            
+        Returns
+        -------
+        If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
+        """
+        
+        stations = {}
+        for net, sta in self.inventory_iterator(self.inventory):
+            station_code = '%s.%s'%(net.code, sta.code)
+            stla, stlo, stel = self.station_coordinates(sta)
+            stations[station_code] = (stla, stlo)
+        
+        return plot_stations(stations=stations,
+                             ax=ax, 
+                             show=show, 
+                             oceans_color=oceans_color, 
+                             lands_color=lands_color, 
+                             edgecolor=edgecolor, 
+                             projection=projection,
+                             resolution=resolution,
+                             color_by_network=color_by_network, 
+                             legend_dict=legend_dict,
+                             **kwargs) 
+
 
     def start(self):
         """ Starts the downloads
