@@ -104,7 +104,8 @@ class EQVelocity:
         
     plot_events(ax=None, show=True, oceans_color='water', lands_color='land', 
                 edgecolor='k', projection='Mercator', resolution='110m', 
-                min_size=5, max_size=150, **kwargs):
+                min_size=5, max_size=150, legend_markers, legend_dict={},
+                **kwargs):
         Maps the seismic events used to obtain dispersion measurements
         
         Class Methods
@@ -1000,7 +1001,8 @@ class EQVelocity:
         
     def plot_events(self, ax=None, show=True, oceans_color='water', lands_color='land', 
                     edgecolor='k', projection='Mercator', resolution='110m', 
-                    min_size=5, max_size=150, legend_dict={}, **kwargs):
+                    min_size=5, max_size=150, legend_markers=4, legend_dict={}, 
+                    **kwargs):
         """ Creates a map of epicenters
         
         Parameters
@@ -1045,7 +1047,11 @@ class EQVelocity:
             to interpolate all magnitudes associated with each event, so as to
             scale them appropriately on the map. (The final "sizes" are passed to
             the argument `s` of matplotlib.pyplot.scatter)
-                
+        
+        legend_markers : int
+            Number of markers displayed in the legend. Ignored if `s` (size of the
+            markers in matplotlib.pyplot.scatter) is passed
+        
         legend_dict : dict
             Keyword arguments passed to matplotlib.pyplot.legend
             
@@ -1074,6 +1080,7 @@ class EQVelocity:
                            resolution=resolution, 
                            min_size=min_size,
                            max_size=max_size,
+                           legend_markers=legend_markers,
                            legend_dict=legend_dict, 
                            **kwargs)
         

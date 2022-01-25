@@ -100,7 +100,8 @@ def add_earth_features_GSHHS(ax, scale='auto', oceans_color='aqua',
 
 
 def add_earth_features(ax, scale='110m', oceans_color='aqua', 
-                       lands_color='coral', edgecolor='k'):
+                       lands_color='coral', edgecolor='k', lands_lw=0.5,
+                       oceans_lw=0.5, lakes_lw=0.5):
     """ 
     Adds natural features to a cartopy.mpl.geoaxes.GeoAxesSubplot, fetching
     data from the Natural Earth dataset (http://www.naturalearthdata.com/)
@@ -123,6 +124,10 @@ def add_earth_features(ax, scale='110m', oceans_color='aqua',
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. Passed to 
         cartopy.feature.NaturalEarthFeature. Default is 'k' (black)
+        
+    lands_lw, oceans_lw, lakes_lw : float
+        Linewidths for lands, oceans, and lakes. Arguments passed to
+        GeoAxesSubplot.add_feature
     """
     
     if oceans_color == 'water':
@@ -144,9 +149,9 @@ def add_earth_features(ax, scale='110m', oceans_color='aqua',
                                          scale=scale, 
                                          edgecolor=edgecolor, 
                                          facecolor=oceans_color)
-    ax.add_feature(land, linewidth=0.5)
-    ax.add_feature(ocean, linewidth=0.5)
-    ax.add_feature(lakes, linewidth=0.5)
+    ax.add_feature(land, linewidth=lands_lw)
+    ax.add_feature(ocean, linewidth=oceans_lw)
+    ax.add_feature(lakes, linewidth=lakes_lw)
     
 
 def make_colorbar(ax, mappable, **kwargs):
@@ -429,8 +434,8 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
 
 def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water', 
                 lands_color='land', edgecolor='k', projection='Mercator',
-                resolution='110m', min_size=5, max_size=200, legend_dict={}, 
-                **kwargs):
+                resolution='110m', min_size=5, max_size=200, legend_markers=4, 
+                legend_dict={}, **kwargs):
     """ Creates a map of epicenters
     
     Parameters
@@ -475,6 +480,10 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
         to interpolate all magnitudes associated with each event, so as to
         scale them appropriately on the map. (The final "sizes" are passed to
         the argument `s` of matplotlib.pyplot.scatter)
+        
+    legend_markers : int
+        Number of markers displayed in the legend. Ignored if `s` (size of the
+        markers in matplotlib.pyplot.scatter) is passed
             
     legend_dict : dict
         Keyword arguments passed to matplotlib.pyplot.legend
@@ -508,7 +517,7 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
     
     def get_integer_magnitudes(mag):
         magmin, magmax = min(mag), max(mag)
-        return np.round(np.geomspace(magmin, magmax, 4), 1)
+        return np.round(np.geomspace(magmin, magmax, legend_markers), 1)
     
     
     transform = ccrs.PlateCarree()
