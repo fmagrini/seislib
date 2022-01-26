@@ -545,8 +545,8 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance, ref_cur
         Function to determine the elliptical kernels around each zero crossing.
         similar to a kernel density estimate (KDE) method, an ellipse is
         drawn around each zero crossing having a weight of 1 at the location
-        of the zero crossing which decreases to 0 at its border.
-        the phase velocity pick is taken where the weight of the overlapping
+        of the zero crossing and decreases to 0 at its border. The phase 
+        velocity pick is taken where the weight of the overlapping
         elliptical kernels is maximum which gives smoother picks as compared
         to picking the (noisy) zero crossings directly.
         Shape and size of the elliptical kernels is user determined
