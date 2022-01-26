@@ -2152,7 +2152,7 @@ class TwoStationMethod:
             xlim = np.min(mesh[0][0]), np.max(mesh[0][0])
             ylim = np.min(mesh[1][:, 0]), np.max(mesh[1][:, 0])
             
-            plt.figure()
+            plt.figure(figsize=plt.figaspect(0.8))
             plt.subplot(2, 2, 1)
             plt.pcolormesh(*mesh, p_prior)
             plt.plot(refcurve[:,0], refcurve[:,1], 'b', label='Reference')
@@ -2178,7 +2178,7 @@ class TwoStationMethod:
             plt.ylabel('Velocity [km/s]')
             plt.xlabel('Period [s]')
             plt.legend(loc='upper right')
-            plt.title('Conditioned')
+            plt.title('Weighted density of obs.')
             
             plt.subplot(2, 2, 4)
             plt.pcolormesh(*mesh, p_cond_filtered)
@@ -2188,10 +2188,10 @@ class TwoStationMethod:
             plt.ylim(*ylim)
             plt.xlabel('Period [s]')
             plt.legend(loc='upper right')
-            plt.title('Conditioned filtered')
+            plt.title(r'Weighted and filtered ($prob\_min$=%.2f)'%prob_min)
             
             plt.tight_layout()
-            plt.subplots_adjust(top=0.93)
+            plt.subplots_adjust(top=0.91)
             plt.suptitle(suptitle, y=0.98)
             if savefig is not None:
                 plt.savefig(savefig, dpi=(150))
