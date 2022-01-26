@@ -19,7 +19,7 @@ import seislib.colormaps as scm
 
 
     
-def lower_threshold_projection(projection, thresh=1e3):
+def lower_threshold_projection(projection, thresh=1e3, **kwargs):
     """ 
     An ugly but effective work around to get a higher-resolution curvature
     of the great-circle paths. This is useful when plotting the great-circle
@@ -54,7 +54,7 @@ def lower_threshold_projection(projection, thresh=1e3):
         def threshold(self):
             return thresh
         
-    return LowerThresholdProjection()
+    return LowerThresholdProjection(**kwargs)
 
     
 def add_earth_features_GSHHS(ax, scale='auto', oceans_color='aqua', 
