@@ -1720,7 +1720,7 @@ class TwoStationMethod:
     ##################BECAUSE#################################################
     #irfft(U1 * np.exp(-1j*(phi))) == irfft(U1 * np.exp(-1j*(phi+2*pi))) == u2
     ##########################################################################   
-            for i in range(-16, 17, 2):
+            for i in range(-20, 21, 2):
                 c_w = w*dist / (phi_interp + i*pi)
                 if self.cmin <= c_w <= self.cmax:
                     velocities.append(c_w)
