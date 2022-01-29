@@ -2165,6 +2165,7 @@ class TwoStationMethod:
             plt.subplot(2, 2, 2)
             plt.pcolormesh(*mesh, p_post)
             plt.plot(data[:,0], data[:,1], 'ro', ms=0.5, label='Obs. Dispersion')
+            plt.plot(dispcurve[:,0], dispcurve[:,1], 'r', label='Retrieved')
             plt.ylim(*ylim)
             plt.xlim(*xlim)
             plt.legend()
