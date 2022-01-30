@@ -2095,6 +2095,7 @@ class TwoStationMethod:
                     if measurements:
                         segments.append(np.array(measurements))
                     
+                    segments = [seg for seg in segments if seg.shape[0]>=3]
                     best_prob = 0.6
                     best_segment = None
                     for isegment, segment in enumerate(segments):
@@ -2104,7 +2105,8 @@ class TwoStationMethod:
                             best_prob = prob
                     if best_segment is None:
                         raise DispersionCurveException
-                    return segments[best_segment]                  
+                    return segments[best_segment]  
+                
                 
                 derivative = np.gradient(vel) / np.gradient(periods)
                 inans = np.flatnonzero(derivative < min_derivative)
@@ -2117,6 +2119,8 @@ class TwoStationMethod:
             
             
             def quality_check_first_picks(ref_model, periods, vel):
+                if len(vel) < 3:
+                    raise DispersionCurveException
                 dy = vel[-1] - vel[0]
                 dx = periods[-1] - periods[0]
                 derivative_obs = dy / dx
