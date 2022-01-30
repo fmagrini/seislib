@@ -818,8 +818,8 @@ class EQVelocity:
             for otime in events:
                 st1 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta1, self.component)))
                 st2 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta2, self.component)))
-                tsm.preprocess(st1, st2, float(otime), fs=2)
                 try:
+                    tsm.preprocess(st1, st2, float(otime), fs=2)
                     dispersion = tsm.measure_dispersion()
                 except:
                     continue
@@ -2168,7 +2168,7 @@ class TwoStationMethod:
             plt.plot(dispcurve[:,0], dispcurve[:,1], 'r', label='Retrieved')
             plt.ylim(*ylim)
             plt.xlim(*xlim)
-            plt.legend()
+            plt.legend(loc='upper right')
             plt.title('Density of observations')
             
             plt.subplot(2, 2, 3)
