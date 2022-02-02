@@ -927,7 +927,7 @@ class SeismicTomography:
             roughness damping was used instead (`rdamp`>0)
         """
         
-        def plot(dampings, models, ylabel):
+        def plot(dampings, models, ylabel, scale):
             plt.figure(figsize=(10, 8))
             for damping, (residual_norm, yaxis) in zip(dampings, models):
                 plt.plot(residual_norm, yaxis, 'ro')
@@ -940,8 +940,8 @@ class SeismicTomography:
                          color='r')
             plt.xlabel(r'$||$ A$\cdot$x - b $||$')
             plt.ylabel(ylabel, fontsize=20, labelpad=10)
-            plt.yscale('log')
-            plt.xscale('log')
+            plt.yscale(scale)
+            plt.xscale(scale)
             plt.show()
         
         A = A if A is not None else self.A
