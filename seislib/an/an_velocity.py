@@ -503,7 +503,7 @@ class AmbientNoiseVelocity:
                 
         def station_pairs_generator(stations, reverse_iteration=False):
             sort = lambda iterable, reverse: sorted(iterable, reverse=reverse)
-            station_pairs = (pair for pair in sort(it.combinations(stations, 2),
+            station_pairs = (pair for pair in sort(it.combinations(sorted(stations), 2),
                                                    reverse_iteration))
             for pair in station_pairs:
                 yield pair
