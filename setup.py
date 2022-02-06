@@ -7,7 +7,7 @@ import sys
 import os
 from setuptools import find_packages
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 
 
 def readme():
