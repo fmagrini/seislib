@@ -1247,6 +1247,7 @@ class AmbientNoiseAttenuation:
         freq = np.load(os.path.join(src_dataset, 'frequencies.npy'))
         np.save(os.path.join(save, 'frequencies.npy'), freq)
         alphas = np.geomspace(alphamin, alphamax, nalpha)
+        np.save(os.path.join(save, 'alphas.npy'), alphas)
         
         pixels = sorted([i for i in os.listdir(src_dataset) if 'pixel' in i],
                          key=lambda i: int(i.strip('pixel.pickle')))

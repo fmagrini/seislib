@@ -154,7 +154,7 @@ def add_earth_features(ax, scale='110m', oceans_color='aqua',
     ax.add_feature(lakes, linewidth=lakes_lw)
     
 
-def make_colorbar(ax, mappable, **kwargs):
+def make_colorbar(ax, mappable, size='5%', pad='3%', **kwargs):
     """ Prepares and attaches a colorbar to the GeoAxesSubplot
     
     Parameters
@@ -162,6 +162,12 @@ def make_colorbar(ax, mappable, **kwargs):
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
     
     mappable : matplotlib.cm.ScalarMappable
+    
+    size : str
+        Width of the colorbar, default is '5%'
+    
+    pad : str
+        Space between the colorbar and ax, default is 3%'
     
     kwargs : Additional keyword arguments passed to matplotlib.pyplot.colorbar
     
@@ -177,7 +183,7 @@ def make_colorbar(ax, mappable, **kwargs):
         loc = 'right'
     elif orientation == 'horizontal':
         loc = 'bottom'  
-    cax = divider.append_axes(loc, '5%', pad='3%', axes_class=mpl.pyplot.Axes)
+    cax = divider.append_axes(loc, size, pad=pad, axes_class=mpl.pyplot.Axes)
     cb = ax.get_figure().colorbar(mappable, 
                                   cax=cax, 
                                   orientation=orientation,

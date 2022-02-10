@@ -613,6 +613,7 @@ class AmbientNoiseVelocity:
             tr2 = get_trace(st2, azimuth=az, component=self.component)      
             dispcurve_file = os.path.join(save_pv, '%s_%s.npy'%(tr1.id, tr2.id))
             if os.path.exists(dispcurve_file):
+                update_done(sta1, sta2)
                 continue
             fig_file = os.path.join(save_fig, '%s_%s.png'%(tr1.id, tr2.id))
             
