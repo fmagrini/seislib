@@ -27,6 +27,7 @@ from obspy.signal.invsim import cosine_taper
 from obspy.geodetics.base import gps2dist_azimuth
 from seislib import EqualAreaGrid
 from seislib.utils import load_pickle, save_pickle, remove_file, resample
+from seislib.utils import azimuth_backazimuth
 from seislib.plotting import add_earth_features
 from seislib.plotting import colormesh, contour, contourf
 from seislib.plotting import plot_stations, plot_map
@@ -97,8 +98,15 @@ class AmbientNoiseAttenuation:
      
     plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
                   edgecolor='k', projection='Mercator', resolution='110m', 
-                  color_by_network=True, legend_dict={}, **kwargs):
-        Maps the seismic receivers for which data are available        
+                  color_by_network=True, legend_dict={}, **kwargs)
+        Maps the seismic receivers for which data are available   
+        
+    plot_azimuthal_coverage(ipixel, ax=None, bins=None, show=True, **kwargs)
+        Plots a polar histogram of the azimuthal coverage for one pixel
+        
+    plot_cost(ipixel, ax=None, alphamin=None, alphamax=None, freqmin=None, 
+              freqmax=None, show=True, **kwargs)
+        Plots the values of cost obtained in the inversion of a given pixel
         
     
     Class Methods
@@ -1454,7 +1462,6 @@ class AmbientNoiseAttenuation:
                         cbar_dict=cbar_dict,
                         **kwargs)
          
-            
         
     @classmethod
     def colormesh(cls, mesh, c, ax, **kwargs):
@@ -1619,5 +1626,171 @@ class AmbientNoiseAttenuation:
                              legend_dict=legend_dict,
                              **kwargs)
         
+    
+    def plot_azimuthal_coverage(self, ipixel, ax=None, bins=None, show=True,
+                                **kwargs):
+        """ Plots a polar histogram of the azimuthal coverage for one pixel
+
+        Parameters
+        ----------
+        ipixel : int
+            Index of the pixel used in the inversion for alpha
+            
+        ax : matplotlib instance of PolarAxesSubplot, optional
+            If None, a new figure and ax is created
+            
+        bins : array-like, optional
+            List or numpy array specifying the azimuthal bins (in degrees). If
+            None, bins of 30 degrees between 0 and 360 are used
+            
+        show : bool
+            If False, `ax` is returned. Else, the figure is displayed.
+            
+        kwargs : 
+            Additional arguments passed to matplotlib.pyplot.bar     
+            
+            
+        Returns
+        -------
+        If `show` is True, None, else `ax`
+        """
         
+        data = load_pickle(os.path.join(self.savedir, 
+                                        'inversion_dataset',
+                                        'pixel%s.pickle'%ipixel))
+        pairs = [i.split('_') for i in data]
+        coords = np.array([[*self.stations[pair[0]], *self.stations[pair[1]]] \
+                           for pair in pairs])
+        azimuths = np.array([*azimuth_backazimuth(*coords.T)]).ravel()
+        if ax is None:
+            fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+
+        bins = bins if bins is not None else np.arange(0, 360+30, 30)
+        bin_size = np.radians(abs(bins[1] - bins[0]))
+        hist, bins = np.histogram(azimuths, bins=bins)
+        centers = np.radians(np.ediff1d(bins)//2 + bins[:-1])
+                
+        color = kwargs.pop('color', '.8')
+        bottom = kwargs.pop('bottom', 0)
+        edgecolor = kwargs.pop('edgecolor', 'k')
+        ax.bar(centers, 
+               hist, 
+               width=bin_size, 
+               bottom=bottom, 
+               color=color, 
+               edgecolor=edgecolor,
+               **kwargs)
+        ax.tick_params(axis='both', which='major')
+        ax.set_theta_direction(-1)
+        ax.set_theta_offset(np.pi/2.0)
+        if not show:
+            return ax
+        plt.show()
+        
+    
+    def plot_cost(self, ipixel, ax=None, alphamin=None, alphamax=None, 
+                  freqmin=None, freqmax=None, show=True, **kwargs):
+        """ Plots the values of cost obtained in the inversion of a given pixel
+        
+        Parameters
+        ----------
+        ipixel : int
+            Index of the pixel used in the inversion for alpha
+            
+        ax : matplotlib instance of AxesSubplot, optional
+            If None, a new figure and ax is created
+            
+        show : bool
+            If False, `ax` is returned. Else, the figure is displayed.
+
+        alphamin, alphamax : float, optional
+            Alpha range used to bound the yaxis in the figure. If None, the 
+            whole alpha range used in the inversion is displayed
+            
+        freqmin, freqmax : float, optional
+            Frequency range used to bound the xaxis in the figure. If None, the 
+            whole Frequency range used in the inversion is displayed
+            
+        show : bool
+            If False, `ax` is returned. Else, the figure is displayed.
+
+        **kwargs :
+            Additional arguments passed to matplotlib.pyplot.pcolormesh
+
+
+        Returns
+        -------
+        If `show` is True, None, else a tuple containing
+            - matplotlib.collections.QuadMesh (associated with pcolormesh)
+            - matplotlib.pyplot.colorbar
+        """
+        
+        def normalize_cost(matrix):
+            matrix = matrix.T.copy()
+            for row in matrix:
+                if not np.all(np.isnan(row)):
+                    assert not np.any(np.isnan(row))
+                    max_row, min_row = np.max(row), np.min(row)
+                    row[:] = (row-min_row) / (max_row-min_row)
+            return matrix.T
+        
+        src = os.path.join(self.savedir, 'results')
+        parameterization = load_pickle(os.path.join(self.savedir, 
+                                                    'parameterization.pickle'))
+        result = load_pickle(os.path.join(src, 'pixel%s.pickle'%ipixel))
+        alphas_dict = load_pickle(os.path.join(src, 'best_alphas.pickle'))
+        frequency = np.load(os.path.join(src, 'frequencies.npy'))
+        alpha = np.load(os.path.join(src, 'alphas.npy'))
+        best_alphas, no_pairs = alphas_dict[ipixel]
+        cost = result['cost']
+        cost_normalized = normalize_cost(cost)
+        
+        no_stations = parameterization['no_stations'][ipixel]
+        no_measurements = max(result['no_measurements'])
+        text = 'Stations: %s\n'%no_stations
+        text += 'Cross-spectra: %s'%no_measurements
+        
+        alphamin = alphamin if alphamin is not None else alpha.min()
+        alphamax = alphamax if alphamax is not None else alpha.max()
+        freqmin = freqmin if freqmin is not None else frequency.min()
+        freqmax = freqmax if freqmax is not None else frequency.max()
+        cmap = kwargs.pop('cmap', 'Greys_r')
+        if 'norm' not in kwargs:
+            min_lev, max_lev = np.min(cost_normalized), np.max(cost_normalized)
+            norm = plt.Normalize(vmin=min_lev, vmax=max_lev/30)
+            
+        bbox_props = dict(boxstyle='round', 
+                          fc='w', 
+                          ec='none', 
+                          lw=1.5, 
+                          pad=0.1, 
+                          alpha=0.85)
+        
+        fig, ax = plt.subplots()
+        img = ax.pcolormesh(frequency, 
+                       alpha, 
+                       cost_normalized, 
+                       norm=norm, 
+                       cmap=cmap,
+                       **kwargs)
+        ax.plot(frequency, best_alphas, 'ro', ms=2)
+        cb = fig.colorbar(img, ax=ax, pad=0.02)
+        cb.set_label(label='Normalized cost')
+        cb.ax.ticklabel_format(style='sci', scilimits=(0,0))
+        ax.set_yscale('log')
+        ax.set_xlabel('Frequency [Hz]')
+        ax.set_ylabel(r'$\alpha\ [m^{-1}]$')
+        ax.tick_params(axis='both', which='both', direction='in')
+        ax.set_ylim(alphamin, alphamax)
+        ax.set_xlim(frequency.min(), frequency.max())
+        ax.text(0.02, 0.97, s=text, va='top', ha='left', transform=ax.transAxes, 
+                bbox=bbox_props)
+        if not show:
+            return img, cb
+        plt.show()
+        
+    
+    
+    
+    
 
