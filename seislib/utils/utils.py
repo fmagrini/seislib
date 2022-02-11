@@ -16,8 +16,51 @@ from scipy.interpolate import CloughTocher2DInterpolator
 from scipy.integrate import quad
 from scipy.stats import pearsonr
 from obspy import Trace, Stream
+from obspy.geodetics import gps2dist_azimuth
 from obspy import UTCDateTime as UTC
 from seislib.exceptions import TimeSpanException
+
+
+def gc_distance(lat1, lon1, lat2, lon2):
+    """ 
+    Calculates the great circle distance (in m) between coordinate points 
+    (in degrees). This function calls directly the obspy gps2dist_azimuth,
+    it only extends its functionality through the numpy.vectorize decorator.
+    
+    Parameters
+    ----------
+    lat1, lon1, lat2, lon2 : float or array-like of shape (n,) (in degrees)
+    
+    
+    Returns
+    -------
+    Great-circle distance (in m). If the input is an array (or list) of
+    coordinates, an array of distances is returned
+    """
+    
+    func = np.vectorize(gps2dist_azimuth)
+    return func(lat1, lon1, lat2, lon2)[0]
+
+
+def azimuth_backazimuth(lat1, lon1, lat2, lon2):
+    """ 
+    Calculates the azimuth and backazimuth (in degrees) between coordinate 
+    points (in degrees). This function calls directly the obspy 
+    gps2dist_azimuth, it only extends its functionality through the 
+    numpy.vectorize decorator
+    
+    Parameters
+    ----------
+    lat1, lon1, lat2, lon2 : float or array-like of shape (n,) (in degrees)
+    
+    
+    Returns
+    -------
+    tuple of shape (2,) or ndarray of shape (n, 2) : [azimuth, backazimuth]
+    """
+    
+    func = np.vectorize(gps2dist_azimuth)
+    return func(lat1, lon1, lat2, lon2)[1:]
 
 
 def adapt_timespan(st1, st2):
