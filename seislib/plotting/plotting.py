@@ -18,7 +18,43 @@ import cartopy.feature as cfeature
 import seislib.colormaps as scm
 
 
+
+def add_inset_axis(axis, rect, polar=False):
+    """ Adds an axis inset
     
+    Parameters
+    ----------
+    axis : matplotlib AxesSubplot
+        Instance of matplotlib.pyplot.subplot
+        
+    rect : list or tuple of shape (4,)
+        [bottom, left, width, height] of the inset. Bottom and left coordinates
+        are expressed with respect to `axis`
+        
+    polar : bool
+        If True, a polar plot is created. Default is False
+        
+    
+    Returns
+    -------
+    Inset axis
+    """
+    
+    def axis_to_fig(axis):
+        fig = axis.figure
+        def transform(coord):
+            return fig.transFigure.inverted().transform(
+                axis.transAxes.transform(coord))
+        return transform
+    
+    fig = axis.figure
+    left, bottom, width, height = rect
+    trans = axis_to_fig(axis)
+    figleft, figbottom = trans((left, bottom))
+    figwidth, figheight = trans([width,height]) - trans([0,0])
+    return fig.add_axes([figleft, figbottom, figwidth, figheight], polar=polar)
+
+
 def lower_threshold_projection(projection, thresh=1e3, **kwargs):
     """ 
     An ugly but effective work around to get a higher-resolution curvature
