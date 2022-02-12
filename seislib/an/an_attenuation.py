@@ -30,7 +30,7 @@ from seislib.utils import load_pickle, save_pickle, remove_file, resample
 from seislib.utils import azimuth_backazimuth
 from seislib.plotting import add_earth_features
 from seislib.plotting import colormesh, contour, contourf
-from seislib.plotting import plot_stations, plot_map
+from seislib.plotting import plot_stations, plot_map, make_colorbar
 from seislib.an import velocity_filter
 
 
@@ -105,7 +105,7 @@ class AmbientNoiseAttenuation:
         Plots a polar histogram of the azimuthal coverage for one pixel
         
     plot_cost(ipixel, ax=None, alphamin=None, alphamax=None, freqmin=None, 
-              freqmax=None, show=True, **kwargs)
+              freqmax=None, show=True, curve_dict={}, **kwargs)
         Plots the values of cost obtained in the inversion of a given pixel
         
     
@@ -1689,7 +1689,8 @@ class AmbientNoiseAttenuation:
         
     
     def plot_cost(self, ipixel, ax=None, alphamin=None, alphamax=None, 
-                  freqmin=None, freqmax=None, show=True, **kwargs):
+                  freqmin=None, freqmax=None, show=True, curve_dict={},
+                  **kwargs):
         """ Plots the values of cost obtained in the inversion of a given pixel
         
         Parameters
@@ -1713,7 +1714,11 @@ class AmbientNoiseAttenuation:
             
         show : bool
             If False, `ax` is returned. Else, the figure is displayed.
-
+            
+        curve_dict : dict
+            Arguments passed to matplotlib.pyplot.plot, to control the aspect
+            of the attenuation curve
+        
         **kwargs :
             Additional arguments passed to matplotlib.pyplot.pcolormesh
 
@@ -1766,15 +1771,17 @@ class AmbientNoiseAttenuation:
                           pad=0.1, 
                           alpha=0.85)
         
-        fig, ax = plt.subplots()
+        if ax is None:
+            fig, ax = plt.subplots()
         img = ax.pcolormesh(frequency, 
                        alpha, 
                        cost_normalized, 
                        norm=norm, 
                        cmap=cmap,
                        **kwargs)
-        ax.plot(frequency, best_alphas, 'ro', ms=2)
-        cb = fig.colorbar(img, ax=ax, pad=0.02)
+        ax.plot(frequency, best_alphas, **curve_dict)
+        cb = make_colorbar(ax, img, orientation='vertical')
+        # cb = fig.colorbar(img, ax=ax, pad=0.02)
         cb.set_label(label='Normalized cost')
         cb.ax.ticklabel_format(style='sci', scilimits=(0,0))
         ax.set_yscale('log')
