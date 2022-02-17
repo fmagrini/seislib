@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="Python" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; seislib 0.3 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to SeisLib&#39;s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> seislib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">seislib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>To use seislib, make sure you have all the <strong>dependences</strong> installed, i.e., <strong>obspy</strong>,
+<strong>cartopy</strong>, and <strong>cython</strong>. Having installed these three packages, you should not
+need about other dependences such as <em>numpy</em>, <em>scipy</em>, and <em>matplotlib</em>.</p>
+<p>Using CONDA (recommended):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">~$ conda install -c conda-forge obspy</span>
+<span class="go">~$ conda install -c conda-forge cartopy</span>
+<span class="go">~$ conda install -c anaconda cython&gt;=0.29.2</span>
+</pre></div>
+</div>
+<p>Using PIP:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">~$ pip install obspy</span>
+<span class="go">~$ pip install cartopy</span>
+<span class="go">~$ pip install cython&gt;=0.29.2</span>
+</pre></div>
+</div>
+<p>Once the above dependences have been installed, you can proceed with the installation of
+<strong>seislib</strong>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">~$ pip install seislib</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you run into troubles with the above, you can try the following approach:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">~$ git clone https://github.com/fmagrini/seislib.git</span>
+<span class="go">~$ cd seislib/seislib/clib/</span>
+<span class="go">~$ python setup_all.py build_ext --inplace</span>
+</pre></div>
+</div>
+<p>Where the last command will compile the Cython files. If you work on an anaconda environment,
+you might need to replace &quot;python&quot; with, e.g., &quot;/home/your_name/anaconda3/bin/python&quot;.
+(You can retrieve the path to your python executable by typing &quot;import sys; print(sys.executable)&quot;
+in your Python GUI. Make sure to then add ~/seislib to your path, to being able to import
+its modules in your Python codes.)</p>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to SeisLib&#39;s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Fabrizio Magrini.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

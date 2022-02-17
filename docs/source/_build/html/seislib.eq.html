@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="Python" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download of Seismograms Recording Teleseismic Earthquakes &mdash; seislib 0.3 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> seislib
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">seislib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Download of Seismograms Recording Teleseismic Earthquakes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/seislib.eq.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="download-of-seismograms-recording-teleseismic-earthquakes">
+<h1>Download of Seismograms Recording Teleseismic Earthquakes<a class="headerlink" href="#download-of-seismograms-recording-teleseismic-earthquakes" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="seislib.eq.EQDownloader">
+<em class="property">class </em><code class="sig-prename descclassname">seislib.eq.</code><code class="sig-name descname">EQDownloader</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">savedir</span></em>, <em class="sig-param"><span class="n">inventory_name</span></em>, <em class="sig-param"><span class="n">inv_provider</span><span class="o">=</span><span class="default_value">'iris'</span></em>, <em class="sig-param"><span class="n">user</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">password</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ev_provider</span><span class="o">=</span><span class="default_value">'iris'</span></em>, <em class="sig-param"><span class="n">vmin</span><span class="o">=</span><span class="default_value">1.5</span></em>, <em class="sig-param"><span class="n">vmax</span><span class="o">=</span><span class="default_value">5.5</span></em>, <em class="sig-param"><span class="n">sampling_rate</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">units</span><span class="o">=</span><span class="default_value">'disp'</span></em>, <em class="sig-param"><span class="n">prefilter</span><span class="o">=</span><span class="default_value">0.001, 0.005, 0.05, 0.4</span></em>, <em class="sig-param"><span class="n">attach_response</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">stations_config</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">events_config</span><span class="o">=</span><span class="default_value">{}</span></em>, <em class="sig-param"><span class="n">sleep_time_after_exception</span><span class="o">=</span><span class="default_value">30</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seislib.eq.EQDownloader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downloads surface-wave data to be used via the two-station method</p>
+<p><strong>Attributes</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>savedir<span class="classifier">str</span></dt><dd><p>Absolute path of the directory that will be created</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>staclient<span class="classifier">obspy.clients.fdsn.Client</span></dt><dd><p>Provider of station metadata and waveforms</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>evclient<span class="classifier">obspy.clients.fdsn.Client</span></dt><dd><p>Provider of events metadata</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>channels<span class="classifier">list</span></dt><dd><p>List of candidate channels for the downloads</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>components<span class="classifier">int</span></dt><dd><p>Either 3 (ZNE) or 1 (Z)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>vmin, vmax<span class="classifier">float, int</span></dt><dd><p>Minimum and maximum expected velocity of the surface waves</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>sampling_rate<span class="classifier">int, float</span></dt><dd><p>Sampling rate of the final seismograms</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>prefilter<span class="classifier">tuple</span></dt><dd><p>Filter applied to the waveform before removal of the instrument response</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>units<span class="classifier">str</span></dt><dd><p>Physical units of the final seismogram</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attach_response<span class="classifier">bool</span></dt><dd><p>Whether or not the response information is attached to the waveforms
+during the download</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>verbose<span class="classifier">bool</span></dt><dd><p>Whether or not progress information are displayed in the console</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>sleep_time_after_exception<span class="classifier">int, float</span></dt><dd><p>The downloads are stopped for the specified time (in s) after a FDSN
+exception</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>distmin, distmax<span class="classifier">float</span></dt><dd><p>Minimum and maximum distance of a station from the epicenter (km)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>depthmax<span class="classifier">float</span></dt><dd><p>Maximum depth of the earthquakes (km)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>magmin, magmax<span class="classifier">float</span></dt><dd><p>Minimum and maximum magnitude</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>starttime, endtime<span class="classifier">obspy.core.utcdatetime.UTCDateTime</span></dt><dd><p>Starttime and entime of the events catalogue</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>stations_config, events_config<span class="classifier">dict</span></dt><dd><p>Dictionary object with information relevant to the download of the
+stations and events metadata</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>inventory<span class="classifier">obspy.core.inventory.inventory.Inventory</span></dt><dd><p>Stations metadata</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>_exceptions<span class="classifier">collections.defaultdict(int)</span></dt><dd><p>Dictionary object with information on the occurred exceptions</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>_downloaded<span class="classifier">int</span></dt><dd><p>Number of waveforms downloaded</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>_no_stations<span class="classifier">int</span></dt><dd><p>Number of stations to download</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>_events_done<span class="classifier">int</span></dt><dd><p>Number of events for which the downloads have been finished</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Methods</strong></p>
+<blockquote>
+<div><ul>
+<li><dl class="simple">
+<dt>handle_multiple_locations(st, station_info)</dt><dd><p>Location selection in case multiple ones are available</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>collect_waveforms(network, station, channels, starttime, endtime)</dt><dd><p>Downloads obspy stream</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>prepare_data(st)</dt><dd><p>Demean, detrend, tapering, removing response and resampling</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>adjust_channels(st)</dt><dd><p>If the stream contains the Z12 channels, these are rotated towards ZNE</p>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>compile_header_and_save(st, savedir, stla, stlo, stel, evla, evlo, evdp,</dt><dd><blockquote>
+<div><p>otime, mag, dist, az, baz)</p>
+</div></blockquote>
+<p>Compiles the header of the obspy stream (sac format) and writes to disk</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>select_components(st, baz)</dt><dd><p>Handles the absence of some components in the final stream</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>preprocessing(st, station)</dt><dd><p>Preprocessing of the obspy stream</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>build_inventory(<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs)</dt><dd><p>Builds an obspy inventory containing stations information</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>active_channels(station)</dt><dd><p>Channels available for the given station among those to download</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>fetch_catalog(t1, t2, <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs)</dt><dd><p>Fetches a catalog of seismic events</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>start()</dt><dd><p>Starts the downloads</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Class Methods</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt>station_coordinates(station_info)</dt><dd><p>Fetches station coordinates (lat, lon, elevation)</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>station_was_active(station, time)</dt><dd><p>Wheater or not the seismic station was active at the given time</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>inventory_iterator(inventory, reverse=False):</dt><dd><p>Generator function to iterate over an obspy inventory</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>event_coordinates_and_time(event)</dt><dd><p>Fetch event coordinates (lat, lon, depth) and origin time.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>get_event_info(event)</dt><dd><p>Fetch event information</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="py method">
+<dt id="seislib.eq.MassDownloader_EQ.EQDownloader.active_channels">
+<code class="sig-name descname">active_channels</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">station</span></em><span class="sig-paren">)</span><a class="headerlink" href="#seislib.eq.MassDownloader_EQ.EQDownloader.active_channels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Channels available for the given station among those to download</p>
+<p><strong>Parameters</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>station : obspy.core.inventory.station.Station</p></li>
+</ul>
+</div></blockquote>
+<p><strong>Returns</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>List of channels</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Fabrizio Magrini.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

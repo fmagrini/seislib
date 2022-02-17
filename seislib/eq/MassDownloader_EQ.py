@@ -387,7 +387,7 @@ class EQDownloader:
         
         Parameters
         ----------
-        kwargs :
+        **kwargs :
             Additional key word arguments passed to the get_stations method of 
             obspy.clients.fdsn.client
             
@@ -523,8 +523,9 @@ class EQDownloader:
         t1, t2 : obspy.core.utcdatetime.UTCDateTime
             Starttime and endtime of the catalog
             
-        kwargs : dict
-            Passed to obspy.clients.fdsn.client.Client.get_events
+        **kwargs :
+            Additional key-word arguments passed to 
+            obspy.clients.fdsn.client.Client.get_events
         
         
         Returns
@@ -959,7 +960,7 @@ class EQDownloader:
         """ Starts the downloads.
         
         The catalog of seismic events is iterated over and, for each event, all
-        the waveforms from the receivers associated with `station_config`
+        the waveforms from the receivers associated with `stations_config`
         will be downloaded, if available. The waveforms are detrended, demeaned, 
         removed of the instrument response, and resampled. Finally, they are
         saved in savedir/data/event, where 'event' is the origin time (in the

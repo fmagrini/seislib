@@ -31,18 +31,17 @@ Welcome to SeisLib's documentation!
    This project is under active development.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
 
 Contents
 ========
 
-.. toctree::	 
-   :titlesonly:
-    
+.. toctree::
+
    installation
-   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
+   
    
 Indices and tables
 ==================
