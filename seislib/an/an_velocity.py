@@ -498,8 +498,8 @@ class AmbientNoiseVelocity:
     
         def update_done(sta1, sta2):
             with open(save_done, 'a') as f:
-                f.write('%s_%s.npy\n'%(sta1, sta2))
-            done.add('%s_%s.npy'%(sta1, sta2))
+                f.write('%s__%s\n'%(sta1, sta2))
+            # done.add('%s__%s'%(sta1, sta2))
                 
         def station_pairs_generator(stations, reverse_iteration=False):
             sort = lambda iterable, reverse: sorted(iterable, reverse=reverse)
@@ -584,7 +584,7 @@ class AmbientNoiseVelocity:
         sta1_code = None
         done = load_done(save_done)
         for ndone, (sta1, sta2) in enumerate(station_pairs):
-            if '%s_%s.npy'%(sta1, sta2) in done:
+            if '%s__%s'%(sta1, sta2) in done:
                 continue
             if not ndone % 100:
                 done = load_done(save_done)
@@ -612,11 +612,11 @@ class AmbientNoiseVelocity:
             st2 = read_stream(folder=self.src, file=sac2, component=self.component)
             tr1 = get_trace(st1, azimuth=az, component=self.component)
             tr2 = get_trace(st2, azimuth=az, component=self.component)      
-            dispcurve_file = os.path.join(save_pv, '%s_%s.npy'%(tr1.id, tr2.id))
+            dispcurve_file = os.path.join(save_pv, '%s__%s.npy'%(tr1.id, tr2.id))
             if os.path.exists(dispcurve_file):
                 update_done(sta1, sta2)
                 continue
-            fig_file = os.path.join(save_fig, '%s_%s.png'%(tr1.id, tr2.id))
+            fig_file = os.path.join(save_fig, '%s__%s.png'%(tr1.id, tr2.id))
             
             try:
                 freq, xcorr = noisecorr(tr1, tr2, window_length=window_length, 
@@ -726,9 +726,9 @@ class AmbientNoiseVelocity:
             freq, vel = np.load(os.path.join(src, file)).T
             interp_vel = interp1d(freq, vel, bounds_error=False)(frequency)
             measurements[i] = interp_vel
-            pair = file.split('.npy')[0].split('_')
-            pair = ['.'.join(i.split('.')[:2]) for i in pair if '.' in i]
-            sta1, sta2 = [sta for sta in pair if sta in self.stations]
+            code1, code2 = file.split('.npy')[0].split('__')
+            sta1 = '.'.join(code1.split('.')[:2])
+            sta2 = '.'.join(code2.split('.')[:2])
             coords[i] = (*self.stations[sta1], *self.stations[sta2])
         return coords, measurements
     
