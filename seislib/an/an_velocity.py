@@ -572,7 +572,8 @@ class AmbientNoiseVelocity:
         save_fig = os.path.join(self.savedir, 'figures')
         os.makedirs(save_pv, exist_ok=True)
         os.makedirs(save_tmp, exist_ok=True)
-        os.makedirs(save_fig, exist_ok=True)
+        if plotting:
+            os.makedirs(save_fig, exist_ok=True)
         refcurve = self.convert_to_kms(refcurve)
         
         files_dict = {'.'.join(i.split('.')[:2]):i for i in self.files}
