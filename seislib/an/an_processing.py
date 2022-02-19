@@ -20,7 +20,7 @@ from seislib.exceptions import TimeSpanException, DispersionCurveException
 from seislib.exceptions import NonFiniteDataException
 
                 
-def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True, 
+def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True, psd=False,
               waterlevel=1e-10):
     """ Cross correlation of seismic ambient noise
     
@@ -48,6 +48,10 @@ def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True,
     whiten : bool
         Whether or not the individual cross correlations are normalized by
         whitening [e.g., Bensen et al. 2007]. Default is True
+        
+    psd : bool
+        Whether or not the individual cross correlations are normalized by
+        the average psd. Default is False. If `whiten` is True, psd is ignored
         
     waterlevel : float
         Only applied if `whiten` is True. It prevents ZeroDivisionError. Default
@@ -79,7 +83,6 @@ def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True,
     Seats et al. 2012, Improved ambient noise correlation functions using 
         Welch's method, GJI
     """
-    
     
     if ( np.isnan(tr1.data).any() or np.isnan(tr2.data).any() or
          np.isinf(tr1.data).any() or np.isinf(tr2.data).any() ):
@@ -113,15 +116,19 @@ def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True,
         d2 *= taper
         D1 = np.fft.rfft(d1)
         D2 = np.fft.rfft(d2)
-        
-        if whiten:
-            D1 /= np.abs(D1) + waterlevel
-            D2 /= np.abs(D2) + waterlevel
-            
         xcorr = np.conj(D1) * D2
         if np.all(xcorr == 0):
             continue
-        result += xcorr
+        if whiten:
+            norm = (np.abs(D1) + waterlevel) * (np.abs(D2) + waterlevel)
+        elif psd:
+            psd1 = np.real(D1)**2 + np.imag(D1)**2
+            psd2 = np.real(D2)**2 + np.imag(D2)**2
+            norm = (psd1 + psd2) / 2
+        else:
+            norm = 1
+
+        result += xcorr/norm
         counter += 1
     
     return freq, result/counter
