@@ -370,15 +370,18 @@ class AmbientNoiseAttenuation:
             the source directory
         """
 
-        savefile = os.path.join(self.savedir, 'stations.pickle')
+        savecoords = os.path.join(self.savedir, 'stations.pickle')
+        parameterization = os.path.join(self.savedir, 'parameterization.pickle')
         if recompute:
-            remove_file(savefile)
-        if not os.path.exists(savefile):
+            remove_file(savecoords)
+        if not os.path.exists(savecoords):
             coords = self.get_stations_coords(self.files)
-            save_pickle(savefile, coords)
+            save_pickle(savecoords, coords)
         else:
-            coords = load_pickle(savefile)
+            coords = load_pickle(savecoords)
         self.stations = coords
+        if os.path.exists(parameterization):
+            self.parameterization = load_pickle(parameterization)
             
     
     def parameterize(self, cell_size, overlap=0.5, min_no_stations=6,
@@ -532,13 +535,14 @@ class AmbientNoiseAttenuation:
         no_stations, codes = stations_per_pixel(grid, 
                                                 station_codes, 
                                                 station_coords)
-        data = {
+        parameterization = {
                 'grid': grid.mesh,
                 'no_stations': no_stations,
                 'station_codes': [sorted(c) for c in codes]
         }
         save_pickle(os.path.join(self.savedir, 'parameterization.pickle'),
-                    data)
+                    parameterization)
+        self.parameterization = parameterization
         
         if plotting:
             map_boundaries = get_map_boundaries(grid)
@@ -606,10 +610,14 @@ class AmbientNoiseAttenuation:
         np.save(os.path.join(save_ffts, 'frequencies.npy'), freq)
         
         times_per_station = defaultdict(list)
+        stations = set([code for codes in self.parameterization['station_codes'] \
+                    for code in codes])
         for file in self.files:
             if self.verbose:
                 print(file)
             station_code = '.'.join(file.split('.')[:2])
+            if station_code not in stations:
+                continue
             if os.path.exists(os.path.join(save_ffts, '%s.npy'%station_code)):
                 continue
             tr = read(os.path.join(self.src, file))[0]
@@ -830,7 +838,7 @@ class AmbientNoiseAttenuation:
                          save_memory):
 
             for sta1, sta2 in station_pairs:
-                save_file = os.path.join(pixel_dir, '%s_%s.npy'%(sta1, sta2))
+                save_file = os.path.join(pixel_dir, '%s__%s.npy'%(sta1, sta2))
                 if os.path.exists(save_file):
                     continue
                 if save_memory:
@@ -890,18 +898,17 @@ class AmbientNoiseAttenuation:
         np.save(os.path.join(save_corr, 'frequencies.npy'), freq)
         window_length = (freq.size-1) * 2 # seconds
         
-        pixels = load_pickle(os.path.join(self.savedir, 'parameterization.pickle'))
         times = load_pickle(os.path.join(src_ffts, 'times.pickle'))
         save_done = os.path.join(self.savedir, 'corr_spectra', 'DONE.txt')
         
         done = load_done(save_done)
         ffts = None
-        for ipixel in range(pixels['grid'].shape[0]):
+        for ipixel in range(self.parameterization['grid'].shape[0]):
             if ipixel in done:
                 continue
             if self.verbose:
                 print('PIXEL %s'%ipixel)
-            stations = pixels['station_codes'][ipixel]
+            stations = self.parameterization['station_codes'][ipixel]
             common_days = overlapping_times(recording_stations=stations, 
                                             times_per_station=times,
                                             window_length=window_length)
@@ -1013,7 +1020,7 @@ class AmbientNoiseAttenuation:
             omega_tmp = 2 * np.pi * freq_tmp
             tmp_data = {}
             for corr_file in os.listdir(corr_dir):
-                sta1, sta2 = corr_file.strip('.npy').split('_')
+                sta1, sta2 = corr_file.strip('.npy').split('__')
                 if verbose:
                     print('-', sta1, sta2)
                 dispcurve = load_dispcurve(sta1=sta1, 
@@ -1029,7 +1036,7 @@ class AmbientNoiseAttenuation:
                                    fill_value=np.nan)(freq_tmp)
                     egf = np.load(os.path.join(corr_dir, corr_file))
                     dist = get_distance(sta1, sta2, stations)
-                    tmp_data['%s_%s'%(sta1, sta2)] = {
+                    tmp_data['%s__%s'%(sta1, sta2)] = {
                             'r': dist,
                             'c_w': c_w,
                             'egf': egf,
@@ -1054,7 +1061,7 @@ class AmbientNoiseAttenuation:
             velocity_files_dict = {}
             for file in os.listdir(src_velocity):
                 if file.endswith('npy'):
-                    tr1, tr2 = file.split('_')
+                    tr1, tr2 = file.split('__')
                     sta1 = '.'.join(tr1.split('.')[:2])
                     sta2 = '.'.join(tr2.split('.')[:2])
                     velocity_files_dict[(sta1, sta2)] = file
@@ -1073,9 +1080,10 @@ class AmbientNoiseAttenuation:
                                  extrapolate=False)   
             envelope = spline(freq)
             if smoothed:
-                envelope = savgol_filter(envelope, 
-                                         smoothing_window, 
-                                         smoothing_poly)    
+                notnan = np.flatnonzero(~np.isnan(envelope))
+                envelope[notnan] = savgol_filter(envelope[notnan], 
+                                                 smoothing_window, 
+                                                 smoothing_poly)    
             if np.any(envelope < 0):
                 envelope = np.where(envelope>0, envelope, np.nan)
             return envelope
@@ -1092,16 +1100,17 @@ class AmbientNoiseAttenuation:
                                                p=0.1, 
                                                cmin=1.5, 
                                                cmax=5)
+                envelope_egf = get_envelope(x=freq_corr,
+                                            y=smoothed_egf.real,
+                                            freq=freq,
+                                            **kwargs)
+                envelope_j0 = get_envelope(x=tmp_dict['freq'], 
+                                           y=tmp_dict['j0'],
+                                           freq=freq,
+                                           **kwargs)
             except ValueError:
                 return
-            envelope_egf = get_envelope(x=freq_corr,
-                                        y=smoothed_egf.real,
-                                        freq=freq,
-                                        **kwargs)
-            envelope_j0 = get_envelope(x=tmp_dict['freq'], 
-                                       y=tmp_dict['j0'],
-                                       freq=freq,
-                                       **kwargs)
+            
             smoothed_egf = np.interp(freq, freq_corr, smoothed_egf, 
                                      left=np.nan, right=np.nan)
             bessel = np.interp(freq, tmp_dict['freq'], tmp_dict['j0'], 
@@ -1248,7 +1257,6 @@ class AmbientNoiseAttenuation:
             results['no_measurements'] = no_measurements
             return results
         
-        
         src_dataset = os.path.join(self.savedir, 'inversion_dataset')
         save = os.path.join(self.savedir, 'results')
         os.makedirs(save, exist_ok=True)
@@ -1341,8 +1349,7 @@ class AmbientNoiseAttenuation:
 
         src_results = os.path.join(self.savedir, 'results')        
         freq = np.load(os.path.join(src_results, 'frequencies.npy'))
-        mesh = load_pickle(os.path.join(self.savedir, 
-                                        'parameterization.pickle'))['grid']
+        mesh = self.parameterization['grid']
         results = load_pickle(os.path.join(src_results, 'best_alphas.pickle'))
         alphas, no_measurements = interpolate_results(freq=freq,
                                                       results=results, 
@@ -1658,7 +1665,7 @@ class AmbientNoiseAttenuation:
         data = load_pickle(os.path.join(self.savedir, 
                                         'inversion_dataset',
                                         'pixel%s.pickle'%ipixel))
-        pairs = [i.split('_') for i in data]
+        pairs = [i.split('__') for i in data]
         coords = np.array([[*self.stations[pair[0]], *self.stations[pair[1]]] \
                            for pair in pairs])
         azimuths = np.array([*azimuth_backazimuth(*coords.T)]).ravel()
@@ -1740,8 +1747,6 @@ class AmbientNoiseAttenuation:
             return matrix.T
         
         src = os.path.join(self.savedir, 'results')
-        parameterization = load_pickle(os.path.join(self.savedir, 
-                                                    'parameterization.pickle'))
         result = load_pickle(os.path.join(src, 'pixel%s.pickle'%ipixel))
         alphas_dict = load_pickle(os.path.join(src, 'best_alphas.pickle'))
         frequency = np.load(os.path.join(src, 'frequencies.npy'))
@@ -1750,7 +1755,7 @@ class AmbientNoiseAttenuation:
         cost = result['cost']
         cost_normalized = normalize_cost(cost)
         
-        no_stations = parameterization['no_stations'][ipixel]
+        no_stations = self.parameterization['no_stations'][ipixel]
         no_measurements = max(result['no_measurements'])
         text = 'Stations: %s\n'%no_stations
         text += 'Cross-spectra: %s'%no_measurements
