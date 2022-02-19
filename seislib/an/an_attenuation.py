@@ -1766,7 +1766,8 @@ class AmbientNoiseAttenuation:
         freqmax = freqmax if freqmax is not None else frequency.max()
         cmap = kwargs.pop('cmap', 'Greys_r')
         if 'norm' not in kwargs:
-            min_lev, max_lev = np.min(cost_normalized), np.max(cost_normalized)
+            min_lev = np.nanmin(cost_normalized)
+            max_lev = np.nanmax(cost_normalized)
             norm = plt.Normalize(vmin=min_lev, vmax=max_lev/30)
             
         bbox_props = dict(boxstyle='round', 
