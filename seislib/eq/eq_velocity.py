@@ -771,8 +771,8 @@ class EQVelocity:
     
         def update_done(sta1, sta2):
             with open(save_done, 'a') as f:
-                f.write('%s_%s\n'%(sta1, sta2))
-            done.add('%s_%s'%(sta1, sta2))
+                f.write('%s__%s\n'%(sta1, sta2))
+            # done.add('%s_%s'%(sta1, sta2))
             
         def dist_az_backaz(stations, sta1, sta2):
             stla1, stlo1 = stations[sta1]
@@ -804,16 +804,17 @@ class EQVelocity:
                                ttol=0.3,
                                min_no_wavelengths=min_no_wavelengths, 
                                approach=approach)
+        done = load_done(save_done)
         for ndone, ((sta1, sta2), events) in enumerate(self.triplets.items()):
+            if '%s__%s'%(sta1, sta2) in done:
+                continue
             if not ndone % 100:
                 done = load_done(save_done)
                 if self.verbose:
                     print(percentage_done(len(self.triplets), len(done)))
-            if '%s_%s'%(sta1, sta2) in done:
-                continue
             if self.verbose:
                 print(sta1, '-', sta2, ':', len(events), 'EVENTS')
-            savedir = os.path.join(save_dispersion, '%s_%s'%(sta1, sta2))
+            savedir = os.path.join(save_dispersion, '%s__%s'%(sta1, sta2))
             os.makedirs(savedir, exist_ok=True)
             for otime in events:
                 st1 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta1, self.component)))
@@ -824,11 +825,11 @@ class EQVelocity:
                 except:
                     continue
                 if dispersion.size:
-                    file = os.path.join(savedir, '%s_%s_%s.npy'%(sta1, sta2, otime))
+                    file = os.path.join(savedir, '%s__%s__%s.npy'%(sta1, sta2, otime))
                     np.save(file, dispersion)
             if len(os.listdir(savedir)) >= self.min_no_events:
                 dist = dist_az_backaz(self.stations, sta1, sta2)[0]
-                outimg = os.path.join(save_fig, '%s_%s.png'%(sta1, sta2))
+                outimg = os.path.join(save_fig, '%s__%s.png'%(sta1, sta2))
                 try:
                     dispcurve = tsm.extract_dispcurve(refcurve,
                                                       src=savedir,
@@ -846,7 +847,7 @@ class EQVelocity:
                     continue
                     
                 dispcurve[:,1] *= 1000
-                np.save(os.path.join(save_pv, '%s_%s.npy'%(sta1, sta2)),
+                np.save(os.path.join(save_pv, '%s__%s.npy'%(sta1, sta2)),
                         dispcurve)
                 
             update_done(sta1, sta2)
@@ -925,9 +926,9 @@ class EQVelocity:
             periods, vel = np.load(os.path.join(src, file)).T
             interp_vel = interp1d(periods, vel, bounds_error=False)(period)
             measurements[i] = interp_vel
-            pair = file.split('.npy')[0].split('_')
-            pair = ['.'.join(i.split('.')[:2]) for i in pair if '.' in i]
-            sta1, sta2 = [sta for sta in pair if sta in self.stations]
+            code1, code2 = file.split('.npy')[0].split('__')
+            sta1 = '.'.join(code1.split('.')[:2])
+            sta2 = '.'.join(code2.split('.')[:2])
             coords[i] = (*self.stations[sta1], *self.stations[sta2])
         return coords, measurements
     
