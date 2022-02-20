@@ -258,10 +258,23 @@ def colormesh(mesh, c, ax, **kwargs):
                             transform=ccrs.PlateCarree(), **kwargs)
         return img
     
-    if kwargs.get('vmin', None) is None:
-        kwargs['vmin'] = np.nanmin(c)
-    if kwargs.get('vmax', None) is None:
-        kwargs['vmax'] = np.nanmax(c)
+    def update_kwargs(c, **kwargs):
+        updated = {i: j for i, j in kwargs.items()}
+        norm = updated.get('norm')
+        if norm is None:
+            if updated.get('vmin') is None:
+                updated['vmin'] = np.nanmin(c)
+            if updated.get('vmax') is None:
+                updated['vmax'] = np.nanmax(c)
+        else:
+            if norm.vmin is None:
+                norm.vmin = updated.pop('vmin', np.nanmin(c))
+            if norm.vmax is None:
+                norm.vmax = updated.pop('vmax', np.nanmax(c))
+        return updated
+
+    kwargs = update_kwargs(c, **kwargs)
+    
     lat1, lat2 = mesh[0, :2]
     lons = [mesh[0, 2]]
     v = []
@@ -308,6 +321,29 @@ def contourf(mesh, c, ax, smoothing=None, **kwargs):
         img : Instance of matplotlib.contour.QuadContourSet
     """
     
+
+
+    def update_kwargs(c, **kwargs):
+        if kwargs.get('norm') is None:
+            return kwargs
+        
+        updated = {i: j for i, j in kwargs.items()}
+        norm = updated.get('norm')       
+        if norm.vmin is None:
+            norm.vmin = updated.pop('vmin', np.nanmin(c))
+        if norm.vmax is None:
+            norm.vmax = updated.pop('vmax', np.nanmax(c))
+            
+        if type(norm) == type(LogNorm()):
+            levels = updated.get('levels', 50)
+            lev_exp = np.linspace(np.log10(norm.vmin), 
+                                  np.log10(norm.vmax), 
+                                  levels)
+            updated['levels'] = np.power(10, lev_exp)
+            
+        return updated
+
+    kwargs = update_kwargs(c, **kwargs)
     if smoothing is not None:
         c = gaussian_filter(c, sigma=smoothing)
     lats = np.mean(mesh[:, :2], axis=1)
@@ -345,6 +381,27 @@ def contour(mesh, c, ax, smoothing=None, **kwargs):
         img : Instance of matplotlib.contour.QuadContourSet
     """
     
+    def update_kwargs(c, **kwargs):
+        if kwargs.get('norm') is None:
+            return kwargs
+        
+        updated = {i: j for i, j in kwargs.items()}
+        norm = updated.get('norm')       
+        if norm.vmin is None:
+            norm.vmin = updated.pop('vmin', np.nanmin(c))
+        if norm.vmax is None:
+            norm.vmax = updated.pop('vmax', np.nanmax(c))
+            
+        if type(norm) == type(LogNorm()):
+            levels = updated.get('levels', 50)
+            lev_exp = np.linspace(np.log10(norm.vmin), 
+                                  np.log10(norm.vmax), 
+                                  levels)
+            updated['levels'] = np.power(10, lev_exp)
+            
+        return updated
+
+    kwargs = update_kwargs(c, **kwargs)
     if smoothing is not None:
         c = gaussian_filter(c, sigma=smoothing)
     lats = np.mean(mesh[:, :2], axis=1)
@@ -994,29 +1051,13 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         latmax = latmax+dlat if latmax+dlat < 90 else latmax
         
         return (lonmin, lonmax, latmin, latmax)
-        
-    def update_kwargs(kwargs):
-        updated = {i: j for i, j in kwargs.items()}
-        updated['vmin'] = kwargs.get('vmin', np.nanmin(c))
-        updated['vmax'] = kwargs.get('vmax', np.nanmax(c))
-        if style != 'contour':
-            updated['cmap'] = kwargs.get('cmap', scm.roma)
-        norm = kwargs.get('norm', None)
-        if norm is not None and type(norm)==type(LogNorm()):
-            if style in ['contourf', 'contour']:
-                cmin, cmax = updated['vmin'], updated['vmax']
-                levels = kwargs.get('levels', 50)
-                lev_exp = np.linspace(np.log10(cmin), 
-                                      np.log10(cmax), 
-                                      levels)
-                updated['levels'] = np.power(10, lev_exp)
-        return updated
     
     def set_colorbar_aspect(cb, kwargs):
         norm = kwargs.get('norm', None)
         if norm is not None and type(norm)==type(LogNorm()):
             if style in ['contour', 'contourf']:
-                cmin, cmax = kwargs['vmin'], kwargs['vmax']
+                # cmin, cmax = kwargs['vmin'], kwargs['vmax']
+                cmin, cmax = norm.vmin, norm.vmax
                 ticks = np.power(10, np.arange(np.floor(np.log10(cmin)), 
                                                np.ceil(np.log10(cmax))))
                 cb.set_ticks(ticks)
@@ -1042,7 +1083,6 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
     if style not in styles:
         raise Exception('`style` not available. Please choose among %s'%styles)
     plotting_func = eval(style)
-    kwargs = update_kwargs(kwargs)
     
     notnan = np.flatnonzero(~np.isnan(c))
     img = plotting_func(mesh=mesh[notnan], c=c[notnan], ax=ax, **kwargs)
