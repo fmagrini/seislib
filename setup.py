@@ -7,7 +7,6 @@ import sys
 import os
 from setuptools import find_packages
 
-VERSION = "0.4.4"
 
 
 def readme():
@@ -88,12 +87,16 @@ def get_maps():
     maps_dirs = [i for i in os.listdir(src) if os.path.isdir(os.path.join(src, i))]
     return ['colormaps/%s/*'%m for m in maps_dirs]
     
-    
+
+here = os.path.abspath(os.path.dirname(__file__))
+about = {}
+with open(os.path.join(here, 'seislib', "__version__.py")) as f:
+    exec(f.read(), about)
 
 
 pkg_metadata = dict(
         name="seislib",
-        version=VERSION,
+        version=about["__version__"],
         description="Multi-scale Seismic Imaging",
         long_description=readme(),
         long_description_content_type="text/markdown",

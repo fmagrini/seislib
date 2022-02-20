@@ -9,10 +9,11 @@ seispy
 =============================================================================
 """
 
+
 from __future__ import print_function
 import sys
 import os
-#sys.path.insert(1, os.path.dirname(__file__))
+from .__version__ import __version__
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), 'clib'))
 from .tomography.grid import EqualAreaGrid
 from . import an
