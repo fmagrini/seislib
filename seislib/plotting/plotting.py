@@ -1057,10 +1057,8 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         if norm is not None and type(norm)==type(LogNorm()):
             if style in ['contour', 'contourf']:
                 cmin, cmax = cb.vmin, cb.vmax
-                print(cmin, cmax)
                 ticks = np.power(10, np.arange(np.floor(np.log10(cmin)), 
                                                np.ceil(np.log10(cmax)+1)))
-                print(ticks)
                 cb.set_ticks(ticks)
                 minorticks = np.hstack([np.arange(2*i, 10*i, 1*i) for i in ticks])
                 minorticks = [i for i in minorticks if cmin<i<cmax]
