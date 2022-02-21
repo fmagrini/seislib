@@ -131,7 +131,7 @@ class EQVelocity:
                         distmax=2500, 
                         min_no_events=8)
         
-    If we print(an), we will obtain something like the following (where X and Y
+    If we print(eq), we will obtain something like the following (where X and Y
     are integers and depend on your data):
         
         >>> RAYLEIGH-WAVE VELOCITY FROM TELESEISMIC EARTHQUAKES (TWO-STATION METHOD)
@@ -951,13 +951,13 @@ class EQVelocity:
             
         oceans_color, lands_color : str
             Color of oceans and lands. The arguments are ignored if ax is not
-            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            None. Otherwise, they are passed to cartopy.feature.NaturalEarthFeature 
             (to the argument 'facecolor'). Defaults are 'water' and 'land'
             
         edgecolor : str
             Color of the boundaries between, e.g., lakes and land. The argument 
             is ignored if ax is not None. Otherwise, it is passed to 
-            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+            cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). Default
             is 'k' (black)
             
         projection : str
@@ -978,7 +978,7 @@ class EQVelocity:
         legend_dict : dict, optional
             Dictionary of keyword arguments passed to matplotlib.pyplot.legend
         
-        kwargs : 
+        **kwargs : 
             Additional keyword arguments passed to matplotlib.pyplot.scatter 
             
             
@@ -1024,13 +1024,13 @@ class EQVelocity:
             
         oceans_color, lands_color : str
             Color of oceans and lands. The arguments are ignored if ax is not
-            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            None. Otherwise, they are passed to cartopy.feature.NaturalEarthFeature 
             (to the argument 'facecolor'). Defaults are 'water' and 'land'
             
         edgecolor : str
             Color of the boundaries between, e.g., lakes and land. The argument 
             is ignored if ax is not None. Otherwise, it is passed to 
-            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
+            cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). Default
             is 'k' (black)
             
         projection : str
@@ -1056,7 +1056,7 @@ class EQVelocity:
         legend_dict : dict
             Keyword arguments passed to matplotlib.pyplot.legend
             
-        kwargs : 
+        **kwargs : 
             Additional keyword arguments passed to matplotlib.pyplot.scatter
             
             

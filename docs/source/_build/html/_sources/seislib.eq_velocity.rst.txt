@@ -1,0 +1,403 @@
+
+
+Automated Calculation of Earthquake-Based Phase Velocities: ``EQVelocity``
+==========================================================================
+Class to calculate inter-station phase velocities based on pairs of receivers aligned on
+the same great-circle path as the epicenter of teleseismic earthquakes.
+
+
+Examples
+--------
+
+The following will calculate, in a automated fashion, inter-station dispersion curves from 
+teleseismic earthquakes recorded at several stations. The seismograms used in the analysis 
+are stored in the directory src="/path/to/data", have been downloaded through 
+:doc:`seislib.eq.EQDownloader <seislib.eq_downloader>`, and consist of earthquake-recordings 
+of vertically-polarized Rayleigh waves (Z component). We first define the `EQVelocity` instance 
+and prepare the data for the subsequent analysis::
+    eq = EQVelocity(src, component='Z')
+    eq.prepare_data(azimuth_tolerance=7, 
+                    distmin=None, 
+                    distmax=2500, 
+                    min_no_events=8)
+    print(eq)
+
+    >>> RAYLEIGH-WAVE VELOCITY FROM TELESEISMIC EARTHQUAKES (TWO-STATION METHOD)
+        =========================================================================
+        EVENTS: X
+        RECEIVERS: N.A.
+        TRIPLETS (EPICENTER-RECEIVERS) AVAILABLE: Y
+        DISPERSION CURVES RETRIEVED: 0
+        =========================================================================
+        SOURCE DIR: /path/to/data
+        SAVE DIR: /path/to/eq_velocity/Z
+..
+
+The above will find, among our seismograms, station pairs approximately lying (azimuthal tolerance of 
+:math:`\pm7^{\circ}`) on the same great-circle path as the epicenters. We set a maximum inter-station 
+distance of 2500 km, and all pairs of receivers for which less than 8 events are available for 
+measuring the dispersion curves are discarded. Printing `eq` will give information on the data available.
+(In the above output, X and Y are integers depending on your data.) 
+
+        
+.. note::
+    The method `prepare_data` will extract the geographic coordinates of each seismic 
+    receivers from the header of the corresponding sac files, those of the seismic events, 
+    and store the information on the triplets of epicenters-receivers that will be used to 
+    obtain the dispersion curves.
+
+    The geographic coordinates of the seismic receivers are saved at 
+    $eq.savedir/stations.pickle, and are stored in a dictionary object 
+    where each key corresponds to a station code ($network_code.$station_code) 
+    and each value is a tuple containing latitude and longitude of the station.
+    For example::
+        { 
+        net1.sta1 : (lat1, lon1),
+        net1.sta2 : (lat2, lon2),
+        net2.sta3 : (lat3, lon3)
+            }
+    ..
+    
+    The geographic coordinates of the events are saved at 
+    $eq.savedir/events.pickle, and have a similar structure to the above:
+    each key corresponds to an event origin time (in the
+    obspy.UTCDateTime.timestamp format), and each value is (lat, lon, mag) of
+    the earthquake, where mag is magnitude.
+
+    The triplets of epicenter-receivers are saved at $eq.savedir/triplets.pickle, 
+    and are stored in a dictionary object where each key is a tuple corresponding 
+    to a station pair and each value is a list of events that are aligned on the 
+    same great circle path as the receivers (within the limits defined by the 
+    input params of `prepare_data`). For example::
+        
+        { 
+        (net1.sta1, net2.sta2) : ['1222701570.84',
+                                  '1237378863.3', 
+                                  '1237486660.74',
+                                  '1238981562.62',
+                                  '1239825695.33',
+                                  etc.],
+            
+        (net3.sta3, net4.sta4) : ['1222701570.84',
+                                  '1237378863.3',
+                                  '1237486660.74',
+                                  '1238981562.62',
+                                  '1239825695.33',
+                                  etc.]
+            }
+    ..
+        
+    Note that each event origin time corresponds to a sub-directory of
+    the source data (`src`). Also note that, since `min_no_events`=8 in 
+    `prepare_data`, the length of the lists of events associated with each 
+    receiver pair will be at least 8.
+..    
+        
+After the data have been "prepared", the receivers and events available can 
+be displayed by typing::
+
+    eq.plot_stations()
+..
+    
+and::
+
+    eq.plot_events()
+..
+
+Now we can calculate the dispersion curves automatically, provided that we
+pass a reference curve (i.e., ndarray of shape (n, 2), where the 1st column 
+is period, the 2nd is phase velocity). For example::
+    
+    eq.extract_dispcurves(refcurve, 
+                          periodmin=15,
+                          periodmax=150,
+                          no_periods=75,
+                          cmin=2.5,
+                          cmax=5,
+                          plotting=True)
+..
+    
+The above will calculate the dispersion curves for all combinations of
+station pairs available in the `eq.triplets` object. The dispersion 
+curves will be computed in the period range 15-150 s (linearly sub-divided 
+in 75 intervals). The results (npy arrays of shape (m, 2), where the 
+1st column is period and the 2nd is phase velocity) will be saved to 
+$eq.savedir/dispcurves. For each dispersion curve retrieved, a figure 
+will be displayed and saved to $eq.savedir/figures (since plotting=True).
+
+
+.. py:class:: EQVelocity(src, savedir=None, component='Z', verbose=True)
+   :module: seislib.eq
+
+Parameters
+----------
+
+	**src** (``str``): Absolute path to the directory containing the files associated with the earthquake-based recordings. The directory should contain, for each event, a sub-directory named after the origin time of the earthquake in timestamp format (see obspy.UTCDateTime.timestamp). Inside each sub-directory, the seismograms associated with the respective event recorded at all the available receivers should be stored into sacfiles. These should be named after the trace id, i.e., net.sta.loc.cha.sac (see obspy.Trace.id). Furthermore, inside each event directory there should be either an xml containing the event coordinates (latitude, longitude), or these coordinates should be stored in the sac header of the related seismograms. To download the data in the proper format, we suggest the use of :doc:`seislib.eq.EQDownloader <seislib.eq_downloader>`.
+
+	**savedir** (``str``, optional): Absolute path to the directory where the results are saved. If not provided, its value will be set to $src/.. All the results will be saved in the directory $savedir/eq_velocity/$component (see the `component` parameter)
+
+	**component** (``str``): Either 'Z', 'R', (corresponding to vertically and radially polarized Rayleigh waves, respectively), or 'T' (for Love waves)
+
+	**verbose** (``bool``): Whether or not information on progress is printed in the console
+
+
+
+Attributes
+----------
+
+	**src** (``str``): Absolute path to the directory containing the files associated with the earthquake-based recordings
+
+	**savedir** (``str``): Absolute path to the directory where the results are saved
+
+	**component** (``str``): Either 'Z', 'R', or 'T'
+
+	**events** (``list``): List of available events to calculate the dispersion curves
+
+	**verbose** (``bool``): Whether or not information on progress is printed in the console
+
+	**stations** (``dict``): Coordinates of the station pairs that can be employed to retrieve dispersion curves (can be accessed after calling the method `prepare_data`)
+
+	**triplets** (``dict``): Triplets of epicenters-receivers that can be employed to retrieve dispersion curves (can be accessed after calling the method `prepare_data`)
+
+
+Methods
+-------
+
+.. py:method:: get_coords_and_triplets(events, azimuth_tolerance=5, distmin=None, distmax=None)
+Retrieves stations and events information, and the triplets of epicenter-receivers to be used to calculate the phase velocities
+
+**Parameters**
+
+	**events** (``list``): List of events (i.e., sub-directories in the data folder `src`)
+
+	**azimuth_tolerance** (``float`` | ``int``): Maximum allowed deviation from the great circle path in degrees
+
+	**distmin**, **distmax** (``float`` | ``int``, optional): Minimum and maximum allowed inter-station distance (in km). Default is None
+
+
+**Returns**
+
+    **stations** (``dict``): each key corresponds to a station code ($network_code.$station_code) 
+    and each value is a tuple containing latitude and longitude of the 
+    station. For example::
+        { net1.sta1 : (lat1, lon1), net2.sta2 : (lat2, lon2)}
+    ..
+
+    **events_info** (``dict``): each key corresponds to an event origin time and each value is a 
+    tuple containing latitude, longitude, and magnitude of the event::
+                    
+        { '1222701570.84' : (lat1, lon1, mag1), '1237486660.74' : (lat2, lon2, mag2)}
+    ..
+
+    **triplets** (``dict``): each key is a tuple corresponding to a station pair and each value 
+    is a list of events that are aligned on the same great circle path as the receivers 
+    (within the limits defined by the input params). For example::
+                
+        { (net1.sta1, net2.sta2) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    etc.],
+            
+          (net3.sta3, net4.sta4) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    etc.]
+        }
+    ..
+
+    Note that each event in the list corresponds to a sub-directory of
+    the source data `src`.
+            
+.. py:method:: prepare_data(azimuth_tolerance=5, distmin=None, distmax=None, min_no_events=5, recompute=False, delete_unused_files=False)
+Saves to disk the geographic coordinates of the seismic receivers and of
+the seismic events, along with the triplets of epicenters-receivers to 
+be used for retrieving the dispersion curves.
+
+**Parameters**
+
+    **azimuth_tolerance** (``float`` | ``int``): Maximum allowed deviation from the great circle path in degrees. All triplets of epicenter-receivers for which the receivers are not aligned within the tolerance indicated are rejected. Larger values will identify more triplets to be used in the following analysis. But if this value is too large, the assumptions behind the two- station method [e.g., Magrini et al. 2020] may not be met. Suggested values are between 3 and 8. Default is 5.
+
+    **distmin**, **distmax** (``float`` | ``int``, optional): Minimum and maximum allowed inter-station distance (in km). Default is None
+
+    **min_no_events** (``int``): Minimum number of events available for a given station pair to be considered in the calculation of the phase velocities.
+
+    **recompute** (``bool``): If True, the station coordinates and triplets will be removed from disk and recalculated. Otherwise (default), if they are present, they will be loaded into memory, avoiding any computation. This parameter should be set to True whenever one wants to change the other parameters of this function, which control the selection of the epicenter-receivers triplets
+
+    **delete_unused_files** (``bool``): If True, every waveform-file that is not contained in the triplets object (i.e., those that are not used to extract dispersion curves in the subsequent analysis) will be permanently deleted from the system.
+
+
+**Returns**
+
+    ``None``. The geographic coordinates of the seismic receivers are saved at $self.savedir/stations.pickle, 
+    and are stored in a dictionary object where each key corresponds to a station code ($network_code.$station_code) 
+    and each value is a tuple containing latitude and longitude of the station. For example::
+        { net1.sta1 : (lat1, lon1), net2.sta2 : (lat2, lon2)}
+    ..
+
+    The geographic coordinates of the events are saved at $self.savedir/events.pickle, and have a similar structure 
+    to the above: each key corresponds to an event origin time (in obspy.UTCDateTime.timestamp format), and each 
+    value is (lat, lon, mag) of the epicenter, where mag is the magnitude of the event.
+
+    The triplets of epicenter-receivers are saved at $self.savedir/triplets.pickle, and are stored in a dictionary 
+    object where each key is a tuple corresponding to a station pair and each value is a list of events that 
+    are aligned on the same great circle path as the receivers (within the limits defined by the input params). 
+    For example::
+                
+        { (net1.sta1, net2.sta2) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    etc.],
+            
+          (net3.sta3, net4.sta4) : ['1222701570.84',
+                                    '1237378863.3', 
+                                    etc.]
+        }
+    ..
+
+    Note that each event in the list corresponds to a sub-directory of the source data `src`.
+
+.. py:method:: get_events_used(self)
+Retrieves the events id for which triplets of epicenter-receivers are
+available to extract dispersion measurements
+
+**Returns**
+
+    **events_used** (``dict``):
+    Dictionary object where each key corresponds to an event (origin
+    time in obspy.UTCDateTime.timestamp format, i.e., the name of the
+    respective directory in self.src), and the associated values 
+    include all the station codes that exploit that event to extract
+    a dispersion measurement
+
+.. py:method:: delete_unused_files(self)
+Deletes every file in the data directory which is not useful for 
+extracting dispersion curves (i.e., those waveform-files that are not 
+included in triplets dict).
+
+.. warning::
+    Use it with caution. It will not be possible to restore the 
+    deleted files.
+..
+
+
+.. py:method:: extract_dispcurves(refcurve, periodmin=15, periodmax=150, no_periods=75, cmin=2.5, cmax=5, min_no_wavelengths=1.5, approach='freq', prob_min=0.25, prior_sigma_10s=0.7, prior_sigma_200s=0.3, plotting=False)
+Automatic extraction of the dispersion curves for all available pairs
+of receivers.
+
+The results are saved to $self.savedir/dispcurves in .npy format,
+and consist of ndarrays of shape (n, 2), where the 1st column is period 
+and the 2nd phase velocity (in m/s).
+
+The routine iterates over all the available pair of receivers for which
+there are epicenters aligned on the same great circle path as the
+receivers (see the EQVelocity.prepare_data method); for each such pair
+of stations, (i) it first extracts dispersion measurements from all the
+event available, and then (ii) merges the dispersion measurements to
+obtain a "probability" density distribution of the thus retrieved
+dispersion measurements, which is function of period and phase velocity.
+(iii) Finally, the dispersion curve is extracted from the regions of
+greater "probability". All this is done under the hood calling the 
+methods measure_dispersion and extract_dispcurve of the class
+:doc:`seislib.eq.TwoStationMethod <seislib.eq_tsm>`
+
+**Parameters**
+
+	**refcurve** (``(n, 2) ndarray``): Reference curve used to extract the dispersion curves. The first column should be period, the second column velocity (in either km/s or m/s). The reference curve is automatically converted to km/s, the physical unit employed in the subsequent analysis.
+
+	**periodmin**, **periodmax** (``float``): Minimum and maximum period analysed by the algorithm (default are 15 and 150 s). The resulting dispersion curves will be limited to this period range
+
+	**no_periods** (``int``): Number of periods between periodmin and periodmax (included) used in the subsequent analysis. The resulting periods will be equally spaced (linearly) from each other. Default is 75
+
+	**cmin**, **cmax** (``float``): Estimated velocity range (in km/s) spanned by the dispersion curves (default values are 2.5 and 5). The resulting dispersion curves will be limited to this velocity range
+
+	**min_no_wavelengths** (``float``): Ratio between the estimated wavelength of the surface-wave at a given period (lambda = period * c_ref) and interstation distance. If lambda/dist > min_no_wavelength, the period in question is not used to retrieve a dispersion measurement. Values < 1 are suggested against. Default is 1.5
+
+	**approach** (``str``): Passed to TwoStationMethod.measure_dispersion. It indicates if the dispersion measurements are extracted in the frequency domain ('freq') or in the time domain ('time'). Default is 'freq'
+
+	**prob_min** (``float``): Passed to TwoStationMethod.extract_dispcurve. Minimum acceptable "probability" in the density of dispersion measurements, at a given period, below which the dispersion curve is not picked. Larger values are more restrictive. Good values are between ~0.2 and ~0.35. Default is 0.25
+
+	**prior_sigma_10s**, **prior_sigma_200s** (``float``): Standard deviations of the Gaussians built around the reference model (refcurve) at the periods of 10 and 200 s to calculate the prior probability density distribution of the dispersion measurements. At each analysed period, the standard deviation is interpolated (and eventually linearly extrapolated) based on these two values. Smaller values give more "weight" to the reference curve in the picking of the phase velocities. Defaults are 0.7 and 0.3
+
+	**plotting** (``bool``): If True, a figure is created for each retrieved dispersion curve. This is automatically displayed and saved in $self.savedir/figures
+
+
+.. py:method:: prepare_input_tomography(savedir, period, outfile='input_%.2fs.txt')
+Prepares a .txt file for each specified period, to be used for 
+calculating phase-velocity maps using the seislib.SeismicTomography class.
+
+**Parameters**
+
+	**savedir** (``str``): Absolute path to the directory where the file(s) is (are) saved. If savedir does not exist, it will be created
+
+	**period** (``int`` | ``float`` | ``array-like``): Period (or periods) at which the dispersion curves will be interpolated (see the method `interpolate_dispcurves`)
+
+	**outfile** (``str``): Format for the file names. It must include either %s or %.Xf (where X is integer), since this will be replaced by each period analysed (one for file)
+
+
+.. py:method:: interpolate_dispcurves(period)
+Interpolates the dispersion curves found at $self.savedir/dispcurves
+at the specified period(s). (No extrapolation is made.)
+
+**Parameters**
+
+	**period** (``int`` | ``float`` | ``array-like``): Period (or periods) at which the dispersion curves will be interpolated
+
+**Returns**
+
+	**coords** (``(n, 4) ndarray``): Coordinates (lat1, lon1, lat2, lon2) of the station pairs for which a dispersion curve has been calculated
+
+	**measurements** (``(n, p) ndarray``): Phase velocity calculated for station pair contained in coords at the wanted 
+        period(s). p is the number of periods. 
+
+        .. note::
+
+            `measurements` could contain nans
+        ..
+
+
+.. py:method:: plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', edgecolor='k', projection='Mercator', resolution='110m', color_by_network=True, legend_dict={}, **kwargs)
+Maps the seismic receivers for which data are available
+
+**Parameters**
+
+	**ax** (``cartopy.mpl.geoaxes.GeoAxesSubplot``): If not None, the receivers are plotted on the GeoAxesSubplot instance. Otherwise, a new figure and GeoAxesSubplot instance is created
+
+	**show** (``bool``): If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is returned. Default is True
+
+	**oceans_color**, **lands_color** (``str``): Color of oceans and lands. The arguments are ignored if ax is not None. Otherwise, they are passed to cartopy.feature.GSHHSFeature (to the argument 'facecolor'). Defaults are 'water' and 'land'
+
+	**edgecolor** (``str``): Color of the boundaries between, e.g., lakes and land. The argument is ignored if ax is not None. Otherwise, it is passed to cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default is 'k' (black)
+
+	**projection** (``str``): Name of the geographic projection used to create the GeoAxesSubplot. (Visit the cartopy website for a list of valid projection names.) If ax is not None, `projection` is ignored. Default is 'Mercator'
+
+	**resolution** (``str``): Resolution of the Earth features displayed in the figure. Passed to cartopy.feature.NaturalEarthFeature. Valid arguments are '110m', '50m', '10m'. Default is '110m'
+
+	**color_by_network** (``bool``): If True, each seismic network will have a different color in the resulting map, and a legend will be displayed. Otherwise, all stations will have the same color. Default is True
+
+	**legend_dict** (``dict`` | ``optional``): Dictionary of keyword arguments passed to matplotlib.pyplot.legend
+
+	**\*\*kwargs**: Additional keyword arguments passed to matplotlib.pyplot.scatter
+
+
+**Returns**
+
+
+Class Methods
+-------------
+
+.. py:method:: lie_on_same_gc(stla1, stlo1, stla2, stlo2, evla, evlo, azimuth_tolerance=5, distmin=None, distmax=None)
+Boolean function. If the station pair and the epicenter lie on the same great circle path, it returns True.
+
+**Parameters**
+
+	**stla1**, **stlo1** (``float``): Latitude and longitude of station 1
+
+	**stla2**, **stlo2** (``float``): Latitude and longitude of station 2
+
+	**evla**, **evlo** (``float``): Latitude and longitude of the epicenter
+
+	**azimuth_tolerance** (``float`` | ``int``): Maximum deviation from the great circle path in degrees
+
+	**distmin**, **distmax** (``float`` | ``int``, optional): Minimum and maximum allowed inter-station distance (in km). Default is None
+
+**Returns**
+
+``bool``
+
