@@ -103,7 +103,7 @@ Parameters
 	**approach** (``str``): Passed to TwoStationMethod.measure_dispersion. It indicates if the dispersion measurements are extracted in the frequency domain ('freq') or in the time domain ('time'). Default is 'freq'
 
 	**gamma_f** (``float`` | ``int``): Controls the width of the bandpass filters, at a given period, used to isolate the fundamental 
-        mode in the seismogram. For technical details, refer to :cite:t:`soomro16`.
+        mode in the seismogram. For technical details, refer to :raw-tex:`\cite{soomro16}`.
 
 	**gamma_w**, **distances** (``(m,) ndarray``, optional): Control the width of tapers used to taper, at a given period, the cross correlations in the frequency domain (these two parameters are ignored if `approach` is 'time'). `distances` should be in km. If not given, they will be automatically set to gamma_w = np.linspace(5, 50, 100) distances = np.linspace(100, 3000, 100) These two arrays are used as interpolators to calculate `gamma` based on the inter-station distance. `gamma` is the parameter that actually controls the width of the tapers, and is defined as gamma = np.interp(dist, distances, gamma_w)
 
@@ -120,3 +120,7 @@ Class Methods
 
 
 
+.. raw:: latex
+
+    \bibliographystyle{plain}
+    \bibliography{refs.bib}

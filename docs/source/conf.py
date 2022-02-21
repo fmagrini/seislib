@@ -36,12 +36,9 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinxcontrib.bibtex'
+#    'sphinxcontrib.bibtex'
 ]
-extras_require={
-'docs': ['sphinxcontrib.bibtex']},
 
-bibtex_bibfiles = ['refs.bib']
 
 html_theme_options = {
     'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
