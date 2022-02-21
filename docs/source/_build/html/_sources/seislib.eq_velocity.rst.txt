@@ -361,9 +361,9 @@ Maps the seismic receivers for which data are available
 
 	**show** (``bool``): If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is returned. Default is True
 
-	**oceans_color**, **lands_color** (``str``): Color of oceans and lands. The arguments are ignored if ax is not None. Otherwise, they are passed to cartopy.feature.GSHHSFeature (to the argument 'facecolor'). Defaults are 'water' and 'land'
+	**oceans_color**, **lands_color** (``str``): Color of oceans and lands. The arguments are ignored if ax is not None. Otherwise, they are passed to cartopy.feature.NaturalEarthFeature (to the argument 'facecolor'). Defaults are 'water' and 'land'
 
-	**edgecolor** (``str``): Color of the boundaries between, e.g., lakes and land. The argument is ignored if ax is not None. Otherwise, it is passed to cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default is 'k' (black)
+	**edgecolor** (``str``): Color of the boundaries between, e.g., lakes and land. The argument is ignored if ax is not None. Otherwise, it is passed to cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). Default is 'k' (black)
 
 	**projection** (``str``): Name of the geographic projection used to create the GeoAxesSubplot. (Visit the cartopy website for a list of valid projection names.) If ax is not None, `projection` is ignored. Default is 'Mercator'
 
@@ -377,6 +377,43 @@ Maps the seismic receivers for which data are available
 
 
 **Returns**
+
+    If `show` is True, ``None``, else `ax`, i.e. the ``GeoAxesSubplot``
+
+
+.. py:method:: plot_events(ax=None, show=True, oceans_color='water', lands_color='land', edgecolor='k', projection='Mercator', resolution='110m', min_size=5, max_size=150, legend_markers=4, legend_dict={}, **kwargs)
+Creates a map of epicenters
+
+**Parameters**
+
+	**lat**, **lon** (``(n, ) ndarray``): Latitude and longitude of the epicenters
+
+	**mag** (``(n, ) ndarray``, optional): If not given, the size of each on the map will be constant
+
+	**ax** (``cartopy.mpl.geoaxes.GeoAxesSubplot``): If not None, the receivers are plotted on the GeoAxesSubplot instance. Otherwise, a new figure and GeoAxesSubplot instance is created
+
+	**show** (``bool``): If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is returned. Default is True
+
+	**oceans_color**, **lands_color** (``str``): Color of oceans and lands. The arguments are ignored if ax is not None. Otherwise, they are passed to cartopy.feature.NaturalEarthFeature (to the argument 'facecolor'). Defaults are 'water' and 'land'
+
+	**edgecolor** (``str``): Color of the boundaries between, e.g., lakes and land. The argument is ignored if ax is not None. Otherwise, it is passed to cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). Default is 'k' (black)
+
+	**projection** (``str``): Name of the geographic projection used to create the GeoAxesSubplot. (Visit the cartopy website for a list of valid projection names.) If ax is not None, `projection` is ignored. Default is 'Mercator'
+
+	**resolution** (``str``): Resolution of the Earth features displayed in the figure. Passed to cartopy.feature.NaturalEarthFeature. Valid arguments are '110m', '50m', '10m'. Default is '110m'
+
+	**min_size**, **max_size** (``int`` | ``float``): Minimum and maximum size of the epicenters on the map. These are used to interpolate all magnitudes associated with each event, so as to scale them appropriately on the map. (The final "sizes" are passed to the argument `s` of matplotlib.pyplot.scatter)
+
+	**legend_markers** (``int``): Number of markers displayed in the legend. Ignored if `s` (size of the markers in matplotlib.pyplot.scatter) is passed
+
+	**legend_dict** (``dict``): Keyword arguments passed to matplotlib.pyplot.legend
+
+	**\*\*kwargs**: Additional keyword arguments passed to matplotlib.pyplot.scatter
+
+
+**Returns**
+
+    If `show` is True, ``None``, else `ax`, i.e. the ``GeoAxesSubplot``
 
 
 Class Methods

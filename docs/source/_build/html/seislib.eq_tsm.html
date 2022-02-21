@@ -69,6 +69,105 @@
              
   <section id="low-level-calculation-of-earthquake-based-phase-velocities-two-station-method">
 <h1>Low-Level Calculation of Earthquake-Based Phase Velocities: <code class="docutils literal notranslate"><span class="pre">Two-Station</span> <span class="pre">Method</span></code><a class="headerlink" href="#low-level-calculation-of-earthquake-based-phase-velocities-two-station-method" title="Permalink to this headline"></a></h1>
+<p>Class used under the hood by <a class="reference internal" href="seislib.eq_velocity.html"><span class="doc">seislib.eq.EQVelocity</span></a> to calculate inter-station
+phase velocities based on pairs of receivers aligned on the same great-circle path as the epicenter of
+teleseismic earthquakes.</p>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline"></a></h2>
+<p>In the following we will calculate a dispersion curve based on several
+earthquakes recorded at two receivers (sta1, sta2) on the vertical
+components (Z). The seismograms (two per earthquake) are stored in as many directories
+as the number of earthquakes available in the analysis. These directories are named
+after the event origin time (in the obspy.UTCDateTime.timestamp format) and located
+at /path/to/data. The seismic data must be in the .sac format, with the information on
+the epicentral distance (dist) compiled in the header. It is assumed that receivers
+and epicenter lie on the same great-circle path.</p>
+<p>We will retrieve dispersion measurements for 75 periods linearly spaced
+between 15 and 150s. We assume that in this period range surface waves travel
+in the velocity range 2.5 - 5 km/s. We need to pass a reference curve
+consisting of 2 columns (1st: period, 2nd: phase velocity in either km/s or
+m/s), that will be used in the subsequent analysis. We will only employ
+periods for which the ratio between expected wavelength (based on the
+reference curve) and inter-station distance is not smaller than 1.5.</p>
+<p>First, we initialize the TwoStationMethod class as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tsm</span> <span class="o">=</span> <span class="n">TwoStationMethod</span><span class="p">(</span><span class="n">refcurve</span><span class="o">=</span><span class="n">refcurve</span><span class="p">,</span>
+                       <span class="n">periodmin</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+                       <span class="n">periodmax</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span>
+                       <span class="n">no_periods</span><span class="o">=</span><span class="mi">75</span><span class="p">,</span>
+                       <span class="n">cmin</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+                       <span class="n">cmax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                       <span class="n">min_no_wavelengths</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, we use this class obtain dispersion measurements for all events
+available in the data directory. (We are assuming that we only have folders
+corresponding to events that are aligned on the same great circle path as
+the epicenter. For a more automatic processing of station pairs and events,
+see the method <cite>prepare_data</cite> of <a class="reference internal" href="seislib.eq_velocity.html"><span class="doc">seislib.eq.EQVelocity</span></a>.)
+For each event, we will store the associated dispersion measurements in /path/to/savedir/dispersion,
+using the npy format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">read</span>
+
+<span class="n">src</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">data</span>
+<span class="n">dispersion_dir</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">savedir</span><span class="o">/</span><span class="n">dispersion</span>
+
+<span class="n">events</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">origin_time</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+    <span class="n">st1</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">origin_time</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">*&#39;</span><span class="o">%</span><span class="n">sta1</span><span class="p">))</span>
+    <span class="n">st2</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">origin_time</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">*&#39;</span><span class="o">%</span><span class="n">sta2</span><span class="p">))</span>
+
+    <span class="n">tsm</span><span class="o">.</span><span class="n">preprocess</span><span class="p">(</span><span class="n">st1</span><span class="p">,</span> <span class="n">st2</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">origin_time</span><span class="p">))</span>
+    <span class="n">dispersion</span> <span class="o">=</span> <span class="n">tsm</span><span class="o">.</span><span class="n">measure_dispersion</span><span class="p">()</span>
+
+    <span class="n">outfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dispersion_dir</span><span class="p">,</span>
+                            <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">_</span><span class="si">%s</span><span class="s1">.npy&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">sta1</span><span class="p">,</span> <span class="n">sta2</span><span class="p">,</span> <span class="n">origin_time</span><span class="p">))</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">dispersion</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now that all the dispersion measurements have been extracted, we can
+calculate one dispersion curve based on them. (dist_km is inter-station
+distance in km). The result will displayed in the console (plotting=True):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dispcurve</span> <span class="o">=</span> <span class="n">tsm</span><span class="o">.</span><span class="n">extract_dispcurve</span><span class="p">(</span><span class="n">refcurve</span><span class="o">=</span><span class="n">refcurve</span><span class="p">,</span>
+                                  <span class="n">src</span><span class="o">=</span><span class="n">dispersion_dir</span><span class="p">,</span>
+                                  <span class="n">dist_km</span><span class="o">=</span><span class="n">dist_km</span><span class="p">,</span>
+                                  <span class="n">plotting</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">sta1</span><span class="o">=</span><span class="n">sta1</span><span class="p">,</span>
+                                  <span class="n">sta2</span><span class="o">=</span><span class="n">sta2</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline"></a></h2>
+<blockquote>
+<div><p><strong>refcurve</strong> (<code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">2)</span> <span class="pre">ndarray</span></code>): Reference curve used to extract the dispersion curves. The first column should be period, the second column velocity (in either km/s or m/s). The reference curve is automatically converted to km/s, the physical unit employed in the subsequent analysis.</p>
+<p><strong>periodmin</strong>, <strong>periodmax</strong> (<code class="docutils literal notranslate"><span class="pre">float</span></code>): Minimum and maximum period analysed by the algorithm (default are 15 and 150 s). The resulting dispersion curves will be limited to this period range</p>
+<p><strong>no_periods</strong> (<code class="docutils literal notranslate"><span class="pre">int</span></code>): Number of periods between periodmin and periodmax (included) used in the subsequent analysis. The resulting periods will be equally spaced (linearly) from each other. Default is 75</p>
+<p><strong>cmin</strong>, <strong>cmax</strong> (<code class="docutils literal notranslate"><span class="pre">float</span></code>): Estimated velocity range (in km/s) spanned by the dispersion curves (default values are 2.5 and 5). The resulting dispersion curves will be limited to this velocity range</p>
+<p><strong>ttol</strong> (<code class="docutils literal notranslate"><span class="pre">float</span></code>): Tolerance, with respect to the reference curve, used to taper the seismograms around the expected arrival time of the surface wave (at a given period). In practice, at a given period,
+everything outside of the time range given by tmin and tmax (see below) is set to zero through a taper.
+tmin and tmax are defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tmin</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">/</span> <span class="p">(</span><span class="n">ref_vel</span> <span class="o">+</span> <span class="n">ref_vel</span><span class="o">*</span><span class="n">ttol</span><span class="p">)</span>
+<span class="n">tmax</span> <span class="o">=</span> <span class="n">dist</span> <span class="o">/</span> <span class="p">(</span><span class="n">ref_vel</span> <span class="o">-</span> <span class="n">ref_vel</span><span class="o">*</span><span class="n">ttol</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where dist is inter-station distance. Default is 0.3, i.e., 30% of the reference velocity</p>
+<p><strong>min_no_wavelengths</strong> (<code class="docutils literal notranslate"><span class="pre">float</span></code>): Ratio between the estimated wavelength of the surface-wave at a given period (lambda = period * c_ref) and interstation distance. If lambda/dist &gt; min_no_wavelength, the period in question is not used to retrieve a dispersion measurement. Values &lt; 1 are suggested against. Default is 1.5</p>
+<p><strong>approach</strong> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): Passed to TwoStationMethod.measure_dispersion. It indicates if the dispersion measurements are extracted in the frequency domain ('freq') or in the time domain ('time'). Default is 'freq'</p>
+<p><strong>gamma_f</strong> (<code class="docutils literal notranslate"><span class="pre">float</span></code> | <code class="docutils literal notranslate"><span class="pre">int</span></code>): Controls the width of the bandpass filters, at a given period, used to isolate the fundamental mode in the seismogram. For technical details, refer to Soomro et al. (2016)</p>
+<p><strong>gamma_w</strong>, <strong>distances</strong> (<code class="docutils literal notranslate"><span class="pre">(m,)</span> <span class="pre">ndarray</span></code>, optional): Control the width of tapers used to taper, at a given period, the cross correlations in the frequency domain (these two parameters are ignored if <cite>approach</cite> is 'time'). <cite>distances</cite> should be in km. If not given, they will be automatically set to gamma_w = np.linspace(5, 50, 100) distances = np.linspace(100, 3000, 100) These two arrays are used as interpolators to calculate <cite>gamma</cite> based on the inter-station distance. <cite>gamma</cite> is the parameter that actually controls the width of the tapers, and is defined as gamma = np.interp(dist, distances, gamma_w)</p>
+</div></blockquote>
+</section>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline"></a></h2>
+</section>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this headline"></a></h2>
+</section>
+<section id="class-methods">
+<h2>Class Methods<a class="headerlink" href="#class-methods" title="Permalink to this headline"></a></h2>
+</section>
 </section>
 
 

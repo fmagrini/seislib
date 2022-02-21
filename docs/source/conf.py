@@ -22,7 +22,7 @@ copyright = '2022, Fabrizio Magrini'
 author = 'Fabrizio Magrini'
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.4'
+release = '0.4.6'
 
 
 # -- General configuration ---------------------------------------------------
@@ -36,7 +36,12 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.bibtex'
 ]
+extras_require={
+'docs': ['sphinxcontrib.bibtex']},
+
+bibtex_bibfiles = ['refs.bib']
 
 html_theme_options = {
     'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
