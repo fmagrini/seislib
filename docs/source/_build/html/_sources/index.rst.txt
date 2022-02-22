@@ -1,3 +1,8 @@
+.. seislib documentation master file, created by
+   sphinx-quickstart on Sun Jan 23 20:58:00 2022.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
 Welcome to SeisLib's documentation!
 ===================================
 
@@ -25,36 +30,22 @@ Welcome to SeisLib's documentation!
 
    This project is under active development.
 
-#.. toctree::
-#   :maxdepth: 1
-#   :caption: Contents:
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
 
 
-Installation
-============
+Contents
+========
 
 .. toctree::	 
    :titlesonly:
     
    installation
-   
-Teleseismic Earthquakes
-=======================
-
-.. toctree::	 
-   :titlesonly:
-    
-   eq/index
-   
- 
-How to cite us
-============== 
-
-.. toctree::	 
-   :titlesonly:
-    
+   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
+   Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
+   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>
    How to cite <cite_us>
-
    
 Indices and tables
 ==================
@@ -62,7 +53,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-
-
