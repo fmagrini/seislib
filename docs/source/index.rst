@@ -30,13 +30,9 @@ Welcome to SeisLib's documentation!
 
    This project is under active development.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Indices and tables:
+#.. toctree::
+#   :maxdepth: 1
+#   :caption: Contents:
    
    
 Contents
