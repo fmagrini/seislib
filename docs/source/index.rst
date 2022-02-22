@@ -33,26 +33,62 @@ Welcome to SeisLib's documentation!
 #.. toctree::
 #   :maxdepth: 1
 #   :caption: Contents:
-   
-   
+
 Contents
-========
+-----------
 
-.. toctree::	 
-   :titlesonly:
+:doc:`installation`
+:doc:`seislib.eq_downloader`
+    Download of Teleseismic-Earthquake Recordings
+:doc:`cite_us`
+
+
+
+.. Hidden TOCs
+
+.. toctree::
    :caption: Getting Started
-   installation
-   :caption: EQ
-   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
-   Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
-   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
-   How to cite <cite_us>
-   
-Indices and tables
-==================
+   :maxdepth: 1
+   :hidden:
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   installation
+
+.. toctree::
+    :titlesonly:
+    :caption: Teleseismic Earthquakes
+    :hidden:
+
+    Download of teleseismic-earthquake recordings <seislib.eq_downloader>
+    Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
+    Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm> 
+
+.. toctree::
+   :caption: References
+   :maxdepth: 1
+   :hidden:
+   
+   How to cite <cite_us> 
+
+
+
+
+#Contents
+#========
+
+#.. toctree::	 
+#   :titlesonly:
+#   :caption: Getting Started
+#   installation
+#   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
+#   Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
+#   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
+#   How to cite <cite_us>
+   
+#Indices and tables
+#==================
+
+#* :ref:`genindex`
+#* :ref:`modindex`
+#* :ref:`search`
 
 
