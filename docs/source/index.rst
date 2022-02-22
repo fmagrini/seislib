@@ -30,37 +30,28 @@ Welcome to SeisLib's documentation!
 
    This project is under active development.
 
-Using this theme
-----------------
-
-Test
-
-
-
-.. Hidden TOCs
-
-.. toctree::
-   :caption: Getting Started
-   :maxdepth: 1
-   :hidden:
-
-   installation
-
-.. toctree::
-    :titlesonly:
-    :caption: Teleseismic Earthquakes
-    :hidden:
-
-    Download of teleseismic-earthquake recordings <seislib.eq_downloader>
-    Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
-    Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm> 
-
-.. toctree::
-   :caption: References
-   :maxdepth: 1
-   :hidden:
+#.. toctree::
+#   :maxdepth: 1
+#   :caption: Contents:
    
-   How to cite <cite_us> 
+   
+Contents
+========
 
+.. toctree::	 
+   :titlesonly:
+   :caption: Getting Started
+   installation
+   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
+   Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
+   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
+   How to cite <cite_us>
+   
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
 
 
