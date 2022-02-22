@@ -39,22 +39,19 @@ Contents
 ========
 
 .. toctree::	 
-   #:titlesonly:
-   :maxdepth: 1
+   :titlesonly:
     
    installation
    Download of teleseismic-earthquake recordings <seislib.eq_downloader>
    Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
-   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>
-
+   
 Testing
 =======
 
 .. toctree::	 
-   #:titlesonly:
-   :maxdepth: 1
+   :titlesonly:
    
-   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>
+   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
    How to cite <cite_us>
    
 Indices and tables
