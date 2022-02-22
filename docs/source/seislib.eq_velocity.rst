@@ -44,7 +44,7 @@ measuring the dispersion curves are discarded. Printing `eq` will give informati
 
         
 .. note::
-    The method `prepare_data` will extract the geographic coordinates of each seismic 
+    The :meth:`prepare_data` will extract the geographic coordinates of each seismic 
     receivers from the header of the corresponding sac files, those of the seismic events, 
     and store the information on the triplets of epicenters-receivers that will be used to 
     obtain the dispersion curves.
@@ -71,7 +71,7 @@ measuring the dispersion curves are discarded. Printing `eq` will give informati
     and are stored in a dictionary object where each key is a tuple corresponding 
     to a station pair and each value is a list of events that are aligned on the 
     same great circle path as the receivers (within the limits defined by the 
-    input params of `prepare_data`). For example::
+    input params of :meth:`prepare_data`). For example::
         
         { 
         (net1.sta1, net2.sta2) : ['1222701570.84',
@@ -91,8 +91,8 @@ measuring the dispersion curves are discarded. Printing `eq` will give informati
     ..
         
     Note that each event origin time corresponds to a sub-directory of
-    the source data (`src`). Also note that, since `min_no_events`=8 in 
-    `prepare_data`, the length of the lists of events associated with each 
+    the source data (`src`). Also note that, since the `min_no_events` passed to 
+    :meth:`prepare_data` is 8, the length of the lists of events associated with each 
     receiver pair will be at least 8.
 ..    
         
@@ -258,7 +258,7 @@ be used for retrieving the dispersion curves.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. py:method:: get_events_used(self)
+.. py:method:: get_events_used()
 Retrieves the events id for which triplets of epicenter-receivers are
 available to extract dispersion measurements
 
@@ -273,7 +273,7 @@ available to extract dispersion measurements
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. py:method:: delete_unused_files(self)
+.. py:method:: delete_unused_files()
 Deletes every file in the data directory which is not useful for 
 extracting dispersion curves (i.e., those waveform-files that are not 
 included in triplets dict).

@@ -40,8 +40,9 @@ Contents
 
 .. toctree::	 
    :titlesonly:
-    
+   :caption: Getting Started
    installation
+   :caption: EQ
    Download of teleseismic-earthquake recordings <seislib.eq_downloader>
    Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
    Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
@@ -53,3 +54,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+

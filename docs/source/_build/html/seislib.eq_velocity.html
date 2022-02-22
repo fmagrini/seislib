@@ -112,7 +112,7 @@ measuring the dispersion curves are discarded. Printing <cite>eq</cite> will giv
 (In the above output, X and Y are integers depending on your data.)</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The method <cite>prepare_data</cite> will extract the geographic coordinates of each seismic
+<p>The <a class="reference internal" href="#prepare_data" title="prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a> will extract the geographic coordinates of each seismic
 receivers from the header of the corresponding sac files, those of the seismic events,
 and store the information on the triplets of epicenters-receivers that will be used to
 obtain the dispersion curves.</p>
@@ -137,7 +137,7 @@ the earthquake, where mag is magnitude.</p>
 and are stored in a dictionary object where each key is a tuple corresponding
 to a station pair and each value is a list of events that are aligned on the
 same great circle path as the receivers (within the limits defined by the
-input params of <cite>prepare_data</cite>). For example:</p>
+input params of <a class="reference internal" href="#prepare_data" title="prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a>). For example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="p">(</span><span class="n">net1</span><span class="o">.</span><span class="n">sta1</span><span class="p">,</span> <span class="n">net2</span><span class="o">.</span><span class="n">sta2</span><span class="p">)</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;1222701570.84&#39;</span><span class="p">,</span>
                           <span class="s1">&#39;1237378863.3&#39;</span><span class="p">,</span>
@@ -156,8 +156,8 @@ input params of <cite>prepare_data</cite>). For example:</p>
 </pre></div>
 </div>
 <p>Note that each event origin time corresponds to a sub-directory of
-the source data (<cite>src</cite>). Also note that, since <cite>min_no_events`=8 in
-`prepare_data</cite>, the length of the lists of events associated with each
+the source data (<cite>src</cite>). Also note that, since the <cite>min_no_events</cite> passed to
+<a class="reference internal" href="#prepare_data" title="prepare_data"><code class="xref py py-meth docutils literal notranslate"><span class="pre">prepare_data()</span></code></a> is 8, the length of the lists of events associated with each
 receiver pair will be at least 8.</p>
 </div>
 <p>After the data have been &quot;prepared&quot;, the receivers and events available can
