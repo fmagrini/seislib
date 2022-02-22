@@ -2,6 +2,9 @@
 
 Automated Calculation of Earthquake-Based Phase Velocities: ``EQVelocity``
 ==========================================================================
+
+.. py:class:: EQVelocity(src, savedir=None, component='Z', verbose=True)
+   :module: seislib.eq
 Class to calculate inter-station phase velocities based on pairs of receivers aligned on
 the same great-circle path as the epicenter of teleseismic earthquakes.
 
@@ -126,8 +129,6 @@ $eq.savedir/dispcurves. For each dispersion curve retrieved, a figure
 will be displayed and saved to $eq.savedir/figures (since plotting=True).
 
 
-.. py:class:: EQVelocity(src, savedir=None, component='Z', verbose=True)
-   :module: seislib.eq
 
 Parameters
 ----------
@@ -205,7 +206,9 @@ Retrieves stations and events information, and the triplets of epicenter-receive
 
     Note that each event in the list corresponds to a sub-directory of
     the source data `src`.
-            
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
 .. py:method:: prepare_data(azimuth_tolerance=5, distmin=None, distmax=None, min_no_events=5, recompute=False, delete_unused_files=False)
 Saves to disk the geographic coordinates of the seismic receivers and of
 the seismic events, along with the triplets of epicenters-receivers to 
@@ -253,6 +256,8 @@ be used for retrieving the dispersion curves.
 
     Note that each event in the list corresponds to a sub-directory of the source data `src`.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. py:method:: get_events_used(self)
 Retrieves the events id for which triplets of epicenter-receivers are
 available to extract dispersion measurements
@@ -266,6 +271,8 @@ available to extract dispersion measurements
     include all the station codes that exploit that event to extract
     a dispersion measurement
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. py:method:: delete_unused_files(self)
 Deletes every file in the data directory which is not useful for 
 extracting dispersion curves (i.e., those waveform-files that are not 
@@ -276,6 +283,7 @@ included in triplets dict).
     deleted files.
 ..
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. py:method:: extract_dispcurves(refcurve, periodmin=15, periodmax=150, no_periods=75, cmin=2.5, cmax=5, min_no_wavelengths=1.5, approach='freq', prob_min=0.25, prior_sigma_10s=0.7, prior_sigma_200s=0.3, plotting=False)
 Automatic extraction of the dispersion curves for all available pairs
@@ -294,7 +302,7 @@ obtain a "probability" density distribution of the thus retrieved
 dispersion measurements, which is function of period and phase velocity.
 (iii) Finally, the dispersion curve is extracted from the regions of
 greater "probability". All this is done under the hood calling the 
-methods measure_dispersion and extract_dispcurve of the class
+methods :meth:`measure_dispersion` and :meth:`extract_dispcurve` of 
 :doc:`seislib.eq.TwoStationMethod <seislib.eq_tsm>`
 
 **Parameters**
@@ -317,6 +325,7 @@ methods measure_dispersion and extract_dispcurve of the class
 
 	**plotting** (``bool``): If True, a figure is created for each retrieved dispersion curve. This is automatically displayed and saved in $self.savedir/figures
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. py:method:: prepare_input_tomography(savedir, period, outfile='input_%.2fs.txt')
 Prepares a .txt file for each specified period, to be used for 
@@ -330,6 +339,7 @@ calculating phase-velocity maps using the seislib.SeismicTomography class.
 
 	**outfile** (``str``): Format for the file names. It must include either %s or %.Xf (where X is integer), since this will be replaced by each period analysed (one for file)
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. py:method:: interpolate_dispcurves(period)
 Interpolates the dispersion curves found at $self.savedir/dispcurves
@@ -351,6 +361,7 @@ at the specified period(s). (No extrapolation is made.)
             `measurements` could contain nans
         ..
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. py:method:: plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', edgecolor='k', projection='Mercator', resolution='110m', color_by_network=True, legend_dict={}, **kwargs)
 Maps the seismic receivers for which data are available
@@ -380,6 +391,7 @@ Maps the seismic receivers for which data are available
 
     If `show` is True, ``None``, else `ax`, i.e. the ``GeoAxesSubplot``
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. py:method:: plot_events(ax=None, show=True, oceans_color='water', lands_color='land', edgecolor='k', projection='Mercator', resolution='110m', min_size=5, max_size=150, legend_markers=4, legend_dict={}, **kwargs)
 Creates a map of epicenters

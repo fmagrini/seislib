@@ -1,5 +1,6 @@
-Welcome to SeisLib's documentation!
-===================================
+#######################
+Teleseismic Earthquakes
+#######################
 
 **seislib** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
@@ -25,9 +26,9 @@ Welcome to SeisLib's documentation!
 
    This project is under active development.
 
-#.. toctree::
-#   :maxdepth: 1
-#   :caption: Contents:
+.. toctree::
+   :maxdepth: 1
+   :caption: Contents:
 
 
 Installation
@@ -62,7 +63,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-
-

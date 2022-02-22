@@ -36,9 +36,9 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-#    'sphinxcontrib.bibtex'
+#    'sphinxcontrib.bibtex',
 ]
-
+#bibtex_bibfiles = ['refs.bib']
 
 html_theme_options = {
     'analytics_id': 'G-XXXXXXXXXX',  #  Provided by Google in your dashboard
@@ -97,4 +97,12 @@ html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
+
+
+
+
+
+
+
+
 
