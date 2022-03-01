@@ -1,12 +1,107 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-@author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
-"""
+r"""
+Rayleigh-Wave Attenuation
+========================= 
+
+The below class provide support for calculating Rayleigh-Wave 
+attenuation based on continuous ambient-noise recordings of a 
+dense seismic array.
+
+As opposed to the problem of calculating phase velocities, which 
+are only related to the phase of the empirical Green's function, 
+estimates of attenuation should rely on its `amplitude`. Previous 
+studies showed how the amplitude of the empirical Green's function 
+should be treated with caution, because of its sensitivity to 
+parameters such as the distribution of noise sources [1]_. Accordingly, 
+[2]_ designed a procedure that should contribute to "regularizing" 
+the subsequent inversion for the Rayleigh-wave attenuation coefficient 
+:math:`\alpha`, as verified by a suite of numerical tests. Such procedure 
+builds on the previous work of [3]_, and allows for measuring the
+frequency-dependency of :math:`\alpha`.
+
+If we consider a dense seismic array, whose receivers are located at 
+:math:`{\bf x}`, SeisLib first retrieves the normalized cross-spectra
+associated with each combination of station pairs `ij` 
+
+.. math::
+
+    \rho = 
+    \Re{ \Bigg\lbrace \frac{u ({\bf x}_i,\omega) u^{\ast} ({\bf x}_j,\omega)}
+    {\left\langle \vert u({\bf x},\omega) 
+    \vert^2 \right\rangle_{\bf x}}} \Bigg\rbrace, 
+
+where `u` denotes the ambient-noise recording in the frequency domain, 
+:math:`^{\ast}` complex conjugation, and :math:`\Re{\big\lbrace \dotso \big\rbrace}` 
+maps a complex number into its real part. The normalization term 
+:math:`\left\langle \vert u({\bf x},\omega) \vert^2 \right\rangle_{\bf x}` 
+corresponds to the average power spectral density (PSD) recorded by the seismic 
+array. 
+
+Then, :math:`\alpha` can be constrained by minimizing the cost function [2]_
+
+.. math::
+
+    C(\alpha, \omega)= 
+    \sum_{i,j}
+    \Delta_{ij}^2
+    \Biggr\rvert
+    \mbox{env}\left[\rho \right]
+    - 
+    \mbox{env}\left[
+    J_0\left(\frac{\omega \Delta_{ij}}{c_{ij}(\omega)}\right) 
+    \mbox{e}^{-\alpha(\omega) \Delta_{ij}}
+    \right]
+    \Biggr\rvert^2,
+
+where :math:`\Delta`, :math:`\omega`, and `c` denote inter-station 
+distance, angular frequency, and phase velocity, respectively, 
+and :math:`J_0` a zeroth order Bessel function of the 
+first kind. The weight :math:`\Delta_{ij}^2` is used to compensate for the 
+decrease in the amplitude of :math:`J_0` with inter-station distance, due to 
+geometrical spreading, and the envelope function :math:`\mbox{env}` has beneficial 
+effects on the stability of the inversion.
+
+In the above equation, phase velocity `c` is assumed to be known, i.e., it 
+should be calculated in a preliminary step (see :mod:`seislib.an.an_velocity`).
+The minimum of :math:`C(\alpha, \omega)` 
+can then be found via "grid-search" over :math:`\alpha`, for a discrete set of 
+values of :math:`\omega`. The alert reader might notice at this point that, 
+since the sum is carried out over all possible combinations of station pairs 
+belonging to the considered array, only one attenuation curve can be extracted 
+from such minimization. This strategy, albeit in a sense restrictive, has been 
+shown to yield robust estimates of the frequency dependency of :math:`\alpha` 
+even in presence of a heterogeneous distribution of noise sources [2]_. If 
+the array has good azimuthal coverage, using all station pairs as an ensemble 
+in the minimization of :math:`C(\alpha, \omega)` allows for sampling most 
+azimuths of wave propagation. In turn, this should "regularize" the inversion 
+by decreasing unwanted effects due to inhomogeneities in the distribution of 
+the noise sources, or compensating for a non-perfectly diffuse ambient seismic 
+field.
+
+Since the above equation only allows to obtain one attenuation curve for
+seismic array, to retrieve the spatial variations in attenuation SeisLib 
+implements the strategy applied by [4]_ to USArray data. In practice,
+:meth:`parameterize` allows for subdividing a given array in many (possibly
+overlapping) sub-arrays. These are identified by equal-area blocks of
+arbitrary size, and used to obtain one attenuation curve for each of them.
 
 
+References
+----------
+.. [1] Tsai, (2011). Understanding the amplitudes of noise correlation 
+    measurements. JGR
+
+.. [2] Magrini & Boschi, (2021). Surface‐Wave Attenuation From Seismic 
+    Ambient Noise: Numerical Validation and Application. JGR
+
+.. [3] Boschi et al., (2019). On seismic ambient noise cross-correlation 
+    and surface-wave attenuation. GJI
+
+.. [4] Magrini et al., (2021). Rayleigh-wave attenuation across the
+    conterminous United States in the microseism frequency band. Scientific
+    Reports
+"""
 import os
 import itertools as it
 from collections import defaultdict
@@ -36,9 +131,21 @@ from seislib.an import velocity_filter
 
 class AmbientNoiseAttenuation:
     
-    """
+    r"""
     Class to obtain Rayleigh-wave attenuation out of continuous seismograms,
     via cross-correlation of seismic ambient noise. 
+        
+    Parameters
+    ----------
+    src : str
+        Absolute path to the directory containing the files associated with 
+        the continuous seismograms
+        
+    savedir : str
+        Absolute path to the directory where the results are saved
+
+    verbose : bool
+        Whether or not information on progress is printed in the console
 
 
     Attributes
@@ -60,138 +167,92 @@ class AmbientNoiseAttenuation:
         Coordinates of the station pairs that can be employed to retrieve
         dispersion curves (can be accessed after calling the method
         `prepare_data`)
-        
     
-    Methods
-    -------
-    get_files()
-        Retrieves the files associated with continuous seismograms recorded
-        on the vertical component
+    parameterization : dict
+        Information on the parameterization of the study area, consisting
+        of a dictionary object of the form::
+
+            {
+            'grid': np.array([[lat1, lat2, lon1, lon2],
+                              [lat3, lat4, lon3, lon4]
+                              [etc.]]),
+            'no_stations': np.array([int1, int2, etc.]),
+            'station_codes': [[sta1, sta2, sta3, etc.],
+                              [sta4, sta5, sta6, etc.]]
+            }
         
-    get_stations_coords(files)
-        Retrieves the geographic coordinates associated with each receiver
+        where lat1, lat2, lon1, lon2 identify the first block of the
+        parameterization, int1 is the number of stations in the first
+        block, and sta1, sta2, sta3, etc. are the associated station 
+        codes.
+               
         
-    prepare_data(recompute=False)
-        Retrieves and saves on disk the geographic coordinates
-        
-    parameterize(cell_size, overlap=0.5, min_no_stations=6, plotting=True)
-        Creates an equal-area (possibly overlapping) parameterization
-        
-    compute_ffts(fs=1, window_length=3600)
-        Computes the Fourier transforms for all the continuous data
-        
-    compute_corr_spectra(min_no_pairs=6, min_no_days=30, ram_available=9000, 
-                         ram_split=4)
-        Computes the corr-spectra for each pair of receivers in each grid cell 
-        of the parameterization
-        
-    prepare_inversion(src_velocity, freqmin=0.05, freqmax=0.4, nfreq=300, 
-                      smooth=False, smoothing_window=25, smoothing_poly=2)
-        Prepares the data set to be inverted for Rayleigh-wave attenuation
-        
-    inversion(alphamin=5e-7, alphamax=5e-4, nalpha=350, min_no_pairs=6)
-        Carries out the inversion for Rayleigh-wave attenuation
-        
-    get_attenuation_map(period, cell_size, min_overlapping_pixels=2)
-        Calculates an attenuation maps based on the results obtained in the 
-        inversion
-     
-    plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', resolution='110m', 
-                  color_by_network=True, legend_dict={}, **kwargs)
-        Maps the seismic receivers for which data are available   
-        
-    plot_azimuthal_coverage(ipixel, ax=None, bins=None, show=True, **kwargs)
-        Plots a polar histogram of the azimuthal coverage for one pixel
-        
-    plot_cost(ipixel, ax=None, alphamin=None, alphamax=None, freqmin=None, 
-              freqmax=None, show=True, curve_dict={}, **kwargs)
-        Plots the values of cost obtained in the inversion of a given pixel
-        
-    
-    Class Methods
-    -------------
-    plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None, 
-             bound_map=True, colorbar=True, show=True, style='colormesh', 
-             add_features=False, resolution='110m', cbar_dict={}, **kwargs)
-        Displays an attenuation map
-    
-    colormesh(mesh, c, ax, **kwargs):
-        Adaptation of matplotlib.pyplot.pcolormesh to the (adaptive) equal area 
-        grid
-        
-    contourf(mesh, c, ax, smoothing=None, **kwargs)
-        Adaptation of matplotlib.pyplot.contourf to the (adaptive) equal area 
-        grid
-        
-    contour(mesh, c, ax, smoothing=None, **kwargs)
-        Adaptation of matplotlib.pyplot.contour to the (adaptive) equal area 
-        grid
-        
-        
-    Example
-    -------
+    Examples
+    --------
     In the following, we will calculate an attenuation map for a region
-    characterized by the presence of a dense distribution of receivers. When
-    applied to the transportable component of the USArray, the code will produce
-    maps analogous to those in Magrini et al. (2021). The logical steps will be
-    (i) define an overlapping parameterization of the study area, (ii) compute
-    the Fourier transforms of our continuous seismograms, (iii) use the thus
-    retrieved Fourier transforms to compute the average power-spectral density 
-    in each grid cell of our parameterization; these are used in the calculation
-    of the cross-spectra as normalization term [Magrini & Boschi 2021]. 
-    (iv) Prepare the inversion data-set, for each sub-array associated with
-    each grid cell of our parameterization. This data-set is based on the 
-    cross-spectra and on previously computed inter-station phase velocities.
-    (v) Invert the data-set associated with each grid cell, so to retrieve one
-    attenuation curve for grid cell, and (vi) plot the results.
+    characterized by a dense distribution of receivers. When applied to 
+    the transportable component of the USArray, the code will produce
+    maps analogous to those in [1]_. To do so, we carry out the following
+    steps squentially: (i) define an overlapping parameterization of the study 
+    area, (ii) compute the Fourier transforms of our continuous seismograms, 
+    (iii) use the thus retrieved Fourier transforms to compute the average 
+    power-spectral density in each grid cell of our parameterization; these 
+    are used in the calculation of the cross-spectra as normalization term 
+    [2]_. (iv) Prepare the inversion data-set, for each sub-array associated with
+    each grid cell of our parameterization. This data-set consists of the 
+    cross-spectra and of the previously computed inter-station phase velocities.
+    (v) Invert the data-set associated with each grid cell, so as to retrieve 
+    one attenuation curve per grid cell, and (vi) plot the results.
     
-    First, we need to define an AmbientNoiseAttenuation instance, and retrieve
-    the geographic coordinates of each receivers. Our waveform data are in .sac 
-    format, with the header compiled with the needed information. (To download
-    seismic data in the proper format, consider using seislib.an.ANDownloader)
-    These are stored in /path/to/data. We will save the results in /savedir
+    First, we need to define an :class:`AmbientNoiseAttenuation` instance, and 
+    retrieve the geographic coordinates for each receivers. Our waveform data 
+    are in .sac format, with the header compiled with the needed information. 
+    (To download seismic data in the proper format, consider using 
+    :class:`seislib.an.an_downloader.ANDownloader`) These are stored in 
+    /path/to/data. We will save the results in /savedir::
     
         src = '/path/to/data'
         save = '/savedir'
         an = AmbientNoiseAttenuation(src=src, savedir=save, verbose=True)
         an.prepare_data()
         
-    `prepare_data` will automatically save a station.pickle file in $save
-    ---------------------------------------------------------------------------
-    NOTE: If the files containing the continuous seismograms do not have a sac 
-    header, or if they have a different extension than .sac, the user can create 
-    the station.pickle file on his own, before calling the `prepare_data` method.
-    (However, each file name should be in the format net.sta.loc.cha', where 
-    net, sta, and loc (optional) are network, station, and location code, 
-    respectively, and cha is channel (e.g., BHZ, BHN, or BHE). For example, 
-    TA.N38A..LHZ.sac.
+    :meth:`prepare_data` will automatically save a station.pickle file in $save
     
-    The stations.pickle file should contain a dictionary object where each key
-    corresponds to a station code ($net.$sta) and each value should be a tuple
-    containing latitude and longitude of the station. For example:
+    .. note::
+        If the files containing the continuous seismograms do not have a sac 
+        header, or if they have a different extension than .sac, the user can 
+        create the station.pickle file on his own, before calling 
+        :meth:`prepare_data`. (However, each file name should be in the format 
+        net.sta.loc.cha', where net, sta, and loc (optional) are network, 
+        station, and location code, respectively, and cha is channel (e.g., 
+        BHZ, BHN, or BHE). For example, TA.N38A..LHZ.sac.
         
-        { net1.sta1 : (lat1, lon1),
-          net1.sta2 : (lat2, lon2),
-          net2.sta3 : (lat3, lon3)
-          }
-    ---------------------------------------------------------------------------
-    We can parameterize the study area, by means of an equal-area grid of
+        The stations.pickle file should contain a dictionary object where each key
+        corresponds to a station code ($net.$sta) and each value should be a tuple
+        containing latitude and longitude of the station. For example::
+            
+            { net1.sta1 : (lat1, lon1),
+            net1.sta2 : (lat2, lon2),
+            net2.sta3 : (lat3, lon3)
+            }
+    
+    We now parameterize the study area, by means of an equal-area grid of
     cell dimensions of 2.5°, with a spatial overlap of 50% on both latitude and
-    longitude. Those grid cells containing less than 6 receivers are discarded.
+    longitude. Those grid cells containing less than 6 receivers are discarded::
     
         an.parameterize(cell_size=2.5, 
                         overlap=0.5, 
-                        min_no_stations=6, 
-                        plotting=True)
+                        min_no_stations=6)
         
-    The above will create the file paramerization.pickle in $save, that will be
-    used in the following processing. We now compute the Fourier transforms
-    and the cross-spectra. To compute the Fourier transforms, we use time
-    windows of 6h, and in the calculation of the cross spectra we will discard
-    every grid cell for which at least 6 station pairs having at least 30 days
-    of simultaneous recordings are not available. (`fs` indicates the sampling
-    rate.)
+    The above will create the file paramerization.pickle in $save, and set
+    the corresponding dictionary object to the attribute `paramterization` of
+    `an`. This can be accessed typing `an.parameterization`, and will be
+    used under the hood in the following processing. We now compute the Fourier 
+    transforms and the cross-spectra. To compute the Fourier transforms, we use 
+    time windows of 6h, and in the calculation of the cross spectra we will 
+    discard every grid cell for which at least 6 station pairs having at least 
+    30 days of simultaneous recordings are not available. (`fs` indicates the 
+    sampling rate.)::
         
         an.compute_ffts(fs=1, window_length=3600*6)
         an.compute_corr_spectra(min_no_pairs=6, 
@@ -203,9 +264,9 @@ class AmbientNoiseAttenuation:
     will be created in $save, where the result of the processing is stored.
     
     Before preparing the final data-set for the inversion, we need to calculate
-    inter-station phase velocities. We did so by using the AmbientNoiseVelocity
-    class of seislib.an. The retrieved dispersion curves are found in 
-    /path/to/dispcurves.
+    inter-station phase velocities. We did so by using 
+    :class:`seislib.an.an_velocity.AmbientNoiseVelocity`. The retrieved 
+    dispersion curves are stored in /path/to/dispcurves::
         
         an.prepare_inversion(src_velocity='/path/to/dispcurves',
                              freqmin=1/15, 
@@ -214,18 +275,19 @@ class AmbientNoiseAttenuation:
     
     The above will prepare the data-set needed by the inversion, using a 
     frequency range of 1/15 - 0.4 Hz, sampled by 300 points so that each
-    frequency is equally spaced from each other logarithmically. The data-set,
-    built for each grid cell individually, is automatically saved to 
+    frequency is equally spaced from each other on logarithmic scale. The 
+    data-set, built for each grid cell individually, is automatically saved to 
     $save/inversion_dataset. To retrieve one attenuation curve for grid cell,
-    we can now run
+    we can now run::
         
         an.inversion(alphamin=5e-8, alphamax=1e-4, nalpha=350, min_no_pairs=6)
         
-    that will search for optimal frequency-dependent attenuation coefficient
-    in the range 5e-8 - 1e-4 (1/m) via a 2-D grid search carried out over
-    alpha and frequency. The alpha range is sampled through 350 points equally
-    spaced on a logarithmic scale. All grid cells for which data are not 
-    available from at least 6 station pairs are discarded.
+    that will search for the optimal frequency-dependent attenuation coefficient
+    in the range :math:`5 \times 10^{-8}` - :math:`1 \times 10^{-4}` 
+    1/m via a 2-D grid search carried out over
+    :math:`\alpha` and frequency. The :math:`\alpha` range is sampled through 
+    350 points equally spaced on a logarithmic scale. All grid cells for which 
+    data are not available from at least 6 station pairs are discarded.
     
     The above will save the results in $save/results. These can be visualized
     in the form of maps at different periods. In the following, we calculate
@@ -235,7 +297,7 @@ class AmbientNoiseAttenuation:
     50% overlapping parameterization for the calculation of the attenuation 
     curves) will be attributed an attenuation value. (This behaviour is 
     controlled by the parameter `min_overlapping_pixels`). Once the attenuation 
-    map is created, we plot it.
+    map is created, we plot it::
         
         grid, attenuation = an.get_attenuation_map(period=4, 
                                                    cell_size=1,
@@ -243,29 +305,25 @@ class AmbientNoiseAttenuation:
         an.plot_map(grid, attenuation)
     
     
+    .. note::
+
+        Once you have prepared the inversion data set by 
+        :meth:`prepare_inversion` (and you are satisfied by the parameters 
+        passed therein), you can free the previously occupied space 
+        on disk by deleting the directories $save/ffts, $save/psd, since they
+        will not be used in the subsequent inversion.
+
     References
     ----------
-    Magrini et al. 2021, Rayleigh‑wave attenuation across the conterminous 
-        United States in the microseism frequency band, Scientific Reports        
-    Magrini & Boschi 2021, Surface‐Wave Attenuation From Seismic Ambient Noise: 
-        Numerical Validation and Application, JGR   
+    .. [1] Magrini et al., (2021). Rayleigh-wave attenuation across the
+        conterminous United States in the microseism frequency band. Scientific
+        Reports
+
+    .. [2] Magrini & Boschi, (2021). Surface‐Wave Attenuation From Seismic 
+        Ambient Noise: Numerical Validation and Application. JGR
     """
     
     def __init__(self, src, savedir=None, verbose=True):
-        """
-        Parameters
-        ----------
-        src : str
-            Absolute path to the directory containing the files associated with 
-            the continuous seismograms
-            
-        savedir : str
-            Absolute path to the directory where the results are saved
-
-        verbose : bool
-            Whether or not information on progress is printed in the console
-        """
-        
         self.verbose = verbose
         self.src = src
         savedir = os.path.dirname(src) if savedir is None else savedir
@@ -280,6 +338,8 @@ class AmbientNoiseAttenuation:
         string += '\n%s'%('='*separators)
         stations = set(['.'.join(i.split('.')[:2]) for i in self.files])
         string += '\nRECEIVERS: %s'%(len(stations))
+        if self.__dict__.get('parameterization') is not None:
+            string += '\nSUB-ARRAYS: %s'%(self.parameterization['grid'].shape[0])
         string += '\n%s'%('='*separators)
         string += '\nSOURCE DIR: %s'%self.src
         string += '\nSAVE DIR: %s'%self.savedir
@@ -298,7 +358,7 @@ class AmbientNoiseAttenuation:
         Returns
         -------
         files : list of str
-            e.g. ['net1.sta1.00.BHZ.sac', 'net1.sta2.00.BHZ.sac']
+            e.g., ['net1.sta1.00.BHZ.sac', 'net1.sta2.00.BHZ.sac']
         """
 
         files = []
@@ -319,20 +379,18 @@ class AmbientNoiseAttenuation:
             Names of the files corresponding with the continuous seismograms,
             located in the `src` directory
             
-            
         Returns
         -------
         coords : dict
             each key corresponds to a station code ($network_code.$station_code) 
             and each value is a tuple containing latitude and longitude of the 
-            station. For example:
+            station. For example::
                 
                 { net1.sta1 : (lat1, lon1),
                   net1.sta2 : (lat2, lon2),
                   net2.sta3 : (lat3, lon3)
                   }
         """
-
         coords = {}
         for file in files:
             station_code = '.'.join(file.split('.')[:2])
@@ -347,29 +405,47 @@ class AmbientNoiseAttenuation:
     def prepare_data(self, recompute=False):
         """ 
         Saves to disk the geographic coordinates associated with each receiver. 
-        These are saved to $self.savedir/stations.pickle
+        These are saved to self.savedir/stations.pickle
         
         The stations.pickle file contains a dictionary object where each key
         corresponds to a station code ($network_code.$station_code) and each 
         value is a tuple containing latitude and longitude of the station. 
-        For example:
+        For example::
             
             { net1.sta1 : (lat1, lon1),
               net1.sta2 : (lat2, lon2),
               net2.sta3 : (lat3, lon3)
               }
             
+        If self.savedir/parameterization.pickle exists, the corresponding
+        dictionary object is set as an attribute of the 
+        :class:`AmbientNoiseAttenuation` instance under the name 
+        `parameterization`. This includes information on the parameterization 
+        of the study area, and has the form::
+
+            {
+            'grid': np.array([[lat1, lat2, lon1, lon2],
+                              [lat3, lat4, lon3, lon4]
+                              [etc.]]),
+            'no_stations': np.array([int1, int2, etc.]),
+            'station_codes': [[sta1, sta2, sta3, etc.],
+                              [sta4, sta5, sta6, etc.]]
+            }
+        
+        where lat1, lat2, lon1, lon2 identify the first block of the
+        parameterization, int1 is the number of stations in the first
+        block, and sta1, sta2, sta3, etc. are the associated station 
+        codes.
         
         Parameters
         ----------
         recompute : bool
-            If True, the station coordinates and times will be removed from
+            If `True`, the station coordinates and times will be removed from
             disk and recalculated. Otherwise (default), if they are present,
             they will be loaded into memory, avoiding any computation. This
-            parameter should be set to True whenever one has added files to
-            the source directory
+            parameter should be set to `True` whenever one has added new files 
+            to the source directory
         """
-
         savecoords = os.path.join(self.savedir, 'stations.pickle')
         parameterization = os.path.join(self.savedir, 'parameterization.pickle')
         if recompute:
@@ -389,18 +465,37 @@ class AmbientNoiseAttenuation:
         """
         Creates the equal area (possibly overlapping) parameterization used in 
         the subsequent analysis. The equal-area grid is created through the 
-        EqualAreaGrid class of seislib.
+        :class:seislib.tomography.grid.EqualAreaGrid class of seislib.
         
-        The parameterization is saved at $self.savedir/parameterization.pickle
+        The parameterization is saved at $savedir/parameterization.pickle and
+        set as an attribute of the :class:`AmbientNoiseAttenuation` instance 
+        under the name `parameterization`. The corresponding dictionary object
+        includes information on the parameterization of the study area, and 
+        has the form::
+
+            {
+            'grid': np.array([[lat1, lat2, lon1, lon2],
+                              [lat3, lat4, lon3, lon4]
+                              [etc.]]),
+            'no_stations': np.array([int1, int2, etc.]),
+            'station_codes': [[sta1, sta2, sta3, etc.],
+                              [sta4, sta5, sta6, etc.]]
+            }
+        
+        where lat1, lat2, lon1, lon2 identify the first block of the
+        parameterization, int1 is the number of stations in the first
+        block, and sta1, sta2, sta3, etc. are the associated station 
+        codes.
         
         Parameters
         ----------
-        cell_size : float, int (in degrees)
-            Size of each grid cell of the resulting parameterization
+        cell_size : float
+            Size of each grid cell of the resulting parameterization (in 
+            degrees)
         
         overlap : float
             If > 0, the parameterization will be overlapping in space by the
-            specified extent [e.g., Magrini et al. 2021]. Default is 0.5
+            specified extent [1]_. Default is 0.5
         
         min_no_stations : int
             Minimum number of stations falling within each grid-cell. If the
@@ -408,19 +503,19 @@ class AmbientNoiseAttenuation:
             parameterization
             
         plotting : bool
-            If True, a figure on the resulting parameterization is displayed
+            If `True`, a figure on the resulting parameterization is displayed
             
-        plot_resolution : str
+        plot_resolution : {'10m', '50m', '110m'}
             Resolution of the Earth features displayed in the figure. Passed to
-            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
             '50m', '10m'. Default is '110m'
         
         References
         ----------
-        Magrini et al. 2021, Rayleigh‑wave attenuation across the conterminous 
-            United States in the microseism frequency band, Scientific Reports
+        .. [1] Magrini et al., (2021). Rayleigh-wave attenuation across the
+            conterminous United States in the microseism frequency band. Scientific
+            Reports
         """
-        
         def add_overlap(grid, overlap_east=0.5, overlap_north=0.5):        
             mesh = grid.mesh
             dlat = (1-overlap_north) * (mesh[:,1]-mesh[:,0])
@@ -567,20 +662,19 @@ class AmbientNoiseAttenuation:
             seismogram is characterized by a different sampling rate, it will
             be resampled
         
-        window_lenght : int, float (s)
-            Length of the time windows used to perform the cross correlations
+        window_lenght : int
+            Length of the time windows (in s) used to perform the 
+            cross-correlations
         
-        
-        Warning
-        -------
-        The operation might take a relatively large space on disk, depending on
-        the amount of continuous seismograms available and on the sampling rate
-        chosen. (Even more than the size of the original data.) This necessary
-        to speed up (consistently) the operations needed to extract attenuation 
-        measurements, mostly in the calculation of the average power spectral 
-        density of each sub-array found in each grid cell of the parameterization.
+        .. warning::
+
+            The operation might take a relatively large space on disk, depending on
+            the amount of continuous seismograms available and on the sampling rate
+            chosen. (Even more than the size of the original data.) This,
+            however, is necessary to speed up (consistently) all the subsequent 
+            operations, involving cross-correlations and calculation of the average
+            power spectral density of each sub-array.
         """
-        
         def fourier_transform(x, window_samples):      
             taper = cosine_taper(window_samples, p=0.05)
             x = detrend(x, type='constant')
@@ -653,13 +747,12 @@ class AmbientNoiseAttenuation:
         associated with the continuous seismograms found in a given cell are 
         first loaded into memory. Then, they are used to calculate the
         average power-spectral density of the grid-cell, which is then used
-        as a normalization term of the cross-correlations [Boschi et al. 2019, 
-        Boschi et al. 2020, Magrini & Boschi 2021].
+        as a normalization term of the cross-correlations (see [1]_, [2]_,
+        and [3]_).
         
         Two directories are created: $self.savedir/corr_spectra and 
         $self.savedir/psd, where the cross-spectra and the average psd will
         be saved.
-        
         
         Parameters
         ----------
@@ -667,17 +760,17 @@ class AmbientNoiseAttenuation:
             Minimum number of pairs of receivers in a given grid cell available
             for computing the cross-spectrum. Grid cells not reaching this
             number are not processed. Default is 6. Larger values yield more
-            robust estimates of Rayleigh-wave attenuation [Magrini & Boschi 
-            2021]. Smaller values are suggested against
+            robust estimates of Rayleigh-wave attenuation [3]_. Smaller values 
+            are suggested against
             
         min_no_days : int, float
             Minimum number of simultaneous recordings available for a given
             station pair to be considered for the calculation of the cross-
-            spectrum. Station pairs not reaching this number do *not* count as
+            spectrum. Station pairs not reaching this number do not count as
             available station pairs (see `min_no_pairs`)
             
-        ram_available : int, float (in Mb)
-            RAM available for the analysis. The parameter allows for 
+        ram_available : int, float
+            RAM available (in Mb) for the analysis. The parameter allows for 
             estabilishing, in a given pixel, if all the Fourier transforms 
             related to the pixel can be loaded into memory or a generator is
             otherwise required. Lower values are suggested to avoid MemoryErrors,
@@ -685,25 +778,23 @@ class AmbientNoiseAttenuation:
             is 9000 (i.e., 9 Gb)
             
         ram_split : int
-            When the estimate on the RAM used to load the Fourier transforms
-            of a given pixel into memory exceed `ram_available`, the task of
-            loading them is splitted in `ram_split` operations. Larger values
-            help avoiding MemoryErrors, but result in a longer computational
-            time. Default is 4
-        
+            When the (estimated) RAM necessary to load the Fourier transforms
+            of a given pixel into memory exceeds `ram_available`, the task is
+            splitted in `ram_split` operations. Larger values help avoiding 
+            MemoryErrors, but result in a longer computational time. Default 
+            is 4
         
         References
         ----------
-        Boschi et al. 2019, On seismic ambient noise cross-correlation and 
-            surface-wave attenuation, GJI
+        .. [1] Boschi et al., (2019). On seismic ambient noise cross-correlation and 
+            surface-wave attenuation. GJI
         
-        Boschi et al. 2020, Erratum: On seismic ambient noise cross-correlation 
-            and surface-wave attenuation, GJI
+        .. [2] Boschi et al., (2020). Erratum: On seismic ambient noise cross-correlation 
+            and surface-wave attenuation. GJI
         
-        Magrini & Boschi 2021, Surface‐Wave Attenuation From Seismic Ambient 
-            Noise: Numerical Validation and Application, JGR   
+        .. [3] Magrini & Boschi (2021). Surface‐Wave Attenuation From Seismic Ambient 
+            Noise: Numerical Validation and Application. JGR   
         """
-        
         def load_done(path):
             if os.path.exists(path):
                 return [int(i.strip()) for i in open(path)]
@@ -977,14 +1068,14 @@ class AmbientNoiseAttenuation:
     def prepare_inversion(self, src_velocity, freqmin=0.05, freqmax=0.4, 
                           nfreq=300, smooth=False, smoothing_window=25, 
                           smoothing_poly=2):
-        """ Prepares the data set to be inverted for Rayleigh-wave attenuation.
+        r""" Prepares the data set to be inverted for Rayleigh-wave attenuation.
         
         The data set used in the inversion, for each station pair, consists of 
         (i) envelope of the cross-spectrum, (ii) envelope of the associated 
-        Bessel function j0, (iii) phase velocity, (iv) inter-station distance.
-        These objects are collected, for each grid cell associated with the
-        parameterization, for all station pairs available, and stored into a
-        dictionary object that is written on disk at 
+        Bessel function :math:`J_0`, (iii) phase velocity, (iv) inter-station 
+        distance. These objects are collected, for each grid cell associated 
+        with the parameterization, for all station pairs available, and stored 
+        into a dictionary object that is written on disk at 
         $self.savedir/inversion_dataset. The individual dictionaries are saved
         in the pickle format and named after the index of the grid cell in the
         belonging parameterization.
@@ -1001,19 +1092,18 @@ class AmbientNoiseAttenuation:
             
         nfreq : float
             The frequency range in question will be subdivided in `nfreq` points
-            geometrically spaced (see numpy.geomspace)
+            geometrically spaced (see `numpy.geomspace`)
             
         smooth : bool
-            If True, the cross-spectra envelopes are smoothing with a Savitzky-
-            Golay filter. Default is False
+            If `True`, the cross-spectra envelopes are smoothing with a 
+            Savitzky-Golay filter. Default is `False`
             
         smoothing_window : odd int
-            Passed to scipy.signal.savgol_filter. Default is 25
+            Passed to `scipy.signal.savgol_filter`. Default is 25
             
         smoothing_poly : int
-            Passed to scipy.signal.savgol_filter. Default is 2
+            Passed to `scipy.signal.savgol_filter`. Default is 2
         """
-        
         def load_tmp_data(corr_dir, src_velocity, velocity_files_dict,
                           stations, freqmin, freqmax, verbose):
             freq_tmp = np.geomspace(freqmin/5, freqmax*2, 2000)
@@ -1164,48 +1254,46 @@ class AmbientNoiseAttenuation:
                 
     
     def inversion(self, alphamin=5e-7, alphamax=5e-4, nalpha=350, min_no_pairs=6):
-        """ Carries out the inversion for Rayleigh-wave attenuation
+        r""" Carries out the inversion for Rayleigh-wave attenuation
         
-        For each pickle file available in %self.savedir/inversion_dataset,
+        For each pickle file available in $self.savedir/inversion_dataset,
         an inversion is carried out by minimizing the misfit between the corr-
         spectra and the corresponding Bessel functions, so as to retrieve
-        *one* attenuation curve associated with the pixel [Magrini & Boschi 
-        2021]. 
+        one attenuation curve for each pixel [1]_. 
         
         The results (one attenuation curve per pickle file), are saved
-        at $self.savedir/results, and consist of (i) best_alphas.pickle, 
-        dictionary object containing, for each grid cell, the retrieved 
+        at $self.savedir/results, and consist of (i) best_alphas.pickle: 
+        a dictionary object containing, for each grid cell, the retrieved 
         attenuation curve and the number of station pairs used to constrain it;
-        (ii) frequencies.npy, frequency vector associated with the attenuation
+        (ii) frequencies.npy: frequency vector associated with the attenuation
         curves; (iii) pixel$d.pickle (where $d indicates the index of the grid 
-        cell in $self.savedir/parameterization.pickle), dictionary object
+        cell in $self.savedir/parameterization.pickle): dictionary object
         containing, along with the information stored in (i), the minimized
         misfit matrix to retrieve the attenuation curve.
         
         
         Parameters
         ----------
-        alphamin, alphamax : float (in m^-1)
-            Attenuation range within which the best-fitting attenuation is
-            sought as a function of frequency. Default are 5e-7 and 5e-4
+        alphamin, alphamax : float
+            Attenuation range (in 1/m) within which the best-fitting 
+            attenuation is sought as a function of frequency. Defaults are 
+            5e-7 and 5e-4
             
         nalpha : int
-            Number of alphas used to subdivide the attenuation range 
-            geometrically (see numpy.geomspace). Default is 350
+            Number of values of :math:`\alpha` used to subdivide the attenuation 
+            range geometrically (see `numpy.geomspace`). Default is 350
         
         min_no_pairs : int
             Minimum number of stations pairs required to carry out the 
-            inversion. If, in a given grid cell, the number of available data
+            inversion. If, in a given sub-array, the number of available data
             is smaller than this number, the pixel is not inverted for. Default
             is 6. Smaller values are suggested against.
-
         
         References
         ----------
-        Magrini & Boschi 2021, Surface‐Wave Attenuation From Seismic Ambient 
-            Noise: Numerical Validation and Application, JGR  
+        .. [1] Magrini & Boschi (2021). Surface‐Wave Attenuation From Seismic 
+            Ambient Noise: Numerical Validation and Application. JGR  
         """
-        
         def nans_where_allzeros(matrix):
             matrix = matrix.T
             for row in matrix:
@@ -1285,28 +1373,28 @@ class AmbientNoiseAttenuation:
             
     
     def get_attenuation_map(self, period, cell_size, min_overlapping_pixels=2):
-        """ 
-        Calculates an attenuation maps based on the results obtained in the 
-        inversion. 
+        r""" 
+        Calculates an attenuation maps from the inversion results.
         
         The map will be parameterized using an equal-area grid, built thorugh
-        the class EqualAreaGrid
+        :class:`seislib.tomography.grid.EqualAreaGrid`
         
         Parameters
         ----------
         period : float, int
         
-        cell_size : float, int (in degrees)
-            Size of each grid cell of the resulting parameterization
+        cell_size : float, int
+            Size of each grid cell (in degrees) of the resulting 
+            parameterization
             
-        min_overlapping_pixels:
-            At a given period, each grid cell in the resulting map will be 
-            given by a weighted average of the attenuation curves retrieved in
-            the inversion (the weights are determined by the number of station 
-            pairs used in the inversion of each sub-array). This parameters
-            determines the minimum number of attenuation curves used to constrain
-            a given pixel in the resulting map. Default is 2
-            
+        min_overlapping_pixels: int
+            At a given period, each value of :math:`\alpha` in the resulting 
+            map will be given by a weighted average of the attenuation curves 
+            retrieved in the inversion (the weights are determined by the 
+            number of station pairs used in the inversion of each sub-array). 
+            This parameters determines the minimum number of attenuation 
+            curves used to constrain :math:`\alpha` in a given pixel of the 
+            resulting map. Default is 2
             
         Returns
         -------
@@ -1316,15 +1404,9 @@ class AmbientNoiseAttenuation:
             lon1, lon2)
             
         attenuation : ndarray of shape (n,)
-            Value of attenuation associated in each grid cell of new_grid.mesh
-
-
-        References
-        ----------
-        Magrini et al. 2021, Rayleigh‑wave attenuation across the conterminous 
-            United States in the microseism frequency band, Scientific Reports
+            Value of attenuation associated with each grid cell of 
+            `new_mesh`
         """
-        
         def interpolate_results(freq, results, period):
             alphas = np.zeros(mesh.shape[0])
             no_measurements = np.zeros(mesh.shape[0])
@@ -1387,69 +1469,71 @@ class AmbientNoiseAttenuation:
                  bound_map=True, colorbar=True, show=True, style='colormesh', 
                  add_features=False, resolution='110m', cbar_dict={}, **kwargs):
         """ 
-        Displays an attenuation map
+        Displays an attenuation map.
         
         Parameters
         ----------
-        mesh : ndarray, shape (n, 4)
-            Grid cells in seislib format, consisting of n pixels described by 
+        mesh : ndarray of shape (n, 4)
+            Grid cells in SeisLib format, consisting of n pixels described by 
             lat1, lat2, lon1, lon2 (in degrees).
             
-        c : ndarray, shape (n,)
+        c : ndarray of shape (n,)
             Values associated with the grid cells (mesh)
             
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, `c` is plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not `None`, `c` is plotted on the `GeoAxesSubplot` instance. 
+            Otherwise, a new figure and `GeoAxesSubplot` instance is created
             
         projection : str
-            Name of the geographic projection used to create the GeoAxesSubplot.
-            (Visit the cartopy website for a list of valid projection names.)
-            If ax is not None, `projection` is ignored. Default is 'Mercator'
+            Name of the geographic projection used to create the `GeoAxesSubplot`.
+            (Visit the `cartopy website 
+            <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+            for a list of valid projection names.) If ax is not None, `projection` 
+            is ignored. Default is 'Mercator'
             
-        map_boundaries : list or tuple of floats, shape (4,), optional
+        map_boundaries : iterable of floats, shape (4,), optional
             Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
             the map
             
         bound_map : bool
-            If True, the map boundaries will be automatically determined.
-            Default is False
+            If `True`, the map boundaries will be automatically determined.
+            Default is `False`
         
         colorbar : bool
-            If True (default), a colorbar associated with `c` is displayed on 
+            If `True` (default), a colorbar associated with `c` is displayed on 
             the side of the map
             
         show : bool
-            If True (default), the map will be showed once generated
+            If `True` (default), the map will be showed once generated
             
-        style : str
-            Possible options are 'colormesh', 'contourf', and 'contour',
-            each corresponding to the homonymous method of SeismicTomography.
-            Default is 'colormesh'
+        style : {'colormesh', 'contourf', 'contour'}
+            Possible options are 'colormesh', 'contourf', and 'contour'.
+            Default is 'colormesh', corresponding to :meth:`colormesh`.
 
         add_features : bool
-            If True, natural Earth features will be added to the GeoAxesSubplot.
-            Default is False. If `ax` is None, it is automatically set to True
+            If `True`, natural Earth features will be added to the 
+            `GeoAxesSubplot` through 
+            :meth:`seislib.plotting.plotting.add_earth_features`.
+            Default is `False`. If `ax` is `None`, it is automatically set 
+            to `True`
             
-        resolution : str
+        resolution : {'10m', '50m', '110m'}
             Resolution of the Earth features displayed in the figure. Passed to
-            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-            '50m', '10m'. Default is '110m'
+            `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'. Ignored if `ax` is not `None`.
             
-        cbar_dict : dict
-            Keyword arguments passed to matplotlib.colorbar.ColorbarBase
+        cbar_dict : dict, optional
+            Keyword arguments passed to `matplotlib.colorbar.ColorbarBase`
          
-        kwargs : Additional inputs passed to the 'colormesh', 'contourf', and
-            'contour' methods of SeismicTomography
-            
+        **kwargs : dict, optional
+             Additional inputs passed to the method defined by `style`.
             
         Returns
         -------
-        None if show is False. Otherwise, an instance of 
-        matplotlib.collections.QuadMesh is returned (together with an instance
-        of matplotlib.colorbar.Colorbar, if colorbar is True)
+        `None` if show is `False` else an instance of 
+        `matplotlib.collections.QuadMesh` (together with an instance
+        of `matplotlib.colorbar.Colorbar`, if colorbar is True)
         """
-        
         norm = kwargs.pop('norm', LogNorm())
         cmap = kwargs.pop('cmap', 'inferno')
         
@@ -1473,63 +1557,64 @@ class AmbientNoiseAttenuation:
     @classmethod
     def colormesh(cls, mesh, c, ax, **kwargs):
         """
-        Adaptation of matplotlib.pyplot.pcolormesh to the (adaptive) equal area 
-        grid.
+        Adaptation of `matplotlib.pyplot.pcolormesh` to an (adaptive) 
+        equal-area grid.
         
         Parameters
         ---------
-        mesh : ndarray (n, 4)
+        mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2
             
-        c : list of ndarray (n,)
+        c : array-like of shape (n,)
             Values to plot in each grid cell
             
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` 
+            instance. Otherwise, a new figure and `GeoAxesSubplot` instance 
+            is created
             
-        kwargs : Additional inputs passed to seislib.plotting.colormesh
-        
+        **kwargs : dict, optional 
+            Additional inputs passed to `seislib.plotting.plotting.colormesh`
         
         Returns
         -------
-            img : Instance of matplotlib.collections.QuadMesh
+        img : Instance of matplotlib.collections.QuadMesh
         """
-        
         return colormesh(mesh, c, ax=ax, **kwargs)
         
     
     @classmethod
     def contourf(cls, mesh, c, ax, smoothing=None, **kwargs):
         """
-        Adaptation of matplotlib.pyplot.contourf to the (adaptive) equal area 
-        grid
+        Adaptation of `matplotlib.pyplot.contourf` to an (adaptive) 
+        equal-area grid
         
         Parameters
         ---------
-        mesh : ndarray (n, 4)
+        mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2
             
-        c : list of ndarray (n,)
+        c : array-like of shape (n,)
             Values to plot in each grid cell
             
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` 
+            instance. Otherwise, a new figure and `GeoAxesSubplot` instance 
+            is created
              
         smoothing : float, optional
-            Value passed to scipy.ndimage.filters.gaussian_filter and used to
-            obtain a smooth representation of `c` (default is None)
+            Value passed to `scipy.ndimage.filters.gaussian_filter` and used to
+            obtain a smooth representation of `c` (default is `None`)
             
-        kwargs : Additional inputs passed to seislib.plotting.contourf
+        **kwargs : dict, optional 
+            Additional inputs passed to `seislib.plotting.plotting.colormesh`
         
         Returns
         -------
-            img : Instance of matplotlib.contour.QuadContourSet
+        img : Instance of matplotlib.contour.QuadContourSet
         """
-        
         return contourf(mesh, c, ax=ax, smoothing=smoothing, **kwargs)
 
 
@@ -1541,29 +1626,29 @@ class AmbientNoiseAttenuation:
         
         Parameters
         ---------
-        mesh : ndarray (n, 4)
+        mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2
             
-        c : list of ndarray (n,)
+        c : array-like of shape (n,)
             Values to plot in each grid cell
             
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
-            
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` 
+            instance. Otherwise, a new figure and `GeoAxesSubplot` instance 
+            is created
+             
         smoothing : float, optional
-            Value passed to scipy.ndimage.filters.gaussian_filter and used to
-            obtain a smooth representation of `c` (default is None)
+            Value passed to `scipy.ndimage.filters.gaussian_filter` and used to
+            obtain a smooth representation of `c` (default is `None`)
             
-        kwargs : Additional inputs passed to seislib.plotting.contourf
-
+        **kwargs : dict, optional 
+            Additional inputs passed to `seislib.plotting.plotting.colormesh`
         
         Returns
         -------
-            img : Instance of matplotlib.contour.QuadContourSet
+        img : Instance of matplotlib.contour.QuadContourSet
         """
-        
         return contour(mesh, c, ax, smoothing=smoothing, **kwargs)
     
     
@@ -1576,51 +1661,51 @@ class AmbientNoiseAttenuation:
         Parameters
         ----------
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` instance. 
+            Otherwise, a new figure and `GeoAxesSubplot` instance is created
             
         show : bool
-            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
-            returned. Default is True
+            If `True`, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+            returned. Default is `True`
             
         oceans_color, lands_color : str
             Color of oceans and lands. The arguments are ignored if ax is not
-            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            `None`. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
             (to the argument 'facecolor'). Defaults are 'water' and 'land'
             
         edgecolor : str
             Color of the boundaries between, e.g., lakes and land. The argument 
-            is ignored if ax is not None. Otherwise, it is passed to 
-            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-            is 'k' (black)
+            is ignored if ax is not `None`. Otherwise, it is passed to 
+            `cartopy.feature.NaturalEarthFeature` (to the argument 'edgecolor'). 
+            Default is 'k' (black)
             
         projection : str
-            Name of the geographic projection used to create the GeoAxesSubplot.
-            (Visit the cartopy website for a list of valid projection names.)
-            If ax is not None, `projection` is ignored. Default is 'Mercator'
-         
-        resolution : str
+            Name of the geographic projection used to create the `GeoAxesSubplot`.
+            (Visit the `cartopy website 
+            <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+            for a list of valid projection names.) If ax is not None, `projection` 
+            is ignored. Default is 'Mercator'
+            
+        resolution : {'10m', '50m', '110m'}
             Resolution of the Earth features displayed in the figure. Passed to
-            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-            '50m', '10m'. Default is '110m'
+            `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'. Ignored if `ax` is not `None`.
             
         color_by_network : bool
-            If True, each seismic network will have a different color in the
+            If `True`, each seismic network will have a different color in the
             resulting map, and a legend will be displayed. Otherwise, all
-            stations will have the same color. Default is True
-            
-        legend_dict : dict, optional
-            Dictionary of keyword arguments passed to matplotlib.pyplot.legend
+            stations will have the same color. Default is `True`
         
-        kwargs : 
-            Additional keyword arguments passed to matplotlib.pyplot.scatter 
-            
+        legend_dict : dict, optional
+            Dictionary of keyword arguments passed to `matplotlib.pyplot.legend`
+        
+        **kwargs : dict, optional
+            Additional keyword arguments passed to `matplotlib.pyplot.scatter` 
             
         Returns
         -------
-        If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
-        """
-        
+        `None` if `show` is `True`, else `ax`, i.e. the GeoAxesSubplot
+        """                
         return plot_stations(stations=self.stations,
                              ax=ax, 
                              show=show, 
@@ -1644,24 +1729,24 @@ class AmbientNoiseAttenuation:
             Index of the pixel used in the inversion for alpha
             
         ax : matplotlib instance of PolarAxesSubplot, optional
-            If None, a new figure and ax is created
+            If `None`, a new figure and `PolarAxesSubplot` is created
             
         bins : array-like, optional
-            List or numpy array specifying the azimuthal bins (in degrees). If
-            None, bins of 30 degrees between 0 and 360 are used
+            Azimuthal bins (in degrees). If `None`, bins of 30 degrees 
+            between 0 and 360 are used
             
         show : bool
-            If False, `ax` is returned. Else, the figure is displayed.
+            If `False`, `ax` is returned. Else, the figure is displayed.
+            Default is `True`
             
-        kwargs : 
-            Additional arguments passed to matplotlib.pyplot.bar     
+        **kwargs : dict, optional 
+            Additional arguments passed to `matplotlib.pyplot.bar`     
             
             
         Returns
         -------
-        If `show` is True, None, else `ax`
+        `None` if `show` is `True`, else `ax`
         """
-        
         data = load_pickle(os.path.join(self.savedir, 
                                         'inversion_dataset',
                                         'pixel%s.pickle'%ipixel))
@@ -1706,37 +1791,38 @@ class AmbientNoiseAttenuation:
             Index of the pixel used in the inversion for alpha
             
         ax : matplotlib instance of AxesSubplot, optional
-            If None, a new figure and ax is created
+            If `None`, a new figure and `ax` is created
             
         show : bool
-            If False, `ax` is returned. Else, the figure is displayed.
+            If `False`, `ax` is returned. Else, the figure is displayed.
 
         alphamin, alphamax : float, optional
-            Alpha range used to bound the yaxis in the figure. If None, the 
-            whole alpha range used in the inversion is displayed
+            Alpha range used to bound the yaxis in the figure. If `None`, 
+            the whole alpha range used in the inversion is displayed
             
         freqmin, freqmax : float, optional
-            Frequency range used to bound the xaxis in the figure. If None, the 
-            whole Frequency range used in the inversion is displayed
+            Frequency range used to bound the xaxis in the figure. If `None`, 
+            the whole Frequency range used in the inversion is displayed
             
         show : bool
-            If False, `ax` is returned. Else, the figure is displayed.
+            If `False`, `ax` is returned. Else, the figure is displayed.
+            Default is `True`
             
-        curve_dict : dict
-            Arguments passed to matplotlib.pyplot.plot, to control the aspect
-            of the attenuation curve
+        curve_dict : dict, optional
+            Arguments passed to `matplotlib.pyplot.plot`, to control the 
+            aspect of the attenuation curve
         
-        **kwargs :
-            Additional arguments passed to matplotlib.pyplot.pcolormesh
+        **kwargs : dict, optional
+            Additional arguments passed to `matplotlib.pyplot.pcolormesh`
 
 
         Returns
         -------
-        If `show` is True, None, else a tuple containing
-            - matplotlib.collections.QuadMesh (associated with pcolormesh)
-            - matplotlib.pyplot.colorbar
+        If `show` is `True`, `None`, else a `(2,) tuple` containing
+
+        - `matplotlib.collections.QuadMesh` (associated with pcolormesh); 
+        - `matplotlib.pyplot.colorbar`
         """
-        
         def normalize_cost(matrix):
             matrix = matrix.T.copy()
             for row in matrix:

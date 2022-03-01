@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
+Automated Downloads
+=================== 
+
+The below class allows for automated downloads of seismograms
+recording teleseismic surface waves. The data will be saved on disk
+in the format required by :class:`seislib.eq.eq_velocity.EQVelocity` and
+:class:`seislib.eq.eq_velocity.TwoStationMethod` to calculate inter-station
+dispersion curves based on a two-station method.
+
 """
 
 import os
@@ -27,8 +33,102 @@ ONE_YEAR = 365 * 86400
 
 class EQDownloader:
     """ Downloads surface-wave data to be used via the two-station method
-    
-    
+
+    Parameters
+    ----------
+    savedir : str
+        Absolute path to the directory where the data will be saved. Inside 
+        this directory, a folder named 'data' will be created. Inside 'data'
+        the seismograms will be organized in subdirectories (one for each 
+        seismic event) in the format net.sta.loc.cha.sac.
+        
+    inventory_name : str
+        Name of the inventory (`obspy.core.inventory.inventory.Inventory`) 
+        associated with the downloads. This will be saved in xml format
+        in the `savedir`
+        
+    inv_provider : str
+        Provider of station metadata, passed to `obspy.clients.fdsn.Client`. 
+        Default is `iris`
+        
+    user, password : str, optional
+        User name and password for accessing restricted data. Passed to 
+        `obspy.clients.fdsn.Client`
+        
+    ev_provider : str
+        Provider of earthquake metadata, passed to `obspy.clients.fdsn.Client`. 
+        Default is `iris`
+        
+    vmin, vmax : float
+        Minimum and maximum velocity of the surface waves. These values are
+        used to establish the starting and ending time of the seismograms
+        to be downloaded with respect to the origin time of given earthquake.
+        Relatively loose limits are to be preferred. Default values are 1.5 
+        and 5.5 (km/s), respectively
+        
+    sampling_rate : int, float
+        Final sampling rate of the waveforms, in Hz. Default is 1 Hz
+        
+    units : {'DISP', 'VEL', 'ACC'}
+        Physical units of the final waveforms. Can be either 'DISP', 'VEL',
+        or 'ACC' (case insensitive). Default is 'DISP'.
+        
+    prefilter : (4, ) tuple of floats
+        Bandapass filter applied to the waveforms before removing the
+        intrument response. Default is (0.001, 0.005, 0.05, 0.4)
+        
+    attach_response : bool
+        If `True`, the details of the instrument response are attached to the 
+        header of the waveforms during their downloads. It can slow down the 
+        downloads, but it will make errors due to response information less 
+        likely. Default is `False`
+        
+    stations_config : dict
+        Python dictionary containing optional keys and values passed to
+        `obspy.clients.fdsn.Client.get_stations`.
+        
+    events_config : dict
+        Python dictionary containing optional keys and values passed to
+        `obspy.clients.fdsn.Client.get_events`. Default values are::
+            distmin = 2223.9 (km, corresponding to 20°)
+            distmax = 15567.3 (km, corresponding to 140°)
+            depthmax = 50 (km)
+            magmin = 6
+            magmax = 8.5
+            starttime = UTC(2000, 1, 1)
+            endtime = UTC(2021, 1, 1)
+
+        .. warning:: 
+            The obspy key words 'minmag', 'maxmag', and 'maxdepth' have been 
+            renamed as 'magmin', 'magmax', and 'depthmax', for better clarity 
+            in the code. Passing to `events_config` one of the (obspy) key 
+            words among 'minmag', 'maxmag', and 'maxdepth' will result in an 
+            error.
+        
+        .. note::
+            The above listed default values include 'distmin' and 'distmax' (in km). These refer 
+            to the minimum and maximum distance of the epicenter from a given receiver. Note 
+            that these two key words correspond to the obspy's 
+            'minradius' and 'maxradius', with the only difference that the latters 
+            are expressed in degrees. 'distmin' and 'distmax' have been introduced only for 
+            achieving a higher consistency in the use of physical units throughout the code. 
+            The user should be aware that, although the use of obspy's 'minradius' and 
+            'maxradius' will not result in any error, their use is suggested against. 
+            In fact, if 'distmin' and 'distmax' are not specified, their default value 
+            will be used in the downloads. And if this default is more "restrictive" than 
+            'minradius' and 'maxradius', 'minradius' and 'maxradius' will simpy be ignored 
+            in the downloads.
+        
+    sleep_time_after_exception : float
+        Time to wait (in s) after an `obspy.clients.fdsn.header.FDSNException`.
+        The excpetion could be due to temporal issues of the client, so
+        waiting a little bit before the next download could be useful to
+        get things back to normality.
+        
+    verbose : bool
+        If `True`, information on the downloads will be printed in console
+
+
     Attributes
     ----------
     savedir : str
@@ -43,13 +143,13 @@ class EQDownloader:
     channels : list
         List of candidate channels for the downloads
         
-    components : int
+    components : {3, 1}
         Either 3 (ZNE) or 1 (Z) 
         
-    vmin, vmax : float, int
+    vmin, vmax : float
         Minimum and maximum expected velocity of the surface waves
         
-    sampling_rate : int, float
+    sampling_rate : float
         Sampling rate of the final seismograms
         
     prefilter : tuple
@@ -65,7 +165,7 @@ class EQDownloader:
     verbose : bool
         Whether or not progress information are displayed in the console
         
-    sleep_time_after_exception : int, float
+    sleep_time_after_exception : float
         The downloads are stopped for the specified time (in s) after a FDSN 
         exception
         
@@ -100,93 +200,28 @@ class EQDownloader:
     _events_done : int
         Number of events for which the downloads have been finished
 
-        
-    Methods
-    -------
-    handle_multiple_locations(st, station_info)
-        Location selection in case multiple ones are available
-        
-    collect_waveforms(network, station, channels, starttime, endtime)
-        Downloads obspy stream
-        
-    prepare_data(st)
-        Demean, detrend, tapering, removing response and resampling
-        
-    adjust_channels(st)
-        If the stream contains the Z12 channels, these are rotated towards ZNE
-        
-    compile_header_and_save(st, savedir, stla, stlo, stel, evla, evlo, evdp, 
-                            otime, mag, dist, az, baz)
-        Compiles the header of the obspy stream (sac format) and writes to disk
-        
-    select_components(st, baz)
-        Handles the absence of some components in the final stream
-        
-    preprocessing(st, station)
-        Preprocessing of the obspy stream
-        
-    build_inventory(**kwargs)
-        Builds an obspy inventory containing stations information    
-        
-    active_channels(station)
-        Channels available for the given station among those to download
-        
-    fetch_catalog(t1, t2, **kwargs)
-        Fetches a catalog of seismic events
-        
-    plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', resolution='110m', 
-                  color_by_network=True, legend_dict={}, **kwargs)
-        Creates a maps of seismic receivers available for download
 
-    start()
-        Starts the downloads
-        
-        
-    Class Methods
-    -------------
-    station_coordinates(station_info)
-        Fetches station coordinates (lat, lon, elevation)
-        
-    station_was_active(station, time)
-        Wheater or not the seismic station was active at the given time
-        
-    inventory_iterator(inventory, reverse=False):
-        Generator function to iterate over an obspy inventory
-        
-    event_coordinates_and_time(event)
-        Fetch event coordinates (lat, lon, depth) and origin time.
-        
-    get_event_info(event)
-        Fetch event information
-
-
-    Example
-    -------
-    
+    Examples
+    --------
     The following will download seismic data from all the seismic networks 
     and stations managed by iris within the region specified by minlatitude, 
-    maxlatitude, minlongitude, maxlongitude in `stations_config`. 3 component 
-    seismogram (ZNE) will be downloaded from either of the LH, BH, or HH 
-    channel (precedence is given from left to right, i.e., LH>BH>HH: if LH 
-    is not available, BH will be downloaded; if BH is not available, HH will 
-    be downloaded.)
-    
-      stations_config=dict(
-              channel='LH*,BH*,HH*',
-              includerestricted=False,
-              maxlatitude=12,
-              minlatitude=-18,
-              minlongitude=90,
-              maxlongitude=140)   
+    maxlatitude, minlongitude, maxlongitude. All such parameters should be passed to
+    `stations_config`::
+
+        stations_config=dict(
+                channel='LH*,BH*,HH*',
+                includerestricted=False,
+                maxlatitude=12,
+                minlatitude=-18,
+                minlongitude=90,
+                maxlongitude=140)    
       
-     
     All earthquakes characterized by a magnitude between 6 and 8.5, by a 
-    maximum depth of 50km, and generated between the 1.1.2000 and 1.1.2021 
+    maximum depth of 50 km, and generated between the 1.1.2000 and 1.1.2021 
     will be used, to identify the surface-wave in the seismograms recorded
     at the considered seismic stations. The distance between each earthquake
     and a given receiver should be more than 20° (expressed in km) and less
-    than 140° (in km).
+    than 140° (in km)::
     
       events_config=dict(
               starttime=UTC(2000, 1, 1),
@@ -198,10 +233,34 @@ class EQDownloader:
               distmax=degrees2kilometers(140),
                   )      
       
-    
-    We initialize the EQDownloader instance, and then start it.
-    
-        downloader = EQDownloader(savedir='/path/to/directory', 
+    The above also specifies the preference of downloading 3-component seismograms (ZNE), 
+    as implied by the asterisk sign. For a given receiver recording an earthquake, either 
+    of the LH, BH, or HH channels will be downloaded, with priority given from left to right, 
+    i.e., LH>BH>HH: if LH is not available, BH will be downloaded; if BH is not available, HH will 
+    be downloaded.
+        
+    In this example, we use all earthquakes characterized by a 
+    magnitude between 6 and 8.5, by a maximum depth of 50km, and generated 
+    between the 1.1.2000 and 1.1.2021. The distance between each earthquake
+    and a given receiver should be more than 20° (expressed in km) and less
+    than 140° (in km)::
+
+        from obspy import UTCDateTime as UTC
+        from obspy.geodetics import degrees2kilometers
+
+        events_config=dict(
+                starttime=UTC(2000, 1, 1),
+                endtime=UTC(2021, 1, 1),
+                depthmax=50,
+                magmin=6, 
+                magmax=8.5,
+                distmin=degrees2kilometers(20),
+                distmax=degrees2kilometers(140),
+                    )      
+        
+    We initialize the EQDownloader instance, and then start it::
+        
+        downloader = EQDownloader(savedir='/path/to/directory',
                                   inv_provider='iris',
                                   ev_provider='iris',
                                   inventory_name='iris.xml',
@@ -223,104 +282,6 @@ class EQDownloader:
                  sampling_rate=1, units='disp', prefilter=(0.001, 0.005, 0.05, 0.4), 
                  attach_response=False, stations_config={}, events_config={},
                  sleep_time_after_exception=30, verbose=True):
-        """        
-        Parameters
-        ----------
-        savedir : str
-            Absolute path to the directory where the data will be saved. Inside 
-            this directory, a folder named 'data' will be created, inside which
-            the seismograms stored inside subdirectories (one for each seismic
-            event) in the format net.sta.loc.cha.sac.
-            (net=network code, sta=station, loc=location, cha=channel)
-            
-        inventory_name : str
-            Name of the inventory (obspy.core.inventory.inventory.Inventory) 
-            associated with the downloads. This will be saved in xml format
-            in the `savedir`
-            
-        inv_provider : str
-            Provider of station metadata, passed to obspy.clients.fdsn.Client. 
-            Default is `iris`
-            
-        user, password : str, optional
-            User name and password for accessing restricted data. Passed to 
-            obspy.clients.fdsn.Client
-            
-        ev_provider : str
-            Provider of earthquake metadata, passed to obspy.clients.fdsn.Client. 
-            Default is `iris`
-            
-        vmin, vmax : float
-            Minimum and maximum velocity of the surface waves. These values are
-            used to establish the starting and ending time of the seismograms
-            to be downloaded with respect to the origin time of given earthquake.
-            Relatively loose limits are to be preferred. Default values are 1.5 
-            and 5.5 (km/s), respectively
-            
-        sampling_rate : int, float
-            Final sampling rate of the waveforms, in Hz. Default is 1 Hz
-            
-        units : str
-            Physical units of the final waveforms. Can be either 'DISP', 'VEL',
-            or 'ACC' (case insensitive). Default is 'DISP'.
-            
-        prefilter : tuple of floats
-            Bandapass filter applied to the waveforms before removing the
-            intrument response. Default is (0.001, 0.005, 0.05, 0.4)
-            
-        attach_response : bool
-            If True, the details of the instrument response are attached to the 
-            header of the waveforms during their downloads. It can slow down the 
-            downloads, but it will make errors due to response information less 
-            likely. Default is False
-            
-        stations_config : dict
-            Python dictionary containing optional keys and values passed to
-            obspy.clients.fdsn.Client.get_stations. See obspy documentation
-            
-        events_config : dict
-            Python dictionary containing optional keys and values passed to
-            obspy.clients.fdsn.Client.get_events. See obspy documentation.
-            -----
-            NOTE1: The obspy key words 'minmag', 'maxmag', and 'maxdepth' have 
-            been renamed as 'magmin', 'magmax', and 'depthmax', for better 
-            clarity in the code. Passing to event_config one of the (obspy) key 
-            words among 'minmag', 'maxmag', and 'maxdepth' will result in an error. 
-            -----
-            NOTE2: Additional kew words (besides those available in obspy) that 
-            can be passed are 'distmin' and 'distmax' (in km). These refer to
-            the minimum and maximum distance of the epicenter of a given seismic
-            event from the considered seismic station. Note that these two key
-            words correspond to the obspy 'minradius' and 'maxradius', with the
-            only difference that the latters are expressed in degrees. 'distmin'
-            and 'distmax' have been introduced only for achieving a higher
-            consistency in the use of physical units throughout the code. The 
-            user should be aware that, although the use of obspy's 'minradius' 
-            and 'maxradius' will not result in any error, their use is suggested 
-            against. In fact, if 'distmin' and 'distmax' are not specified, their 
-            default value (see below) will be used in the downloads. And if 
-            'distmin' and 'distmax' are more "restrictive" than 'minradius' and 
-            'maxradius', they will vanify the obspy's key words.
-            -----
-            Default values are:
-                distmin = 2223.9 (km, corresponding to 20°)
-                distmax = 15567.3 (km, corresponding to 140°)
-                depthmax = 50 (km)
-                magmin = 6
-                magmax = 8.5
-                starttime = UTC(2000, 1, 1)
-                endtime = UTC(2021, 1, 1)
-            -----
-            
-        sleep_time_after_exception : float, int
-            Time to wait (in s) after an obspy.clients.fdsn.header.FDSNException.
-            The excpetion could be due to temporal issues of the client, so
-            waiting a little bit before the next download could be useful to
-            get things back to normality.
-            
-        verbose : bool
-            If True, information on the downloads will be printed in console
-        """
 
         self.savedir = savedir
         os.makedirs(savedir, exist_ok=True)
@@ -387,16 +348,14 @@ class EQDownloader:
         
         Parameters
         ----------
-        **kwargs :
+        **kwargs : dict, optional
             Additional key word arguments passed to the get_stations method of 
-            obspy.clients.fdsn.client
-            
+            `obspy.clients.fdsn.client`
             
         Returns
         -------
         inv : obspy.core.inventory.inventory.Inventory
         """
-        
         def attach_channels(inv, **kwargs):
             
             tmp_kwargs = {i:j for i, j in kwargs.items() \
@@ -436,14 +395,14 @@ class EQDownloader:
         inventory : obspy.core.inventory.inventory.Inventory  
         
         reverse : bool
-            If True, the inventory will be iterated over from bottom to top
+            If `True`, the inventory will be iterated over from bottom to top
             
             
         Yields
         ------
-        (2,) tuple containing network and station information at each iteration
+        (2,) tuple 
+            Yields network and station information at each iteration
         """
-
         def func(iterable, reverse=False):
             if reverse:
                 return reversed(iterable)
@@ -462,13 +421,13 @@ class EQDownloader:
         ----------
         event : obspy.core.event.event.Event
         
-        
         Returns
         -------
-        (latitude, longitude, depth), origin_time (obspy.UTCDateTime.timestamp)
+        (2,) Tuple
+            (latitude, longitude, depth) and origin time in 
+            `obspy.UTCDateTime.timestamp` format
     
         """
-    
         otime = event.origins[0].time
         evla = event.origins[0].latitude
         evlo = event.origins[0].longitude
@@ -487,9 +446,9 @@ class EQDownloader:
         
         Returns
         -------
-        (latitude, longitude, elevation)
+        (3,) Tuple of floats
+            latitude, longitude, elevation
         """
-        
         stla = station_info.latitude
         stlo = station_info.longitude
         stel = station_info.elevation
@@ -504,12 +463,11 @@ class EQDownloader:
         ----------
         event : obspy.core.event.event.Event
         
-        
         Returns
         -------
-        (origin time, magnitude), (latitude, longitude, depth)
+        (2, ) Tuple
+            (origin time, magnitude), (latitude, longitude, depth)
         """
-
         (evla, evlo, evdp), otime = cls.event_coordinates_and_time(event)
         mag = event.magnitudes[0].mag
         return (otime, mag), (evla, evlo, evdp)    
@@ -523,16 +481,15 @@ class EQDownloader:
         t1, t2 : obspy.core.utcdatetime.UTCDateTime
             Starttime and endtime of the catalog
             
-        **kwargs :
+        **kwargs : dict, optional
             Additional key-word arguments passed to 
-            obspy.clients.fdsn.client.Client.get_events
-        
+            `obspy.clients.fdsn.client.Client.get_events`
         
         Returns
         -------
         obspy.core.event.catalog.Catalog
+            Catalog of seismic events
         """
-
         catalog = self.evclient.get_events(
                 starttime=t1, 
                 endtime=t2, 
@@ -558,9 +515,8 @@ class EQDownloader:
         Returns
         -------
         bool
-        
+            Whether or not the receiver was active at the specified time
         """
-        
         if station.start_date and (time<station.start_date):
             return False
         if station.end_date and (time>station.end_date):
@@ -577,9 +533,8 @@ class EQDownloader:
         
         Returns
         -------
-        List of channels
+        List
         """
-
         channels = set([channel.code[:2] for channel in station.channels])
         return [cha for cha in self.channels if cha[:2] in channels]
     
@@ -592,7 +547,7 @@ class EQDownloader:
         network, station : str 
             network and station codes
             
-        channels : tuple, list, ndarray of str
+        channels : iterable of str
             iterable containing the channels codes suited to the download. Each
             channel will be tried to be used in the downloads. The first successfull
             attempt determines the returned waveforms. (Higher priority is given to
@@ -600,7 +555,6 @@ class EQDownloader:
             
         starttime, endtime : obspy.core.utcdatetime.UTCDateTime
             start and end time of the stream.
-        
         
         Returns
         -------
@@ -649,9 +603,8 @@ class EQDownloader:
         
         Returns
         -------
-        Obspy stream
+        st : obspy.core.stream.Stream
         """
-        
         locations = set([tr.stats.location for tr in st])
         if len(locations) > 1:
             channel_type = st[0].stats.channel[0]
@@ -682,7 +635,6 @@ class EQDownloader:
         -------
         obspy.core.stream.Stream if the processing is successful, else None
         """
-        
         try:
             st.detrend('demean')
             st.detrend('linear')
@@ -716,12 +668,10 @@ class EQDownloader:
         ----------
         st : obspy.core.stream.Stream
         
-        
         Returns
         -------
         obspy.core.stream.Stream if the rotation is successful, else None
         """
-
         channels = set([tr.stats.channel[-1] for tr in st])
         if 'Z' in channels and 'N' in channels and 'E' in channels:
             return st
@@ -752,10 +702,9 @@ class EQDownloader:
         baz : int, float (in degrees)
             Back-azimuth used for the rotation NE->RT
         
-        
         Returns
         -------
-        st : obspy.Stream
+        st : obspy.core.stream.Stream
             If the expected three-component stream lacks of one or both the
             horizontal components, the vertical component is returned. If the
             stream lacks the vertical component but has the two horizontal ones,
@@ -763,7 +712,6 @@ class EQDownloader:
             azimuth. If only one horizontal component is available, it returns 
             None        
         """
-        
         channels = [tr.stats.channel[-1] for tr in st]
         if 'Z' in channels:
             return st.select(channel='*Z')
@@ -780,8 +728,8 @@ class EQDownloader:
     def preprocessing(self, st, station, baz):
         """ Preprocessing of the obspy stream
         
-        The function calls sequentially the methods 'handle_multiple_locations',
-        'prepare_data', and 'adjust_channels'.
+        The function calls sequentially the methods :meth:`handle_multiple_locations`,
+        :meth:`prepare_data`, and :meth:`adjust_channels`.
         
         Parameters
         ----------
@@ -789,15 +737,13 @@ class EQDownloader:
         
         station : obspy.core.inventory.station.Station
         
-        baz : float (degrees)
-            Back azimuth of the epicenter with respect to the receiver
-        
+        baz : float
+            Back azimuth (degrees) of the epicenter with respect to the receiver
         
         Returns
         -------
         obspy.core.stream.Stream if the preprocessing is successful, else None
         """
-
         if st is None or len(st)==0:# or len(st)<self.components:
             return
         st = self.handle_multiple_locations(st, station)
@@ -830,10 +776,10 @@ class EQDownloader:
         stream : obspy.core.stream.Stream
         
         stla, stlo, stel : float
-            latitude, longitude, elevation of the seismic station
+            Latitude, longitude, elevation of the seismic station
             
         evla, evlo, evdp : float
-            latitude, longitude, depth of the earthquake
+            Latitude, longitude, depth of the earthquake
             
         otime : obspy.core.utcdatetime.UTCDateTime
             Origin time of the earthquake
@@ -844,7 +790,6 @@ class EQDownloader:
         az, baz : float
             Azimuth and back azimuth of the epicenter with respect to the receiver
         """
-        
         for tr in st:
             tr.stats.sac = AttribDict()
             tr.stats.sac.stla = stla
@@ -883,7 +828,7 @@ class EQDownloader:
             ($network_code.$station_code) and each value is a tuple containing 
             latitude and longitude of the station. 
             
-            For example:
+            For example::
                 
                 { net1.sta1 : (lat1, lon1),
                   net1.sta2 : (lat2, lon2),
@@ -891,51 +836,51 @@ class EQDownloader:
                   }
         
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not None, the receivers are plotted on the `GeoAxesSubplot` instance. 
+            Otherwise, a new figure and `GeoAxesSubplot` instance is created
             
         show : bool
-            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
-            returned. Default is True
+            If True, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+            returned. Default is `True`
             
         oceans_color, lands_color : str
             Color of oceans and lands. The arguments are ignored if ax is not
-            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            `None`. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
             (to the argument 'facecolor'). Defaults are 'water' and 'land'
             
         edgecolor : str
             Color of the boundaries between, e.g., lakes and land. The argument 
             is ignored if ax is not None. Otherwise, it is passed to 
-            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-            is 'k' (black)
+            `cartopy.feature.NaturalEarthFeature` (to the argument 'edgecolor'). 
+            Default is 'k' (black)
             
         projection : str
-            Name of the geographic projection used to create the GeoAxesSubplot.
-            (Visit the cartopy website for a list of valid projection names.)
-            If ax is not None, `projection` is ignored. Default is 'Mercator'
+            Name of the geographic projection used to create the `GeoAxesSubplot`.
+            (Visit the `cartopy website 
+            <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+            for a list of valid projection names.) If ax is not None, `projection` 
+            is ignored. Default is 'Mercator'
         
-        resolution : str
+        resolution : {'10m', '50m', '110m'}
             Resolution of the Earth features displayed in the figure. Passed to
-            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+            `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
             '50m', '10m'. Default is '110m'
         
         color_by_network : bool
-            If True, each seismic network will have a different color in the
+            If `True`, each seismic network will have a different color in the
             resulting map, and a legend will be displayed. Otherwise, all
-            stations will have the same color. Default is True
+            stations will have the same color. Default is `True`
         
-        legend_dict : dict
-            Keyword arguments passed to matplotlib.pyplot.legend
-            
-        kwargs : 
-            Additional keyword arguments passed to matplotlib.pyplot.scatter
-            
+        legend_dict : dict, optional
+            Dictionary of keyword arguments passed to `matplotlib.pyplot.legend`
+        
+        **kwargs : dict, optional
+            Additional keyword arguments passed to `matplotlib.pyplot.scatter` 
             
         Returns
         -------
         If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
-        """
-        
+        """   
         stations = {}
         for net, sta in self.inventory_iterator(self.inventory):
             station_code = '%s.%s'%(net.code, sta.code)
@@ -969,7 +914,6 @@ class EQDownloader:
         The algorithm keeps track of the progress made. This allows one to stop
         the downloads and start from where it was left off at any time.
         """
-
         
         def get_done_stations(savedir, event):
             done_file = os.path.join(savedir, event, 'DONE.txt')
