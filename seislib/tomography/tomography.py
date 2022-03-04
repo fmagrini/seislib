@@ -16,11 +16,11 @@ from obspy.geodetics import gps2dist_azimuth
 from seislib.tomography import EqualAreaGrid
 from seislib import colormaps as scm
 import seislib.plotting as plotting
-from seislib.clib._tomography import _compile_coefficients
-from seislib.clib._tomography import _refine_parameterization
-from seislib.clib._tomography import _raypaths_per_pixel
-from seislib.clib._tomography import _derivatives_lat_lon
-from seislib.clib._tomography import _select_parameters
+from seislib.tomography._ray_theory._tomography import _compile_coefficients
+from seislib.tomography._ray_theory._tomography import _refine_parameterization
+from seislib.tomography._ray_theory._tomography import _raypaths_per_pixel
+from seislib.tomography._ray_theory._tomography import _derivatives_lat_lon
+from seislib.tomography._ray_theory._tomography import _select_parameters
 eps = np.finfo(np.float64).eps
 
 

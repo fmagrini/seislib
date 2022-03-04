@@ -15,9 +15,9 @@ from libc.math cimport sqrt, fabs, fmin, fmax
 from libcpp cimport bool as bool_cpp
 from libcpp.list cimport list as cpplist
 from libcpp.vector cimport vector as cppvector
-from _spherical_geometry cimport cartesian_coordinates, spherical_coordinates
-from _spherical_geometry cimport great_circle_distance, gc_arc_midpoint, great_circle_plane
-from _spherical_geometry cimport gc_meridian_intersection, gc_parallel_intersection
+from seislib.tomography._ray_theory._spherical_geometry cimport cartesian_coordinates, spherical_coordinates
+from seislib.tomography._ray_theory._spherical_geometry cimport great_circle_distance, gc_arc_midpoint, great_circle_plane
+from seislib.tomography._ray_theory._spherical_geometry cimport gc_meridian_intersection, gc_parallel_intersection
 import numpy as np
 cimport numpy as np
 from libc.stdlib cimport malloc, free
