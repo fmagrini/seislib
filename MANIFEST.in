@@ -3,9 +3,9 @@ recursive-include seislib *.py *.txt *.pdf *.pyx *.pxd
 recursive-include seislib/colormaps *.py *.txt *.pdf 
 recursive-include include seislib/colormaps/*/ *.py *.txt 
 
-include seislib/tomography/*.py
-include seislib/clib/*.pyx
-include seislib/clib/*.pxd
+include seislib/tomography/_ray_theory/*.py
+include seislib/tomography/_ray_theory/*.pyx
+include seislib/tomography/_ray_theory/*.pxd
 
 recursive-include doc *
 prune docs/build
