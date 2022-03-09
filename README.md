@@ -43,7 +43,7 @@ pip install seislib
 If you run into troubles with the above, you can try the following approach:
 ```
 git clone https://github.com/fmagrini/seislib.git
-cd seislib/seislib/tomography/\_ray\_theory
+cd seislib/seislib/tomography/_ray_theory
 python setup_all.py build_ext --inplace
 ```
 The last command will compile the Cython files. If you work on an anaconda environment, you might need to replace "python" with, e.g., "/home/your_name/anaconda3/bin/python". (You can retrieve the path to your python executable by typing "import sys; print(sys.executable)" in your Python GUI. Make sure to then add ~/seislib to your path to being able to import its modules in your Python codes.
