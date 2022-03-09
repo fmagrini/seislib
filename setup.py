@@ -34,7 +34,7 @@ def generate_cython():
     python = sys.executable
     cwd = os.path.abspath(os.path.dirname(__file__))
     print("Cythonizing sources")
-    os.chdir(os.path.join(cwd, 'seislib/clib'))
+    os.chdir(os.path.join(cwd, 'seislib/tomography/_ray_theory'))
     print(os.getcwd())
     os.system('%s ./setup_all.py build_ext --inplace'%python)
     os.chdir(cwd)
@@ -106,7 +106,7 @@ pkg_metadata = dict(
         license="MIT",
         packages=find_packages(),
         package_data={  
-            "seislib": ["clib/*", "colormaps/*"] + get_maps()
+            "seislib": ["tomography/_ray_theory/*", "colormaps/*"] + get_maps()
             },
         include_package_data=True,
         python_requires=">=3.6",

@@ -288,7 +288,7 @@ def colormesh(mesh, c, ax, **kwargs):
             lons.append(lon2)
             v.append(c[i])
     if v:
-        plot_band(lat1, lat2, lons, v, **kwargs)
+        img = plot_band(lat1, lat2, lons, v, **kwargs)
     return img
 
 

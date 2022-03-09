@@ -18,8 +18,8 @@ from libcpp cimport bool as bool_cpp
 from libcpp.list cimport list as cpplist
 import numpy as np
 cimport numpy as np
-from _math cimport radians, degrees
-from _math cimport cross_product_3d, norm_3d
+from seislib.tomography._ray_theory._math cimport radians, degrees
+from seislib.tomography._ray_theory._math cimport cross_product_3d, norm_3d
 cdef double TWOPI = 2 * PI
 
 
