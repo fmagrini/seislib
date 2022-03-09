@@ -29,7 +29,7 @@ First, make sure you have all the **dependences** installed, i.e., ***obspy***, 
 ```bash
 conda create -n seislib python=3.9 numpy=1.20
 conda install -c conda-forge obspy
-conda install -c conda-forge cartopy
+conda install -c conda-forge cartopy=0.18
 conda install -c anaconda cython
 ```
 
