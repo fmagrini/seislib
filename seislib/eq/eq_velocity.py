@@ -22,12 +22,21 @@ from scipy import signal
 import matplotlib.pyplot as plt
 from obspy import read, read_events
 from obspy.geodetics.base import gps2dist_azimuth
+from obspy.io.sac.util import SacIOError
 from seislib.utils import adapt_timespan, zeropad, bandpass_gaussian
 from seislib.utils import load_pickle, save_pickle, remove_file
 from seislib.utils import gaussian, skewed_normal, next_power_of_2
 from seislib.plotting import plot_stations, plot_events
 from seislib.exceptions import DispersionCurveException
 
+
+def _read(*args, verbose=True, **kwargs):
+    try:
+        return read(*args, **kwargs)
+    except SacIOError:
+        if verbose:
+            print('SacIOError', *args)
+            
 
 class EQVelocity:
     """
@@ -288,7 +297,9 @@ class EQVelocity:
             return evla, evlo, mag
         
         def get_event_coords_from_sac(sacfile):
-            tr = read(sacfile)[0]
+            tr = _read(sacfile, 
+                       headonly=True,
+                       verbose=self.verbose)[0]
             evla = tr.stats.sac.evla
             evlo = tr.stats.sac.evlo
             mag = tr.stats.sac.mag
@@ -299,7 +310,9 @@ class EQVelocity:
             code = '.'.join(sacfile.split('.')[:2])
             if code in stations:
                 return code, stations[code]
-            st = read(os.path.join(evdir, sacfile))
+            st = _read(os.path.join(evdir, sacfile), 
+                       headonly=True, 
+                       verbose=self.verbose)
             coords = st[0].stats.sac.stla, st[0].stats.sac.stlo
             stations[code] = coords
             return code, coords
@@ -716,8 +729,10 @@ class EQVelocity:
             savedir = os.path.join(save_dispersion, '%s__%s'%(sta1, sta2))
             os.makedirs(savedir, exist_ok=True)
             for otime in events:
-                st1 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta1, self.component)))
-                st2 = read(os.path.join(self.src, otime, '%s*%s.sac'%(sta2, self.component)))
+                st1 = _read(os.path.join(self.src, otime, '%s*%s.sac'%(sta1, self.component)),
+                            verbose=self.verbose)
+                st2 = _read(os.path.join(self.src, otime, '%s*%s.sac'%(sta2, self.component)),
+                            verbose=self.verbose)
                 try:
                     tsm.preprocess(st1, st2, float(otime), fs=2)
                     dispersion = tsm.measure_dispersion()

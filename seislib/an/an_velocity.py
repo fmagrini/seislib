@@ -16,11 +16,20 @@ import numpy as np
 from scipy.interpolate import interp1d
 from obspy import read
 from obspy.geodetics.base import gps2dist_azimuth
+from obspy.io.sac.util import SacIOError
 import matplotlib.pyplot as plt
 from seislib.utils import rotate_stream, load_pickle, save_pickle, remove_file
 from seislib.an import noisecorr, velocity_filter, extract_dispcurve
 from seislib.plotting import plot_stations
 
+
+def _read(*args, verbose=True, **kwargs):
+    try:
+        return read(*args, **kwargs)
+    except SacIOError:
+        if verbose:
+            print('SacIOError', *args)
+        
 
 class AmbientNoiseVelocity:
     """ 
@@ -254,7 +263,9 @@ class AmbientNoiseVelocity:
             station_code = '.'.join(file.split('.')[:2])
             if station_code in coords:
                 continue
-            tr = read(os.path.join(self.src, file))[0]
+            tr = _read(os.path.join(self.src, file), 
+                       headonly=True,
+                       verbose=self.verbose)[0]
             lat, lon = tr.stats.sac.stla, tr.stats.sac.stlo
             coords[station_code] = (lat, lon)
             starttime = tr.stats.starttime.timestamp
@@ -436,7 +447,6 @@ class AmbientNoiseVelocity:
         .. [3] Seats et al. 2012, Improved ambient noise correlation functions using 
             Welch's method, GJI
         """
-        
         def percentage_done(no_pairs, no_done):
             return '\nPERCENTAGE DONE: %.2f\n'%(no_done/no_pairs * 100)
         
@@ -459,12 +469,17 @@ class AmbientNoiseVelocity:
                 yield pair
         
         def read_stream(folder, file, component):
-            st = read(os.path.join(folder, file))
+            st = _read(os.path.join(folder, file), verbose=self.verbose)
+            if st is None:
+                return
             if component=='R' or component=='T':
                 cha = file[-5]
                 new_cha = 'N' if cha=='E' else 'E'
                 new_file = file.replace('%s.sac'%cha, '%s.sac'%new_cha)
-                st += read(os.path.join(folder, new_file))
+                try:
+                    st += _read(os.path.join(folder, new_file), verbose=self.verbose)
+                except TypeError:
+                    return
             return st
         
         def get_trace(st, azimuth, component):
@@ -515,7 +530,7 @@ class AmbientNoiseVelocity:
             if savefig is not None:
                 plt.savefig(savefig, dpi=(150))
             plt.show()
-
+        
         save_pv = os.path.join(self.savedir, 'dispcurves')
         save_tmp = os.path.join(self.savedir, 'tmp')
         save_done = os.path.join(save_tmp, 'DONE.txt')
@@ -557,9 +572,19 @@ class AmbientNoiseVelocity:
                 print(sta1, sta2)
 
             if sta1_code is None or sta1_code!=sta1:
-                st1 = read_stream(folder=self.src, file=sac1, component=self.component)
+                st1 = read_stream(folder=self.src, 
+                                  file=sac1, 
+                                  component=self.component)
+                if st1 is None:
+                    update_done(sta1, sta2)
+                    continue
                 sta1_code = sta1
-            st2 = read_stream(folder=self.src, file=sac2, component=self.component)
+            st2 = read_stream(folder=self.src, 
+                              file=sac2, 
+                              component=self.component)
+            if st2 is None:
+                update_done(sta1, sta2)
+                continue
             tr1 = get_trace(st1, azimuth=az, component=self.component)
             tr2 = get_trace(st2, azimuth=az, component=self.component)      
             dispcurve_file = os.path.join(save_pv, '%s__%s.npy'%(tr1.id, tr2.id))

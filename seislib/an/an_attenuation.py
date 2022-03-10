@@ -120,6 +120,7 @@ from obspy import read
 from obspy import UTCDateTime as UTC
 from obspy.signal.invsim import cosine_taper
 from obspy.geodetics.base import gps2dist_azimuth
+from obspy.io.sac.util import SacIOError
 from seislib import EqualAreaGrid
 from seislib.utils import load_pickle, save_pickle, remove_file, resample
 from seislib.utils import azimuth_backazimuth
@@ -127,6 +128,14 @@ from seislib.plotting import add_earth_features
 from seislib.plotting import colormesh, contour, contourf
 from seislib.plotting import plot_stations, plot_map, make_colorbar
 from seislib.an import velocity_filter
+
+
+def _read(*args, verbose=True, **kwargs):
+    try:
+        return read(*args, **kwargs)
+    except SacIOError:
+        if verbose:
+            print('SacIOError', *args)
 
 
 class AmbientNoiseAttenuation:
@@ -394,7 +403,9 @@ class AmbientNoiseAttenuation:
         coords = {}
         for file in files:
             station_code = '.'.join(file.split('.')[:2])
-            tr = read(os.path.join(self.src, file))[0]
+            tr = _read(os.path.join(self.src, file), 
+                       headonly=True,
+                       verbose=self.verbose)[0]
             lat, lon = tr.stats.sac.stla, tr.stats.sac.stlo
             coords[station_code] = (lat, lon)
             if self.verbose:
@@ -714,7 +725,9 @@ class AmbientNoiseAttenuation:
                 continue
             if os.path.exists(os.path.join(save_ffts, '%s.npy'%station_code)):
                 continue
-            tr = read(os.path.join(self.src, file))[0]
+            tr = _read(os.path.join(self.src, file), verbose=self.verbose)[0]
+            if tr is None:
+                continue
             if tr.stats.sampling_rate != fs:
                 tr = resample(tr, fs)
             tstart = round_time(tr.stats.starttime, window_length, kind='starttime')
