@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-email: fabrizio.magrini90@gmail.com
-"""
+Download of Continuous Seismograms
+================================== 
 
+The below class allows for automated downloads of continuous seismograms
+to be used in seismic-ambient-noise tomography. The data will be saved on 
+disk in the format required by :class:`seislib.an.AmbientNoiseVelocity` 
+and :class:`seislib.an.AmbientNoiseAttenuation` to calculate 
+surface-wave dispersion curves and Rayleigh-wave attenuation, respectively.
+
+"""
 import os
 import warnings
 import time
@@ -30,7 +36,77 @@ warnings.simplefilter(action='ignore')
 class ANDownloader:
     """ Downloads seismic data to be used in ambient noise interferometry
     
-    
+    Parameters
+    ----------
+    savedir : str
+        Absolute path to the directory where the data will be saved. Inside 
+        this, a sub-directory named 'data' will be created, inside which
+        the continuous data will be stored in the format net.sta.loc.cha.sac.
+        (net=network code, sta=station, loc=location, cha=channel)
+
+    inventory_name : str
+        Name of the inventory (`obspy.core.inventory.inventory.Inventory`) 
+        associated with the downloads. This will be saved in xml format
+        in the `savedir`
+
+    provider : str
+        Provider of seismic data, passed to `obspy.clients.fdsn.Client`. 
+        Default is `iris`
+
+    user, password : str, optional
+        User name and password for accessing restricted data. Passed to 
+        `obspy.clients.fdsn.Client`
+
+    duration : float, optional
+        Duration (in seconds) of the individual seismic waveforms to be 
+        downloaded. They will be merged together once all individual 
+        waveforms from a given station are downloaded. Default is 43200s, 
+        i.e., 12h.
+
+    sampling_rate : float
+        Final sampling rate of the waveforms, in Hz. Default is 1 Hz
+
+    prefilter : tuple of floats
+        Bandapass filter applied to the waveforms before removing the
+        intrument response. Default is (0.005, 0.01, 0.25, 0.5).
+
+    units : {'DISP', 'VEL', 'ACC'}
+        Physical units of the final waveforms. Can be either 'DISP', 'VEL',
+        or 'ACC' (case insensitive). Default is 'DISP'.
+
+    attach_response : bool
+        If `True`, the details of the instrument response are attached to the 
+        header of the waveforms during their downloads. It can slow down the 
+        downloads, but it will make errors due to response information less 
+        likely. Default is `False`
+
+    stations_config : dict
+        python dictionary containing optional keys and values passed to
+        `obspy.clients.fdsn.Client.get_stations`.
+
+    sleep_time_after_exception : float
+        Time to wait (in seconds) after an `obspy.clients.fdsn.header.FDSNException`.
+        The exception could be due to temporal issues of the client, so
+        waiting a little bit before the next download could be useful to
+        get things back to normality.
+
+    verbose : bool
+        If `True`, information on the downloads will be printed in console
+
+    reversed_iterations : bool
+        If `True`, the station inventory will be iterated over in a reversed
+        order.
+
+    max_final_stream_duration : float
+        Maximum lenght (in seconds) of the continuous waveforms. Default is 
+        126144000s, i.e. 4 years. By default, when more than 4 years of data 
+        are available, the first 4 years are stored in the 'data' directory 
+        with the conventional name net.sta.loc.cha.sac; the following batches 
+        are saved as net.sta.loc.cha_1.sac (for the 4th-8th years of data), 
+        net.sta.loc.cha_2.sac (for the 8th-12th years),
+        net.sta.loc.cha_3.sac (for the 12th-16th years), etc.           
+
+
     Attributes
     ----------
     savedir : str
@@ -48,13 +124,13 @@ class ANDownloader:
     duration : int, float
         Duration of the waveforms downloaded (in s)
         
-    max_final_stream_duration : int, float
+    max_final_stream_duration : float
         Maximum duration of the final continuous seismograms
         
-    sampling_rate : int, float
+    sampling_rate : float
         Sampling rate of the final seismograms
         
-    prefilter : tuple
+    prefilter : tuple of floats
         Filter applied to the waveform before removal of the instrument response
         
     units : str
@@ -70,7 +146,7 @@ class ANDownloader:
     reversed_iterations : bool
         Whether or not the inventory of stations is reversely iterated over
         
-    sleep_time_after_exception : int, float
+    sleep_time_after_exception : float
         The downloads are stopped for the specified time (in s) after a FDSN 
         exception
         
@@ -92,95 +168,17 @@ class ANDownloader:
         
     _stations_done : int
         Number of stations for which the downloads have been finished
-
-        
-    Methods
-    -------
-    update_stats(stations=False, downloaded=False)
-        Updates information on number of downloaded waveforms and done stations
-        
-    handle_multiple_locations(st, station_info)
-        Location selection in case multiple ones are available
-        
-    collect_waveforms(network, station, channels, starttime, endtime)
-        Downloads obspy stream
-        
-    prepare_data(st)
-        Demean, detrend, tapering, removing response and resampling
-        
-    adjust_channels(st)
-        If the stream contains the Z12 channels, these are rotated towards ZNE
-        
-    compile_header(stream, stla, stlo, stel)
-        Returns the obspy stream with the header compiled in sac format
-        
-    save_tmp_files(stream, outdir, starttime)
-        Saves the temporary files that will be merged and constitute the final
-        continuous seismogram
-        
-    merge_days_and_save(station_code)
-        Merges all temporary files associated with a given station and saves 
-        them as a unique file
-        
-    select_components(st, baz)
-        Handles the absence of some components in the final stream
-        
-    preprocessing(st, station)
-        Preprocessing of the obspy stream
-        
-    build_inventory(**kwargs)
-        Builds an obspy inventory containing stations information    
-        
-    update_done_stations(station_code)
-        Updates the file containing the information on the done stations
-        
-    active_channels(station)
-        Channels available for the given station among those to download
-        
-    last_time_downloaded(tmp_folder)
-        Retrieves the last time downloaded at the previous run of the algorithm 
-        
-    starttime_for_download(tmp_folder, station)
-        Identifies the start time from which the downloads will begin for a 
-        given station    
-        
-    endtime_for_download(station)
-        Gives the last time window to be downloaded for a given station       
-        
-    plot_stations(ax=None, show=True, oceans_color='water', lands_color='land', 
-                  edgecolor='k', projection='Mercator', resolution='110m', 
-                  color_by_network=True, legend_dict={}, **kwargs)
-        Creates a maps of seismic receivers available for download
-        
-    start()
-        Starts the downloads
         
         
-    Class Methods
-    -------------
-    station_coordinates(station_info)
-        Fetches station coordinates (lat, lon, elevation)
-        
-    station_was_active(station, time)
-        Wheater or not the seismic station was active at the given time
-        
-    operating_times_formatter(station)
-        Utility function to print an obspy.UTCDateTime in a nice way
-        
-    inventory_iterator(inventory, reverse=False):
-        Generator function to iterate over an obspy inventory
-        
-        
-    Example
-    -------
-    
+    Examples
+    --------
     The following will download all the continuous waveforms available from
     the 1.1.2020 to the 1.1.2021 for the network II and for the channel
     BH (3 components: BHZ, BHE, BHN), within the region specified by
-    minlatitude, maxlatitude, minlongitude, maxlongitude. Since we do not
-    have access to restricted data, in this case, includerestricted is set
-    to False. See obspy documentation on Client.get_stations for more
-    info on the possible arguments passed to `stations_config`.
+    `minlatitude`, `maxlatitude`, `minlongitude`, maxlongitude. Since we do 
+    not have access to restricted data, in this case, `includerestricted` is 
+    set to `False`. See obspy documentation on `Client.get_stations` for more
+    info on the possible arguments passed to `stations_config`::
         
         from obspy import UTCDateTime as UTC
         
@@ -194,14 +192,15 @@ class ANDownloader:
                                minlongitude=90,
                                maxlongitude=140)
     
-    NOTE: if channel is not specified in the stations_config, the default
+    .. note:: 
+        If `channel` is not specified in `stations_config`, the default
         will be 'HH*' (i.e., HHZ, HHE, HHN). Multiple channels can be passed
         using a comma as, e.g., 'HH*,BH*', or 'HHZ,BHZ'. In the downloads,
-        precedence is given to the first specified channel (in the above,
+        priority is given to the first specified channel (in the above,
         the BH* is downloaded only if HH* is not available).
         
     
-    We initialize the ANDownloader instance, and then start it.
+    We initialize the ANDownloader instance, and then start it::
         
         downloader = ANDownloader(savedir=/path/to/directory, 
                                   inventory_name='II.xml',
@@ -218,66 +217,8 @@ class ANDownloader:
     def __init__(self, savedir, inventory_name, provider='iris', user=None,
                  password=None, duration=43200, sampling_rate=1, units='disp',
                  prefilter=(0.005, 0.01, 0.25, 0.5), attach_response=False, 
-                 stations_config={}, sleep_time_after_exception=30, verbose=True, 
+                 stations_config={}, sleep_time_after_exception=10, verbose=True, 
                  reversed_iterations=False, max_final_stream_duration=126144000):
-        """ 
-        Parameters
-        ----------
-        savedir : str
-            Absolute path to the directory where the data will be saved. Inside 
-            this directory, a folder named 'data' will be created, inside which
-            the continuous data will be stored in the format net.sta.loc.cha.sac.
-            (net=network code, sta=station, loc=location, cha=channel)
-        inventory_name : str
-            Name of the inventory (obspy.core.inventory.inventory.Inventory) 
-            associated with the downloads. This will be saved in xml format
-            in the `savedir`
-        provider : str
-            Provider of seismic data, passed to obspy.clients.fdsn.Client. 
-            Default is `iris`
-        user, password : str, optional
-            User name and password for accessing restricted data. Passed to 
-            obspy.clients.fdsn.Client
-        duration : int, float, optional (in seconds)
-            Duration of the individual seismic waveforms to be downloaded. They 
-            will be merged together once all individual waveforms from a given
-            station are downloaded. Default is 43200s, i.e., 12h.
-        sampling_rate : int, float
-            Final sampling rate of the waveforms, in Hz. Default is 1 Hz
-        prefilter : tuple of floats
-            Bandapass filter applied to the waveforms before removing the
-            intrument response. Default is (0.005, 0.01, 0.25, 0.5).
-        units : str
-            Physical units of the final waveforms. Can be either 'DISP', 'VEL',
-            or 'ACC' (case insensitive). Default is 'DISP'.
-        attach_response : bool
-            If True, the details of the instrument response are attached to the 
-            header of the waveforms during their downloads. It can slow down the 
-            downloads, but it will make errors due to response information less 
-            likely. Default is False
-        stations_config : dict
-            python dictionary containing optional keys and values passed to
-            obspy.clients.fdsn.Client.get_stations. See obspy documentation.
-        sleep_time_after_exception : float, int
-            Time to wait (in s) after an obspy.clients.fdsn.header.FDSNException.
-            The excpetion could be due to temporal issues of the client, so
-            waiting a little bit before the next download could be useful to
-            get things back to normality.
-        verbose : bool
-            If True, information on the downloads will be printed in console
-        reversed_iterations : bool
-            If True, the station inventory will be iterated over in a reversed
-            order.
-        max_final_stream_duration : int, float (in seconds)
-            Maximum lenght of the continuous waveforms. Default is 126144000s,
-            i.e. 4 years. By default, when more than 4 years of data are 
-            available, the first 4 years are stored in the 'data' directory with 
-            the conventional name net.sta.loc.cha.sac; the following batches are 
-            saved as net.sta.loc.cha_1.sac (for the 4th-8th years of data), 
-            net.sta.loc.cha_2.sac (for the 8th-12th years),
-            net.sta.loc.cha_3.sac (for the 12th-16th years), etc.           
-        """
-        
         self.savedir = savedir
         os.makedirs(savedir, exist_ok=True)
         self.staclient = Client(provider, user=user, password=password)
@@ -330,8 +271,13 @@ class ANDownloader:
     def update_stats(self, stations=False, downloaded=False):
         """ 
         Updates information on number of downloaded waveforms and done stations
+
+        Parameters
+        ----------
+        stations, downloaded : bool
+            If `True`, the attributes `_stations_done` and `_downloaded` are
+            updated.
         """
-        
         if stations:
             self._stations_done += 1
         if downloaded:
@@ -348,9 +294,8 @@ class ANDownloader:
         
         Returns
         -------
-        (latitude, longitude, elevation)
+        latitude, longitude, elevation : float
         """
-        
         stla = station_info.latitude
         stlo = station_info.longitude
         stel = station_info.elevation
@@ -363,13 +308,13 @@ class ANDownloader:
         Parameters
         ----------
         st : obspy.core.stream.Stream
+
         station_info : obspy.core.inventory.station.Station
         
         Returns
         -------
         Obspy stream
         """
-        
         locations = set([tr.stats.location for tr in st])
         if len(locations) > 1:
             channel_type = st[0].stats.channel[0]
@@ -395,11 +340,13 @@ class ANDownloader:
         ----------
         network, station, location : str 
             network, station and location codes
-        channels : tuple, list, ndarray of str
-            iterable containing the channels codes suited to the download. Each
+
+        channels : iterable
+            iterable containing the channel codes suited to the download. Each
             channel will be tried to be used in the downloads. The first successfull
             attempt determines the returned waveforms. (Higher priority is given to
             decreasing indexes)
+
         starttime, endtime : obspy.core.utcdatetime.UTCDateTime
             start and end time of the stream.
         
@@ -407,7 +354,6 @@ class ANDownloader:
         -------
         obspy.core.stream.Stream if the download is successful, else None
         """
-        
         for cha in channels:
             try:
                 st = self.staclient.get_waveforms(network=network, 
@@ -446,7 +392,6 @@ class ANDownloader:
         -------
         obspy.core.stream.Stream if the processing is successful, else None
         """
-        
         try:
             st.detrend('demean')
             st.detrend('linear')
@@ -492,7 +437,6 @@ class ANDownloader:
         -------
         obspy.core.stream.Stream if the rotation is successful, else None
         """
-
         channels = set([tr.stats.channel[-1] for tr in st])
         if 'Z' in channels and 'N' in channels and 'E' in channels:
             return st
@@ -517,6 +461,7 @@ class ANDownloader:
         Parameters
         ----------
         stream : obspy.core.stream.Stream
+
         stla, stlo, stel : float
             latitude, longitude, elevation of the seismic station
         
@@ -524,7 +469,6 @@ class ANDownloader:
         -------
         obspy.core.stream.Stream
         """
-        
         for tr in stream:
             tr.stats.sac = AttribDict()
             tr.stats.sac.stla = stla
@@ -542,18 +486,19 @@ class ANDownloader:
 
     def save_tmp_files(self, stream, outdir, starttime):
         """ 
-        Saves temporary files (of duration equal to self.duration) that will be
+        Saves temporary files (of duration equal to `self.duration`) that will be
         merged and saved in the 'data' directory
         
         Parameters
         ----------
         stream : obspy.core.stream.Stream
+
         outdir : str
             Absolute path to saving directory
+
         starttime : str, float (timestamp format)
             Starttime of the stream, only used to name the temporary file
         """
-        
         for tr in stream:
             outfile = os.path.join(outdir, '%s_%s.sac'%(tr.id, starttime))
             tr.write(outfile, format='sac')
@@ -562,16 +507,14 @@ class ANDownloader:
     def merge_days_and_save(self, station_code):
         """
         Merges all temporary files and saves them as a unique file in the 'data' 
-        directory. If these files exceed self.max_final_stream_duration, they
-        are splitted and saved in several batches (type help(ANDownloader) for 
-        more info).
+        directory. If these files exceed `self.max_final_stream_duration`, they
+        are splitted and saved in several batches.
         
         Parameters
         ----------
         station_code : str
             Station code in the format net.sta
         """
-        
         def get_code_to_write(station_code, savedir):
             station_codes = set(['.'.join(i.split('.')[:2]) \
                                  for i in os.listdir(savedir) if station_code in i])
@@ -667,13 +610,13 @@ class ANDownloader:
         Parameters
         ----------
         station : obspy.core.inventory.station.Station
+
         time : obspy.core.utcdatetime.UTCDateTime
         
         Returns
         -------
         bool
         """
-        
         if station.start_date and (time<station.start_date):
             return False
         if station.end_date and (time>station.end_date):
@@ -692,7 +635,6 @@ class ANDownloader:
         -------
         List of channels
         """
-        
         channels = set([channel.code[:2] for channel in station.channels])
         return [cha for cha in self.channels if cha[:2] in channels]
 
@@ -710,7 +652,6 @@ class ANDownloader:
         start, end : str
             Starting and ending operating time of the seismic station
         """
-
         start = station.start_date
         end = station.end_date
         if start is not None:
@@ -734,9 +675,8 @@ class ANDownloader:
             horizontal components, the vertical component is returned. If the
             stream lacks the vertical component but has the two horizontal ones,
             it returns the horizontal components. If only one horizontal
-            component is available, it returns None        
+            component is available, it returns None.    
         """
-        
         channels = [tr.stats.channel[-1] for tr in st]
         if 'Z' in channels:
             return st.select(channel='*Z')
@@ -748,19 +688,19 @@ class ANDownloader:
     def preprocessing(self, st, station):
         """ Preprocessing of the obspy stream
         
-        The function calls sequentially the methods 'handle_multiple_locations',
-        'prepare_data', and 'adjust_channels'.
+        The function calls sequentially the methods :meth:`handle_multiple_locations`,
+        :meth:`prepare_data`, and :meth:`adjust_channels`.
         
         Parameters
         ----------
         st : obspy.core.stream.Stream
+
         station : obspy.core.inventory.station.Station
         
         Returns
         -------
         obspy.core.stream.Stream if the preprocessing is successful, else None
         """
-        
         if st is None or len(st)==0:# or len(st)<self.components:
             return
         st = self.handle_multiple_locations(st, station)
@@ -782,15 +722,15 @@ class ANDownloader:
         
         Parameters
         ----------
-        inventory : obspy.core.inventory.inventory.Inventory        
+        inventory : obspy.core.inventory.inventory.Inventory  
+
         reverse : bool
-            If True, the inventory will be iterated over from bottom to top
+            If `True`, the inventory will be iterated over from bottom to top
             
         Yields
         ------
         (2,) tuple containing network and station information at each iteration
         """
-
         def func(iterable, reverse=False):
             if reverse:
                 return reversed(iterable)
@@ -813,13 +753,12 @@ class ANDownloader:
         ----------
         kwargs :
             Additional key word arguments passed to the get_stations method of 
-            obspy.clients.fdsn.client
+            `obspy.clients.fdsn.client`
             
         Returns
         -------
         inv : obspy.core.inventory.inventory.Inventory
         """
-        
         def attach_channels(inv, **kwargs):
             
             tmp_kwargs = {i:j for i, j in kwargs.items() \
@@ -857,7 +796,6 @@ class ANDownloader:
         station_code : str
             Station code in the format net.sta
         """
-        
         f = open(os.path.join(self.savedir, 'tmp', 'done_stations.txt'), 'a')
         f.write('%s\n'%station_code)
         f.close()
@@ -869,15 +807,14 @@ class ANDownloader:
         Parameters
         ----------
         tmp_folder : str
-            Absolute path to the temporary folder where the individual waveforms
+            Absolute path to the temporary directory where the individual waveforms
             associated with a given station are saved
             
         Returns
         -------
-        obspy.core.utcdatetime.UTCDateTime.timestamp if files are present in the
-            temporary folder, else None
+        `obspy.core.utcdatetime.UTCDateTime.timestamp` if files are present in the
+            temporary directory, else `None`
         """
-        
         tmp_files = os.listdir(tmp_folder)
         if tmp_files:
             return max([float(i.split('_')[1].split('.sac')[0]) for i in tmp_files])
@@ -895,13 +832,13 @@ class ANDownloader:
         tmp_folder : str
             Absolute path to the temporary folder where the individual waveforms
             associated with a given station are saved
+
         station : obspy.core.inventory.station.Station
             
         Returns
         -------
         obspy.core.utcdatetime.UTCDateTime
         """
-
         last_time = self.last_time_downloaded(tmp_folder)
         if last_time is None:
             if 'starttime' in self.stations_config:
@@ -923,7 +860,6 @@ class ANDownloader:
         -------
         obspy.core.utcdatetime.UTCDateTime
         """
-        
         if 'endtime' in self.stations_config:
             return self.stations_config['endtime']
         today = UTC.utcnow()
@@ -934,69 +870,56 @@ class ANDownloader:
                       lands_color='land', edgecolor='k', projection='Mercator',
                       resolution='110m', color_by_network=True, legend_dict={}, 
                       **kwargs):
-        """ Creates a maps of seismic receivers available for download
+        """ Maps the seismic receivers available for download.
         
         Parameters
         ----------
-        stations : dict
-            Dictionary object containing stations information. This should 
-            structured so that each key corresponds to a station code 
-            ($network_code.$station_code) and each value is a tuple containing 
-            latitude and longitude of the station. 
-            
-            For example:
-                
-                { net1.sta1 : (lat1, lon1),
-                  net1.sta2 : (lat2, lon2),
-                  net2.sta3 : (lat3, lon3)
-                  }
-        
         ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-            If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-            Otherwise, a new figure and GeoAxesSubplot instance is created
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` instance. 
+            Otherwise, a new figure and `GeoAxesSubplot` instance is created
             
         show : bool
-            If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
-            returned. Default is True
+            If `True`, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+            returned. Default is `True`
             
         oceans_color, lands_color : str
             Color of oceans and lands. The arguments are ignored if ax is not
-            None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+            `None`. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
             (to the argument 'facecolor'). Defaults are 'water' and 'land'
             
         edgecolor : str
             Color of the boundaries between, e.g., lakes and land. The argument 
-            is ignored if ax is not None. Otherwise, it is passed to 
-            cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-            is 'k' (black)
+            is ignored if ax is not `None`. Otherwise, it is passed to 
+            `cartopy.feature.NaturalEarthFeature` (to the argument 'edgecolor'). 
+            Default is 'k' (black)
             
         projection : str
-            Name of the geographic projection used to create the GeoAxesSubplot.
-            (Visit the cartopy website for a list of valid projection names.)
-            If ax is not None, `projection` is ignored. Default is 'Mercator'
-        
-        resolution : str
+            Name of the geographic projection used to create the `GeoAxesSubplot`.
+            (Visit the `cartopy website 
+            <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+            for a list of valid projection names.) If ax is not None, `projection` 
+            is ignored. Default is 'Mercator'
+            
+        resolution : {'10m', '50m', '110m'}
             Resolution of the Earth features displayed in the figure. Passed to
-            cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-            '50m', '10m'. Default is '110m'
-        
+            `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
+            '50m', '10m'. Default is '110m'. Ignored if `ax` is not `None`.
+            
         color_by_network : bool
-            If True, each seismic network will have a different color in the
+            If `True`, each seismic network will have a different color in the
             resulting map, and a legend will be displayed. Otherwise, all
-            stations will have the same color. Default is True
+            stations will have the same color. Default is `True`
         
-        legend_dict : dict
-            Keyword arguments passed to matplotlib.pyplot.legend
-            
-        kwargs : 
-            Additional keyword arguments passed to matplotlib.pyplot.scatter
-            
+        legend_dict : dict, optional
+            Dictionary of keyword arguments passed to `matplotlib.pyplot.legend`
+        
+        **kwargs : dict, optional
+            Additional keyword arguments passed to `matplotlib.pyplot.scatter` 
             
         Returns
         -------
         If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
-        """
-        
+        """        
         stations = {}
         for net, sta in self.inventory_iterator(self.inventory):
             station_code = '%s.%s'%(net.code, sta.code)
@@ -1019,15 +942,15 @@ class ANDownloader:
     def start(self):
         """ Starts the downloads
         
-        In practice, the obspy inventory will be iterated over and, for each
-        station code, all the seismic waveforms available will be stored (after
-        after detrending, demeaning, removing the instrument response, and 
-        resampling) in a temporary directory (/tmp). Once, for the same station,
-        the downloads are completed, the individual waveforms are merged to a
-        unique continuous seismogram (if that does not exceed the maximum duration
-        of the stream indicated by the user, otherwise it will be splitted into
-        different files. See the documentation on the max_stream_duration
-        parameter by typing help(ANDownloader)).
+        The inventory of stations will be iterated over and, for each
+        station code, all the seismic waveforms available for download will be 
+        stored (after after detrending, demeaning, removing the instrument 
+        response, and resampling) in a temporary directory ($savedir/tmp). Once, for 
+        the same station, the downloads are completed, the individual waveforms are 
+        merged to a unique continuous seismogram (if that does not exceed the maximum 
+        duration of the stream indicated by the user, otherwise it will be splitted 
+        into different files. (See param `max_final_stream_duration` in 
+        :class:`ANDownloader`)
         
         The algorithm keeps track of the progress made. This allows one to stop
         the downloads and start from where it was left off at any time.

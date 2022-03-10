@@ -599,8 +599,8 @@ class EQVelocity:
         dispersion measurements, which is function of period and phase velocity.
         (iii) Finally, the dispersion curve is extracted from the regions of
         greater "probability". All this is done under the hood calling the 
-        methods measure_dispersion and extract_dispcurve of the class
-        seislib.eq.TwoStationMethod.
+        :meth:`measure_dispersion` and :meth:`extract_dispcurve` of 
+        :class:`TwoStationMethod`.
         
         
         Parameters
@@ -1808,10 +1808,10 @@ class TwoStationMethod:
             is phase velocity in km/s
             
 
-        Exceptions
-        ----------
-        If the calculation of the dispersion curve fails, a DispersionCurve
-        Exception is raised.
+        Raises
+        ------
+        DispersionCurveException
+            If the calculation of the dispersion curve fails.
         """
     
         def load_dispersion_measurements(src):

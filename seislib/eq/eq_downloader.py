@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Automated Downloads
-=================== 
+Download of Teleseismic-Earthquake Recordings
+============================================= 
 
 The below class allows for automated downloads of seismograms
 recording teleseismic surface waves. The data will be saved on disk

@@ -1,5 +1,5 @@
-.. seislib documentation master file, created by
-   sphinx-quickstart on Sun Jan 23 20:58:00 2022.
+.. SeisLib documentation master file, created by
+   sphinx-quickstart on Wed Feb 23 14:38:12 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -30,23 +30,37 @@ Welcome to SeisLib's documentation!
 
    This project is under active development.
 
-#.. toctree::
-#   :maxdepth: 1
-#   :caption: Contents:
-   
-   
-Contents
-========
-
-.. toctree::	 
-   :titlesonly:
+.. toctree::
+   :maxdepth: 1
    :caption: Getting Started
+	
    installation
-   Download of teleseismic-earthquake recordings <seislib.eq_downloader>
-   Inter-station dispersion curves from teleseismic earthquakes <seislib.eq_velocity>
-   Low-level calculation of dispersion curves from teleseismic earthquakes <seislib.eq_tsm>   
-   How to cite <cite_us>
    
+.. toctree::
+   :maxdepth: 2
+   :caption: Seismic Ambient Noise
+   
+   seislib.an   
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Teleseismic Earthquakes
+   
+   seislib.eq
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Least-squares imaging
+   
+   seislib.tomography
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: Plotting
+   
+   seislib.plotting
+
+
 Indices and tables
 ==================
 

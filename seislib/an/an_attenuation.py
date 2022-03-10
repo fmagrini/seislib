@@ -4,7 +4,7 @@ r"""
 Rayleigh-Wave Attenuation
 ========================= 
 
-The below class provide support for calculating Rayleigh-Wave 
+The below class provides support for calculating Rayleigh-Wave 
 attenuation based on continuous ambient-noise recordings of a 
 dense seismic array.
 
@@ -1561,7 +1561,7 @@ class AmbientNoiseAttenuation:
         equal-area grid.
         
         Parameters
-        ---------
+        ----------
         mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2
@@ -1591,7 +1591,7 @@ class AmbientNoiseAttenuation:
         equal-area grid
         
         Parameters
-        ---------
+        ----------
         mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2
@@ -1625,7 +1625,7 @@ class AmbientNoiseAttenuation:
         grid
         
         Parameters
-        ---------
+        ----------
         mesh : ndarray of shape (n, 4)
             Equal area grid, consisting of n pixels described by lat1, lat2, 
             lon1, lon2

@@ -4,7 +4,7 @@
 Inter-Station Dispersion Curves
 =============================== 
 
-The below classes provide automated routines to calculate
+The below class provides automated routines to calculate
 Rayleigh and Love inter-station dispersion curves based on
 the continuous seismograms recorded at pairs of receivers.
 

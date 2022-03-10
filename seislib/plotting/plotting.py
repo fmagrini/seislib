@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
+
+
 """
 
 from collections.abc import Iterable
@@ -25,21 +24,20 @@ def add_inset_axis(axis, rect, polar=False):
     Parameters
     ----------
     axis : matplotlib AxesSubplot
-        Instance of matplotlib.pyplot.subplot
+        Instance of `matplotlib.pyplot.subplot`
         
     rect : list or tuple of shape (4,)
-        [bottom, left, width, height] of the inset. Bottom and left coordinates
-        are expressed with respect to `axis`
+        [bottom, left, width, height] of the inset. Bottom and left 
+        coordinates are expressed with respect to `axis`
         
     polar : bool
-        If True, a polar plot is created. Default is False
+        If `True`, a polar plot is created. Default is `False`
         
     
     Returns
     -------
     Inset axis
     """
-    
     def axis_to_fig(axis):
         fig = axis.figure
         def transform(coord):
@@ -57,33 +55,32 @@ def add_inset_axis(axis, rect, polar=False):
 
 def lower_threshold_projection(projection, thresh=1e3, **kwargs):
     """ 
-    An ugly but effective work around to get a higher-resolution curvature
-    of the great-circle paths. This is useful when plotting the great-circle
-    paths in a relatively small region.
+    Effective work around to get a higher-resolution curvature of the 
+    great-circle paths to be plotted in a given projection. This is useful 
+    when plotting the great-circle paths in a relatively small region.
     
     Parameters
     ----------
     projection : class
         Should be one of the cartopy projection classes, e.g., 
-        cartopy.crs.Mercator
+        `cartopy.crs.Mercator`
         
     thresh : float
         Smaller values achieve higher resolutions. Default is 1e3
         
-    
     Returns
     ------- 
     Instance of the input (`projection`) class
     
     
-    Example
-    -------
-    proj = lower_threshold_projection(cartopy.crs.Mercator, thresh=1e3)
+    Examples
+    --------
+    >>> proj = lower_threshold_projection(cartopy.crs.Mercator, 
+    ...                                   thresh=1e3)
     
-    Note that the cartopy.crs.Mercator was not initialized (i.e., there are no
-    brackets after the word `Mercator`)
+    Note that the `cartopy.crs.Mercator` was not initialized (i.e., 
+    there are no brackets after the word `Mercator`)
     """
-    
     class LowerThresholdProjection(projection):
         
         @property
@@ -96,30 +93,27 @@ def lower_threshold_projection(projection, thresh=1e3, **kwargs):
 def add_earth_features_GSHHS(ax, scale='auto', oceans_color='aqua', 
                              lands_color='coral', edgecolor='face'):
     """ 
-    Adds natural features to a cartopy.mpl.geoaxes.GeoAxesSubplot, fetching data
-    from the GSHHS dataset (https://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html)
+    Adds natural features to a `cartopy.mpl.geoaxes.GeoAxesSubplot`, fetching data
+    from the `GSHHS dataset <https://www.ngdc.noaa.gov/mgg/shorelines/gshhs.html>`_
     
     Parameters
     ----------
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
     
-    scale : 'str'
-        Scale of the dataset, passed to cartopy.feature.GSHHSFeature. Valid
-        inputs are 'auto', 'coarse', 'low', 'intermediate', 'high', or 'full'.
+    scale : {'auto', 'coarse', 'low', 'intermediate', 'high', 'full'}
+        Scale of the dataset, passed to `cartopy.feature.GSHHSFeature`. 
         Default is 'auto'
         
     oceans_color, lands_color : str
         Color of oceans and continents in the map. They should be valid 
-        matplotlib colors (see matplotlib.colors doccumentation for more 
-        details) or be part of cartopy.cfeature.COLORS. Defaults are 'aqua' and
-        'coral'
+        `matplotlib` colors or be part of `cartopy.cfeature.COLORS`. Defaults 
+        are 'aqua' and 'coral'
         
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. Passed to 
-        cartopy.feature.GSHHSFeature. Default is 'face' (the boundaries will
+        `cartopy.feature.GSHHSFeature`. Default is 'face' (the boundaries will
         have the same color as the continent)
     """
-    
     if oceans_color == 'water':
         oceans_color = cfeature.COLORS[oceans_color]
     if lands_color == 'land':
@@ -139,33 +133,30 @@ def add_earth_features(ax, scale='110m', oceans_color='aqua',
                        lands_color='coral', edgecolor='k', lands_lw=0.5,
                        oceans_lw=0.5, lakes_lw=0.5):
     """ 
-    Adds natural features to a cartopy.mpl.geoaxes.GeoAxesSubplot, fetching
-    data from the Natural Earth dataset (http://www.naturalearthdata.com/)
+    Adds natural features to a `cartopy.mpl.geoaxes.GeoAxesSubplot`, fetching
+    data from the `Natural Earth dataset <http://www.naturalearthdata.com/>`_
     
     Parameters
     ----------
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
     
-    scale : str
+    scale : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-        '50m', '10m'. Default is '110m'
+        `cartopy.feature.NaturalEarthFeature`. Default is '110m'
         
     oceans_color, lands_color : str
         Color of oceans and continents in the map. They should be valid 
-        matplotlib colors (see matplotlib.colors doccumentation for more 
-        details) or be part of cartopy.cfeature.COLORS. Defaults are 'aqua' and
-        'coral'
+        `matplotlib` colors or be part of `cartopy.cfeature.COLORS`. Defaults 
+        are 'aqua' and 'coral'
         
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. Passed to 
-        cartopy.feature.NaturalEarthFeature. Default is 'k' (black)
+        `cartopy.feature.NaturalEarthFeature`. Default is 'k' (black)
         
     lands_lw, oceans_lw, lakes_lw : float
         Linewidths for lands, oceans, and lakes. Arguments passed to
-        GeoAxesSubplot.add_feature
+        `GeoAxesSubplot.add_feature`
     """
-    
     if oceans_color == 'water':
         oceans_color = cfeature.COLORS[oceans_color]
     if lands_color == 'land':
@@ -203,16 +194,17 @@ def make_colorbar(ax, mappable, size='5%', pad='3%', **kwargs):
         Width of the colorbar, default is '5%'
     
     pad : str
-        Space between the colorbar and ax, default is 3%'
+        Space between the colorbar and ax, default is '3%'
     
-    kwargs : Additional keyword arguments passed to matplotlib.pyplot.colorbar
+    **kwargs
+        Additional keyword arguments passed to
+        `matplotlib.pyplot.colorbar`
     
     
     Returns
     -------
     matplotlib.colorbar.Colorbar
     """
-    
     divider = make_axes_locatable(ax)
     orientation = kwargs.pop('orientation', 'horizontal')
     if orientation == 'vertical':
@@ -229,13 +221,13 @@ def make_colorbar(ax, mappable, size='5%', pad='3%', **kwargs):
 
 def colormesh(mesh, c, ax, **kwargs):
     """
-    Adaptation of matplotlib.pyplot.pcolormesh to the (adaptive) equal area 
+    Adaptation of `matplotlib.pyplot.pcolormesh` to the (adaptive) equal-area 
     grid
     
     Parameters
-    ---------
+    ----------
     mesh : ndarray (n, 4)
-        Equal area grid, consisting of n pixels described by lat1, lat2, 
+        Equal area grid, consisting of `n` blocks described by lat1, lat2, 
         lon1, lon2
         
     c : list of ndarray (n,)
@@ -244,14 +236,14 @@ def colormesh(mesh, c, ax, **kwargs):
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
         Earth image on which `c` will be plotted
         
-    kwargs : Additional keyword arguments passed to ax.pcolormesh
+    **kwargs
+        Additional keyword arguments passed to `ax.pcolormesh`
     
     
     Returns
     -------
-        img : Instance of matplotlib.collections.QuadMesh
+        img : Instance of `matplotlib.collections.QuadMesh`
     """
-    
     def plot_band(lat1, lat2, lons, v, **kwargs):
         lat_mesh, lon_mesh = np.meshgrid([lat1, lat2], lons)
         img = ax.pcolormesh(lon_mesh, lat_mesh, np.reshape(v, (-1, 1)), 
@@ -298,7 +290,7 @@ def contourf(mesh, c, ax, smoothing=None, **kwargs):
     grid.
     
     Parameters
-    ---------
+    ----------
     mesh : ndarray (n, 4)
         Equal area grid, consisting of n pixels described by lat1, lat2, 
         lon1, lon2
@@ -310,19 +302,16 @@ def contourf(mesh, c, ax, smoothing=None, **kwargs):
         Earth image on which `c` will be plotted
         
     smoothing : float, optional
-        Value passed to scipy.ndimage.filters.gaussian_filter and used to
-        obtain a smooth representation of `c` (default is None)
+        Value passed to `scipy.ndimage.filters.gaussian_filter` and used to
+        obtain a smooth representation of `c` (default is `None`)
         
-    kwargs : Additional keyword arguments passed to ax.contourf
-    
+    **kwargs
+        Additional keyword arguments passed to `ax.contourf`
     
     Returns
     -------
-        img : Instance of matplotlib.contour.QuadContourSet
+        img : Instance of `matplotlib.contour.QuadContourSet`
     """
-    
-
-
     def update_kwargs(c, **kwargs):
         if kwargs.get('norm') is None:
             return kwargs
@@ -354,11 +343,11 @@ def contourf(mesh, c, ax, smoothing=None, **kwargs):
 
 def contour(mesh, c, ax, smoothing=None, **kwargs):
     """
-    Adaptation of matplotlib.pyplot.contour to the (adaptive) equal area 
+    Adaptation of `matplotlib.pyplot.contour` to the (adaptive) equal area 
     grid
     
     Parameters
-    ---------
+    ----------
     mesh : ndarray (n, 4)
         Equal area grid, consisting of n pixels described by lat1, lat2, 
         lon1, lon2
@@ -370,15 +359,16 @@ def contour(mesh, c, ax, smoothing=None, **kwargs):
         Earth image on which `c` will be plotted
         
     smoothing : float, optional
-        Value passed to scipy.ndimage.filters.gaussian_filter and used to
-        obtain a smooth representation of `c` (default is None)
+        Value passed to `scipy.ndimage.filters.gaussian_filter` and used to
+        obtain a smooth representation of `c` (default is `None`)
         
-    kwargs : Additional keyword arguments passed to ax.contour
+    **kwargs
+        Additional keyword arguments passed to ax.contour
     
     
     Returns
     -------
-        img : Instance of matplotlib.contour.QuadContourSet
+        img : Instance of `matplotlib.contour.QuadContourSet`
     """
     
     def update_kwargs(c, **kwargs):
@@ -422,9 +412,7 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
         Dictionary object containing stations information. This should 
         structured so that each key corresponds to a station code 
         ($network_code.$station_code) and each value is a tuple containing 
-        latitude and longitude of the station. 
-        
-        For example:
+        latitude and longitude of the station. For example::
             
             { net1.sta1 : (lat1, lon1),
               net1.sta2 : (lat2, lon2),
@@ -432,52 +420,55 @@ def plot_stations(stations, ax=None, show=True, oceans_color='water',
               }
     
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-        If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-        Otherwise, a new figure and GeoAxesSubplot instance is created
+        If not `None`, the receivers are plotted on the `GeoAxesSubplot` instance. 
+        Otherwise, a new figure and `GeoAxesSubplot` instance is created
         
     show : bool
-        If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
-        returned. Default is True
+        If `True`, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+        returned. Default is `True`
         
     oceans_color, lands_color : str
         Color of oceans and lands. The arguments are ignored if ax is not
-        None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+        None. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
         (to the argument 'facecolor'). Defaults are 'water' and 'land'
         
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. The argument 
         is ignored if ax is not None. Otherwise, it is passed to 
-        cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-        is 'k' (black)
+        cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). 
+        Default is 'k' (black)
         
     projection : str
-        Name of the geographic projection used to create the GeoAxesSubplot.
-        (Visit the cartopy website for a list of valid projection names.)
-        If ax is not None, `projection` is ignored. Default is 'Mercator'
+        Name of the geographic projection used to create the `GeoAxesSubplot`.
+        (Visit the `cartopy website 
+        <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+        for a list of valid projection names.) If ax is not None, `projection` 
+        is ignored. Default is 'Mercator'
     
-    resolution : str
+    resolution : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-        '50m', '10m'. Default is '110m'
+        `cartopy.feature.NaturalEarthFeature`. Default is '110m'
     
     color_by_network : bool
-        If True, each seismic network will have a different color in the
+        If `True`, each seismic network will have a different color in the
         resulting map, and a legend will be displayed. Otherwise, all
-        stations will have the same color. Default is True
+        stations will have the same color. Default is `True`
     
     legend_dict : dict
-        Keyword arguments passed to matplotlib.pyplot.legend
+        Keyword arguments passed to `matplotlib.pyplot.legend`
         
     kwargs : 
-        Additional keyword arguments passed to matplotlib.pyplot.scatter
+        Additional keyword arguments passed to `matplotlib.pyplot.scatter`
         
         
     Returns
     -------
-    If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
-    """
+    If `show` is True
+        None
 
-    
+    Otherwise 
+        `ax`, i.e. the `GeoAxesSubplot`
+    """
     def get_coords(stations, color_by_network):
         codes, coords = zip(*[(k, v) for k, v in stations.items() \
                               if '_' not in k])
@@ -546,56 +537,63 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
         If not given, the size of each on the map will be constant
     
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-        If not None, the receivers are plotted on the GeoAxesSubplot instance. 
-        Otherwise, a new figure and GeoAxesSubplot instance is created
+        If not `None`, the receivers are plotted on the `GeoAxesSubplot` 
+        instance. Otherwise, a new figure and `GeoAxesSubplot` instance is 
+        created
         
     show : bool
-        If True, the plot is shown. Otherwise, a GeoAxesSubplot instance is
-        returned. Default is True
+        If `True`, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+        returned. Default is `True`
         
     oceans_color, lands_color : str
         Color of oceans and lands. The arguments are ignored if ax is not
-        None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+        None. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
         (to the argument 'facecolor'). Defaults are 'water' and 'land'
         
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. The argument 
         is ignored if ax is not None. Otherwise, it is passed to 
-        cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-        is 'k' (black)
+        cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). 
+        Default is 'k' (black)
         
     projection : str
-        Name of the geographic projection used to create the GeoAxesSubplot.
-        (Visit the cartopy website for a list of valid projection names.)
-        If ax is not None, `projection` is ignored. Default is 'Mercator'
+        Name of the geographic projection used to create the `GeoAxesSubplot`.
+        (Visit the `cartopy website 
+        <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+        for a list of valid projection names.) If ax is not None, `projection` 
+        is ignored. Default is 'Mercator'
     
-    resolution : str
+    resolution : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-        '50m', '10m'. Default is '110m'
+        `cartopy.feature.NaturalEarthFeature`. Default is '110m'
     
-    min_size, max_size : int, float
+    min_size, max_size : float, optional
         Minimum and maximum size of the epicenters on the map. These are used
         to interpolate all magnitudes associated with each event, so as to
         scale them appropriately on the map. (The final "sizes" are passed to
-        the argument `s` of matplotlib.pyplot.scatter)
+        the argument `s` of `matplotlib.pyplot.scatter`.) If `mag` is `None`,
+        these params are ignored
         
     legend_markers : int
         Number of markers displayed in the legend. Ignored if `s` (size of the
-        markers in matplotlib.pyplot.scatter) is passed
+        markers in `matplotlib.pyplot.scatter`) is passed. Only considered if
+        `mag` is not `None`
             
     legend_dict : dict
-        Keyword arguments passed to matplotlib.pyplot.legend
+        Keyword arguments passed to `matplotlib.pyplot.legend`
         
-    kwargs : 
-        Additional keyword arguments passed to matplotlib.pyplot.scatter
+    **kwargs 
+        Additional keyword arguments passed to `matplotlib.pyplot.scatter`
         
         
     Returns
     -------
-    If `show` is True, None, else `ax`, i.e. the GeoAxesSubplot
+    If `show` is True
+        None
+
+    Otherwise 
+        `ax`, i.e. the `GeoAxesSubplot`
     """
-    
     def get_map_boundaries(lat, lon):
         latmin, latmax = np.min(lat), np.max(lat)
         lonmin, lonmax = np.min(lon), np.max(lon)
@@ -671,12 +669,12 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         Lat1, lon1, lat2, lon2 of the great-circle paths to be plotted
       
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-        If not None, `c` is plotted on the GeoAxesSubplot instance.
-        Otherwise, a new figure and GeoAxesSubplot instance is created
+        If not `None`, `c` is plotted on the `GeoAxesSubplot` instance.
+        Otherwise, a new figure and `GeoAxesSubplot` instance is created
         
     show : bool
-        If True (default), the map will be showed once generated. Otherwise
-        a GeoAxesSubplot instance is returned
+        If `True` (default), the map will be showed once generated. Otherwise
+        a `GeoAxesSubplot` instance is returned
         
     stations_color, paths_color : str
         Color of the receivers and of the great-circle paths (see matplotlib 
@@ -685,47 +683,47 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
                 
     oceans_color, lands_color : str
         Color of oceans and lands. The arguments are ignored if ax is not
-        None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+        None. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
         (to the argument 'facecolor'). Defaults are 'water' and 'land'
 
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. The argument 
         is ignored if ax is not None. Otherwise, it is passed to 
-        cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-        is 'k' (black)
+        cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). 
+        Default is 'k' (black)
 
     stations_alpha, paths_alpha : float, optional
         Transparency of the stations and of the great-circle paths. Defaults
-        are None and 0.3
+        are `None` and 0.3
         
     paths_width : float
         Linewidth of the great-circle paths
                 
     projection : str
-        Name of the geographic projection used to create the GeoAxesSubplot.
-        (Visit the cartopy website for a list of valid projection names.)
-        If ax is not None, `projection` is ignored. Default is 'Mercator'
-
-    resolution : str
+        Name of the geographic projection used to create the `GeoAxesSubplot`.
+        (Visit the `cartopy website 
+        <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+        for a list of valid projection names.) If ax is not None, `projection` 
+        is ignored. Default is 'Mercator'
+    
+    resolution : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-        '50m', '10m'. Default is '110m'
-        
+        `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'. Ignored if `ax` is not `None`.
+    
     map_boundaries : list or tuple of floats, shape (4,), optional
         Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
         the map
         
     bound_map : bool
-        If True, the map boundaries will be automatically determined.
-        Ignored if map_boundaries is not None
+        If `True`, the map boundaries will be automatically determined.
+        Ignored if map_boundaries is not `None`
                     
 
     Returns
     -------
-    None if show is False. Otherwise a GeoAxesSubplot instance
+    `None` if `show` is `False`. Otherwise a `GeoAxesSubplot` instance
     """
-        
-    
     def get_map_boundaries(data):
         lats = np.concatenate((data[:,0], data[:, 2]))
         lons = np.concatenate((data[:,1], data[:, 3]))
@@ -833,57 +831,60 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
                 
     oceans_color, lands_color : str
         Color of oceans and lands. The arguments are ignored if ax is not
-        None. Otherwise, they are passed to cartopy.feature.GSHHSFeature 
+        None. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
         (to the argument 'facecolor'). Defaults are 'water' and 'land'
 
     edgecolor : str
         Color of the boundaries between, e.g., lakes and land. The argument 
         is ignored if ax is not None. Otherwise, it is passed to 
-        cartopy.feature.GSHHSFeature (to the argument 'edgecolor'). Default
-        is 'k' (black)
+        cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). 
+        Default is 'k' (black)
 
     stations_alpha, paths_alpha : float, optional
         Transparency of the stations and of the great-circle paths. Defaults
-        are None and 0.3
+        are `None` and 0.3
         
     paths_width : float
         Linewidth of the great-circle paths
                 
     projection : str
-        Name of the geographic projection used to create the GeoAxesSubplot.
-        (Visit the cartopy website for a list of valid projection names.)
-        If ax is not None, `projection` is ignored. Default is 'Mercator'
+        Name of the geographic projection used to create the `GeoAxesSubplot`.
+        (Visit the `cartopy website 
+        <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+        for a list of valid projection names.) If ax is not None, `projection` 
+        is ignored. Default is 'Mercator'
         
-    resolution : str
+    resolution : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
-        '50m', '10m'. Default is '110m'
-        
+        `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
+        '50m', '10m'. Default is '110m'. Ignored if `ax` is not `None`.
+    
     map_boundaries : list or tuple of floats, shape (4,), optional
         Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
         the map
         
     bound_map : bool
-        If True, the map boundaries will be automatically determined.
-        Ignored if map_boundaries is not None
+        If `True`, the map boundaries will be automatically determined.
+        Ignored if `map_boundaries` is not `None`
     
     colorbar : bool
-        If True (default), a colorbar associated with `c` is displayed on 
+        If `True` (default), a colorbar associated with `c` is displayed on 
         the side of the map        
     
     cbar_dict : dict
-        Keyword arguments passed to matplotlib.colorbar.ColorbarBase
+        Keyword arguments passed to `matplotlib.colorbar.ColorbarBase`
     
-    kwargs:
+    **kwargs
         Additional keyword arguments passed to ax.plot
     
     Returns
     -------
-    None if show is False. Otherwise a GeoAxesSubplot instance together with an 
-    instance of matplotlib.colorbar.Colorbar (if `colorbar` is True)
+    If `show` is `False`
+        `None` 
+    Otherwise 
+        `GeoAxesSubplot` instance together with an instance of 
+        `matplotlib.colorbar.Colorbar` (if `colorbar` is `True`)
     """
-        
-    
     def get_map_boundaries(data):
         lats = np.concatenate((data[:,0], data[:, 2]))
         lons = np.concatenate((data[:,1], data[:, 3]))
@@ -987,58 +988,61 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         Values associated with the grid cells (mesh)
         
     ax : cartopy.mpl.geoaxes.GeoAxesSubplot
-        If not None, `c` is plotted on the GeoAxesSubplot instance. 
-        Otherwise, a new figure and GeoAxesSubplot instance is created
+        If not None, `c` is plotted on the `GeoAxesSubplot` instance. 
+        Otherwise, a new figure and `GeoAxesSubplot` instance is created
         
     projection : str
-        Name of the geographic projection used to create the GeoAxesSubplot.
-        (Visit the cartopy website for a list of valid projection names.)
-        If ax is not None, `projection` is ignored. Default is 'Mercator'
+        Name of the geographic projection used to create the `GeoAxesSubplot`.
+        (Visit the `cartopy website 
+        <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+        for a list of valid projection names.) If ax is not None, `projection` 
+        is ignored. Default is 'Mercator'
         
     map_boundaries : list or tuple of floats, shape (4,), optional
         Lonmin, lonmax, latmin, latmax (in degrees) defining the extent of
         the map
         
     bound_map : bool
-        If True, the map boundaries will be automatically determined.
-        Ignored if map_boundaries is not None
+        If `True`, the map boundaries will be automatically determined.
+        Ignored if `map_boundaries` is not None
     
     colorbar : bool
-        If True (default), a colorbar associated with `c` is displayed on 
+        If `True` (default), a colorbar associated with `c` is displayed on 
         the side of the map
         
     show : bool
-        If True (default), the map will be showed once generated
+        If `True` (default), the map will be showed once generated
         
-    style : str
+    style : {'colormesh', 'contourf', 'contour'}
         Possible options are 'colormesh', 'contourf', and 'contour',
-        each corresponding to the homonymous method of SeismicTomography.
+        each corresponding to the homonymous method.
         Default is 'colormesh'
         
     add_features : bool
-        If True, natural Earth features will be added to the GeoAxesSubplot.
-        Default is False. If `ax` is None, it is automatically set to True
-    
-    resolution : str
+        If `True`, natural Earth features will be added to the `GeoAxesSubplot`.
+        Default is `False`. If `ax` is `None`, it is automatically set to `True`
+        
+    resolution : {'10m', '50m', '110m'}
         Resolution of the Earth features displayed in the figure. Passed to
-        cartopy.feature.NaturalEarthFeature. Valid arguments are '110m',
+        `cartopy.feature.NaturalEarthFeature`. Valid arguments are '110m',
         '50m', '10m'. Default is '110m'
-    
+        
     cbar_dict : dict
-        Keyword arguments passed to matplotlib.colorbar.ColorbarBase
-    
-    kwargs : Additional inputs passed to the 'colormesh', 'contourf', and
-        'contour' methods of SeismicTomography
+        Keyword arguments passed to `matplotlib.colorbar.ColorbarBase`
+        
+    **kwargs
+        Additional inputs passed to the 'colormesh', 'contourf', and
+        'contour' methods of :class:`SeismicTomography`
         
         
     Returns
     -------
-    If show is False: None
-    Otherwise, an instance of matplotlib.collections.QuadMesh is returned,
-    together with an instance of matplotlib.colorbar.Colorbar (if `colorbar`
-    is True)
+    If show is False
+        `None`
+    Otherwise
+        an instance of `matplotlib.collections.QuadMesh`, together with an 
+        instance of `matplotlib.colorbar.Colorbar` (if `colorbar` is `True`)
     """
-    
     def get_map_boundaries(mesh):
         latmin, lonmin = np.min(mesh, axis=0)[::2]
         latmax, lonmax = np.max(mesh, axis=0)[1::2]
@@ -1098,7 +1102,6 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         return img, cb if colorbar else img        
 
 
-
 def scientific_label(obj, precision):
     """ Creates a scientific label approximating a real number in LaTex style
     
@@ -1113,25 +1116,23 @@ def scientific_label(obj, precision):
         
     Returns
     -------
-    str
-        Approximated number in str, e.g., '5.000 \\times 10^{-6}', arising from
+    scientific_notation : str
+        Approximated number, e.g., r'5.000 \\times 10^{-6}', arising from
         the function call scientific_label(5e-06, 3)
         
     
-    Example
-    -------
-    import numpy as np
-    import matplotlib.pyplot as plt
-    
-    x = np.linspace(-2, 2, 150)
-    y = x**2 * 1e-5
-    plt.plot(x, y)
-    ticks = plt.gca().get_yticks()
-    labels = [r'$%s$'%scientific_label(i, 1) for i in ticks]
-    plt.yticks(ticks=ticks, labels=labels)
-    plt.show()
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> x = np.linspace(-2, 2, 150)
+    >>> y = x**2 * 1e-5
+    >>> plt.plot(x, y)
+    >>> ticks = plt.gca().get_yticks()
+    >>> labels = [r'$%s$'%scientific_label(i, 1) for i in ticks]
+    >>> plt.yticks(ticks=ticks, labels=labels)
+    >>> plt.show()
     """
-    
     precision = '%.' + '%se'%precision
     python_notation = precision % obj
     number, power = python_notation.split('e')

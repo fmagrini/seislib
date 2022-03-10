@@ -22,7 +22,12 @@ copyright = '2022, Fabrizio Magrini'
 author = 'Fabrizio Magrini'
 
 # The full version, including alpha/beta/rc tags
-release = '0.4.6'
+here = os.path.abspath(os.path.dirname(__file__))
+about = {}
+with open(os.path.join(here, '../../' 'seislib', "__version__.py")) as f:
+    exec(f.read(), about)
+    
+release = about["__version__"]
 
 
 # -- General configuration ---------------------------------------------------

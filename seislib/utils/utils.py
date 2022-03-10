@@ -24,20 +24,20 @@ from seislib.exceptions import TimeSpanException
 def gc_distance(lat1, lon1, lat2, lon2):
     """ 
     Calculates the great circle distance (in m) between coordinate points 
-    (in degrees). This function calls directly the obspy gps2dist_azimuth,
-    it only extends its functionality through the numpy.vectorize decorator.
+    (in degrees). This function calls directly the obspy `gps2dist_azimuth`,
+    it only extends its functionality through the `numpy.vectorize` decorator.
     
     Parameters
     ----------
-    lat1, lon1, lat2, lon2 : float or array-like of shape (n,) (in degrees)
-    
+    lat1, lon1, lat2, lon2 : float or array-like of shape (n,)
+        Coordinates of the points on the Earth's surface, in degrees.        
     
     Returns
     -------
-    Great-circle distance (in m). If the input is an array (or list) of
-    coordinates, an array of distances is returned
+    Great-circle distance (in m) 
+        If the input is an array (or list) of coordinates, an array of 
+        distances is returned
     """
-    
     func = np.vectorize(gps2dist_azimuth)
     return func(lat1, lon1, lat2, lon2)[0]
 
@@ -46,19 +46,19 @@ def azimuth_backazimuth(lat1, lon1, lat2, lon2):
     """ 
     Calculates the azimuth and backazimuth (in degrees) between coordinate 
     points (in degrees). This function calls directly the obspy 
-    gps2dist_azimuth, it only extends its functionality through the 
+    `gps2dist_azimuth`, it only extends its functionality through the 
     numpy.vectorize decorator
     
     Parameters
     ----------
-    lat1, lon1, lat2, lon2 : float or array-like of shape (n,) (in degrees)
-    
+    lat1, lon1, lat2, lon2 : float or array-like of shape (n,)
+        Coordinates of the points on the Earth's surface, in degrees.               
     
     Returns
     -------
-    tuple of shape (2,) or ndarray of shape (n, 2) : [azimuth, backazimuth]
+    tuple of shape (2,) or ndarray of shape (n, 2)
+        The columns consist of azimuth azimuth and backazimuth    
     """
-    
     func = np.vectorize(gps2dist_azimuth)
     return func(lat1, lon1, lat2, lon2)[1:]
 
@@ -67,26 +67,28 @@ def adapt_timespan(st1, st2):
     """
     Slices all traces from the two input streams to the overlapping timerange.
     Then returns a copy of the sliced streams.
-    
-    Note: The maximum precision achieved by this function is governed by the
-    samling rate. If sub-sample precision is required, consider using 
-    seislib.processing.adapt_timespan_interpolate
-    
+        
     Parameters
     ----------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
 
     Returns
     -------
-    st1, st2 : obspy.Stream or obspy.Trace
-        Obspy stream or trace depending on the input. The original input is not
-        permanently modified (a copy is returned)
+    st1, st2 : obspy.Stream, obspy.Trace
+        Obspy stream or trace depending on the input. The original input is 
+        not permanently modified (a copy is returned)
 
-    Exceptions
-    ----------
-    If no overlap is available, a seislib.exceptions.TimeSpanException is raised
+    Raises
+    ------
+    TimeSpanException
+        If no overlap is available
+
+    Notes
+    -----
+    The maximum precision achieved by this function is governed by the
+    samling rate. If sub-sample precision is required, consider using 
+    :meth:`adapt_timespan_interpolate`
     """
-    
     is_trace = False
     if isinstance(st1, Trace) or isinstance(st2, Trace):
         is_trace = True
@@ -117,27 +119,29 @@ def adapt_timespan_interpolate(st1, st2, min_overlap=0):
     Slices all traces from the two input streams to the overlapping timerange.
     Then returns a copy of the sliced streams. If the starttime of the sliced 
     traces do not fit exactly (because of sub-sample time shifts), the traces 
-    are interpolated to remove the time shift.
-    
-    Note: interpolation can require a relatively long time depending on the
-    size of the sliced stream. If speed is preferred to (sub-sample) precision,
-    consider using seislib.processing.adapt_timespan
+    are interpolated to remove the time shift.       
     
     Parameters
     ----------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
 
     Returns
     -------
-    st1_out, st2_out : obspy.Stream or obspy.Trace
-        Obspy stream or trace depending on the input. The original input is not
-        permanently modified (a copy is returned)
+    st1_out, st2_out : obspy.Stream, obspy.Trace
+        Obspy stream or trace depending on the input. The original input
+        is not permanently modified (a copy is returned)
 
-    Exceptions
-    ----------
-    If no overlap is available, a seislib.exceptions.TimeSpanException is raised
+    Raises
+    ------
+    TimeSpanException
+        If no overlap is available
+
+    Notes
+    -----
+    Interpolation can require a relatively long time depending on the
+    size of the sliced stream. If speed is preferred to (sub-sample) 
+    precision, consider using :meth:`adapt_timespan`
     """
-    
     def slice_streams(st1, st2, starttime, endtime):
         st1_out = st1.slice(starttime, endtime)
         st2_out = st2.slice(starttime, endtime)
@@ -179,18 +183,19 @@ def adapt_sampling_rate(st1, st2):
     characterized by the largest sampling rate is downsampled to the sampling
     rate of the other stream (or trace).
     
-    The downsampling is carried out via the seislib.processing.resample method,
-    which modifies the input streams in place.
+    The downsampling is carried out via the :meth:`resample`, which modifies 
+    the input streams in place.
     
     Parameters
     ----------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
     
     Returns
     -------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
+        Obspy stream or trace depending on the input. The input is permanently 
+        modified
     """
-    
     is_trace = False
     if isinstance(st1, Trace) or isinstance(st2, Trace):
         is_trace = True
@@ -210,18 +215,17 @@ def resample(x, fs):
     characterized by the largest sampling rate is downsampled to the sampling
     rate of the other stream (or trace).
     
-    The downsampling is carried out via the seislib.processing.resample method,
-    which modifies the input streams in place.
-    
     Parameters
     ----------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
     
+
     Returns
     -------
-    st1, st2 : obspy.Stream or obspy.Trace
+    st1, st2 : obspy.Stream, obspy.Trace
+        Obspy stream or trace depending on the input. The input is permanently 
+        modified
     """
-    
     nyquist_f = fs/2 - (fs/2)*0.01
     try:
         x.filter('lowpass', freq=nyquist_f, corners=4, zerophase=True)
@@ -236,28 +240,31 @@ def bandpass_gaussian(data, dt, period, alpha):
     """ Gaussian filter of real-valued data carried out in the frequency domain
     
     The bandpass filter is carried out with a Gaussian filter centered at 
-    `period`, whose width is controlled by `alpha`:
+    `period`, whose width is controlled by `alpha`::
 
-      exp[-alpha * ((f-f0)/f0)**2],
+        exp[-alpha * ((f-f0)/f0)**2]
 
-    where f is frequency and f0 = 1 / `period`. 
+    where f is frequency and f0 = 1 / period. 
     
     Parameters
     ----------
     data : ndarray of shape (n,)
         Real-valued data to be filtered
+
     dt : float
         Time sampling interval of the data
+
     period : float
         Central period, around which the (tight) bandapass filter is carried out
+
     alpha : float
         Parameter that controls the width of the Gaussian filter
         
     Returns
     -------
-    numpy.ndarray of shape (n,) containing the filtered data
+    numpy.ndarray of shape (n,) 
+        Filtered data
     """
-
     ft = rfft(data)
     freq = rfftfreq(len(data), d=dt)
     f0 = 1.0 / period
@@ -267,12 +274,13 @@ def bandpass_gaussian(data, dt, period, alpha):
 
 def zeropad(tr, starttime, endtime):
     """ 
-    Zeropads an obspy.Trace so as to cover the time window specified by
-    `starttime`'and `endtime`
+    Zeropads an `obspy.Trace` so as to cover the time window 
+    specified by `starttime`'and `endtime`
     
     Parameters
     ----------
     tr : obspy.Trace
+
     starttime, endtime : obspy.UTCDateTime
     
     Returns
@@ -280,7 +288,6 @@ def zeropad(tr, starttime, endtime):
     trace : obspy.Trace
         Zeropadded copy of the input trace.
     """
-    
     trace = Trace()
     for key, value in tr.stats.items():
         if key not in ['endtime', 'npts']:
@@ -316,7 +323,6 @@ def rotate(r, t, dphi):
     rnew, tnew : numpy.ndarray
         Rotated components
     """
-    
     rnew = -t*np.sin(np.radians((dphi+180)%360)) - r*np.cos(np.radians((dphi+180)%360))
     tnew = -t*np.cos(np.radians((dphi+180)%360)) + r*np.sin(np.radians((dphi+180)%360))
     return rnew, tnew
@@ -324,7 +330,7 @@ def rotate(r, t, dphi):
 
 def rotate_stream(st, **kwargs):
     """        
-    The method calls the obspy.Stream.rotate method, which sometimes runs into
+    The method calls the `obspy.Stream.rotate` method, which sometimes runs into
     errors if differences are present among the starttimes and/or endtimes of 
     the traces constituting the stream. These are prevented by slicing the 
     stream to a common time window and (if necessary) interpolating it so as to 
@@ -333,15 +339,15 @@ def rotate_stream(st, **kwargs):
     Parameters
     ----------
     st : obspy.Stream
-    kwargs : dict
-        Optional arguments passed to obspy.Stream.rotate
+
+    **kwargs
+        Optional arguments passed to `obspy.Stream.rotate`
     
     Returns
     -------
     st : obspy.Stream
         Rotated copy of the input Stream
     """
-    
     def starttime_and_endtime(st):
         starttime = max([tr.stats.starttime for tr in st])
         endtime = min([tr.stats.endtime for tr in st])
@@ -368,22 +374,22 @@ def running_mean(x, N):
     ----------
     x : ndarray of shape (m,)
         Data vector
+
     N : int
         Controls the extent of the smoothing (larger values correspond to larger
-        smoothing).
+        smoothing)
     
     Returns
     -------
     runmean : ndarray of shape (m,)
         Smoothed input
     
-    Note
-    ----
+    Notes
+    -----
     This is a simple implementation of a moving average. More sofisticated 
-    functions can be found, e.g., in scipy.signal.savgol_filter or 
-    scipy.ndimage.filters.uniform_filter1d
+    functions can be found, e.g., in `scipy.signal.savgol_filter` or 
+    `scipy.ndimage.filters.uniform_filter1d`
     """
-    
     if N%2 == 0:
         N+=1
     idx0 = int((N-1)/2)
@@ -403,22 +409,29 @@ def scatter_to_mesh(lats, lons, c, mesh, method='linear'):
     ----------
     lats, lons : ndarray (n,)
         Coordinates of the scattered data
+
     c : ndarray (n,)
         Values of the scattered data
+
     mesh : ndarray (m, 4)
-        seislib mesh, where the four columns correspond to the boundaries of
-        each pixel, i.e., lat1, lat2, lon1, lon2
-    method : str
-        Interpolation method. Supported: `linear` (default), `nearest`, and
-        `cubic`. The three methods call `LinearNDInterpolator`, 
+        mesh in SeisLib's format, where the four columns correspond 
+        to the boundaries of each pixel, i.e., lat1, lat2, lon1, lon2
+
+    method : {'linear', 'nearest', 'cubic'}
+        Interpolation method. Supported: 'linear' (default), 'nearest', 
+        and 'cubic'. The three methods call `LinearNDInterpolator`, 
         `NearestNDInterpolator`, and `CloughTocher2DInterpolator` of the 
-        scipy.interpolate module, respectively.
+        `scipy.interpolate` module, respectively.
     
     Returns
     -------
     1-D ndarray containing the `c` values interpolated on `mesh`
+
+    Raises
+    ------
+    NotImplementedError
+        If `method` is not supported
     """
-    
     if method == 'linear':
         interpolator = LinearNDInterpolator(np.column_stack((lons, lats)), c)
     elif method == 'nearest':
@@ -440,15 +453,26 @@ def pearson_corrcoef(v1, v2):
     Parameters
     ----------
     v1, v2 : lists or ndarrays (n,)
-        A ValueError is raised if v1 and v2 have different shapes
+        
     
     Returns
     -------
-    Pearson correlation coefficient and pvalue, by calling scipy.stats.pearsonr.
-    (For details, see scipy's documentation.) The calculation is performed on 
-    the non-nan indexes in common between v1 and v2.
-    """
+    corrcoeff : float
+        Pearson correlation coefficient
+
+    pvalue : float
     
+
+    Raises
+    ------
+    ValueError
+        If v1 and v2 have different shapes
+
+    Notes
+    -----
+    This function calls `scipy.stats.pearsonr`, bu handles the presence
+    of `nan` values.
+    """
     if v1.shape != v2.shape:
         raise ValueError('Shapes %s and %s are inconsistent'%(v1.shape, v2.shape))
     notnan = np.intersect1d(np.flatnonzero(~np.isnan(v1)), 
@@ -468,7 +492,7 @@ def gaussian(x, mu, sigma):
     mu : float
         Mean of the Gaussian
         
-    sigma :
+    sigma : float
         Standard deviation of the Gaussian
         
     
@@ -477,7 +501,6 @@ def gaussian(x, mu, sigma):
     float or ndarray
         Gaussian evaluated at x
     """
-    
     return 1 / (sigma * np.sqrt(2*np.pi)) * np.exp(-1/2 * ((x-mu)/sigma)**2)
    
 
@@ -499,14 +522,12 @@ def skewed_normal(x, mu, sigma, skewness):
     skewness : float
         Parameter regulating the skewness of the function. The function is
         right-skewed if `skewness`>0, and left-skewed if `skewness`<0
-        
-    
+
     Returns
     -------
     float or ndarray
         Skewed Normal distribution evaluated at x
-    """
-    
+    """    
     loc = mu - (np.sqrt(2 / np.pi)) * (sigma*skewness / np.sqrt(1+skewness**2))
     integrand = lambda t: np.exp(-t**2 / 2)
     const = 1 / (sigma*np.pi) * np.exp(-(x-loc)**2 / (2*sigma**2))
@@ -526,7 +547,6 @@ def next_power_of_2(x):
     -------
     int
     """
-    
     return 1 if x==0 else 2**(x - 1).bit_length()
 
 
@@ -538,12 +558,10 @@ def load_pickle(path):
     path : str
         Absolute path to the file
     
-    
     Returns
     -------
     Object contained in the .pickle file
     """
-    
     with open(path, 'rb') as f:
         return pickle.load(f) 
 
@@ -556,10 +574,10 @@ def save_pickle(file, obj):
     file : str
         Absolute path to the resulting file
     
-    obj : Object to be saved (see documentation on the pickle module to know
+    obj : python object 
+        Object to be saved (see documentation on the pickle module to know
         more on which Python objects can be stored into .pickle files)
     """
-    
     with open(file, 'wb') as f:
         pickle.dump(obj, f)
 
@@ -572,7 +590,6 @@ def remove_file(file):
     file : str
         Absolute path to the file to be removed
     """
-    
     try:
         os.remove(file)
     except FileNotFoundError:

@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
-"""
+Lower-Level Support
+===================
 
+This module provides useful functions for the processing of continuous 
+recordings of seismic ambient noise. All these functions are called, 
+under the hood, by :class:`seislib.an.AmbientNoiseVelocity` and
+:class:`seislib.an.AmbientNoiseAttenuation`.
+
+"""
 import numpy as np
 from scipy.signal import detrend, find_peaks
 from scipy.stats import linregress
@@ -22,65 +26,69 @@ from seislib.exceptions import NonFiniteDataException
                 
 def noisecorr(tr1, tr2, window_length=3600, overlap=0.5, whiten=True, psd=False,
               waterlevel=1e-10):
-    """ Cross correlation of seismic ambient noise
+    """ Cross correlation of continuous seismograms.
     
     The two seismograms are first sliced to a common time window and, if they
     are characterized by two different sampling rate, the one with the larger
     sampling rate is downsampled. The two seismograms are then subdivided into
     (possibly overlapping) time windows, which are cross correlated in the
     frequency domain. The cross correlations are then stacked and ensemble
-    averaged to obtain the final (frequency domain) cross spectrum.
+    averaged to obtain the final cross spectrum in the frequency domain.
     
     Parameters
     ----------
     tr1, tr2 : obspy.Trace
         Continuous seismograms to be cross-correlated
         
-    window_lenght : int, float (s)
-        Length of the time windows used to perform the cross correlations.
-        Default is 3600
+    window_lenght : float
+        Length of the time windows (in seconds) used to perform the cross 
+        correlations. Default is 3600
         
     overlap : float
-        Should be >=0 and <1 (strictly smaller than 1). Rules the extent
-        of overlap between one time window and the following. Default is 0.5.
-        [See Seats et al. 2012]
+            Should be >=0 and <1 (strictly smaller than 1). Rules the extent
+            of overlap between one time window and the following [2]_. Default 
+            is 0.5
         
     whiten : bool
         Whether or not the individual cross correlations are normalized by
-        whitening [e.g., Bensen et al. 2007]. Default is True
+        whitening [1]_. Default is `True`
         
     psd : bool
         Whether or not the individual cross correlations are normalized by
-        the average psd. Default is False. If `whiten` is True, psd is ignored
+        the average psd. Default is `False`. If `whiten` is `True`, `psd` 
+        is ignored
         
     waterlevel : float
-        Only applied if `whiten` is True. It prevents ZeroDivisionError. Default
-        is 1e-10
+        Only applied if `whiten` is `True`. It prevents `ZeroDivisionError`. 
+        Default is 1e-10
         
         
     Returns
     -------
     freq : ndarray of shape (n,)
         Frequency associated with the cross spectrum. It is calculated as
-        np.fft.rfftfreq(win_samples, dt), where dt is the time delta in the
-        input seismograms, and win_samples is int(window_length / dt)
+        `np.fft.rfftfreq(win_samples, dt)`, where `dt` is the time delta in 
+        the input seismograms, and `win_samples` is `int(window_length / dt)`
         
     corr_spectrum : ndarray of shape (n,)
         Ensemble average of the individual cross correlations
     
     
-    Exceptions
-    ----------
-    If the input traces do not span common times, or the common time is smaller
-    than `window_length', an Exception is raised
+    Raises
+    ------
+    NonFiniteDataException
+        If one of the two traces contains non-finite elements
+    
+    TimeSpanException
+        If the input traces do not span common times
     
     
     References
     ----------
-    Bensen et al. 2007, Processing seismic ambient noise data to obtain reliable 
+    .. [1] Bensen et al. 2007, Processing seismic ambient noise data to obtain reliable 
         broad-band surface wave dispersion measurements, GJI
         
-    Seats et al. 2012, Improved ambient noise correlation functions using 
+    .. [2] Seats et al. 2012, Improved ambient noise correlation functions using 
         Welch's method, GJI
     """
     
@@ -142,10 +150,10 @@ def velocity_filter(freq, corr_spectrum, interstation_distance, cmin=1.0,
     
     In practice, the procedure (i) inverse-Fourier transforms the cross spectrum 
     to the time domain; (ii) it zero-pads the resulting time-domain signal at 
-    times corresponding to velocities outside the velocity range by applying a
-    cosine taper (the same cosine taper is applied at the two ends of the 
-    interval); (iii) a forward-Fourier transform brings back the padded cross 
-    correlation to the frequency domain [e.g., Magrini & Boschi 2021].
+    times corresponding to velocities outside the specified velocity range by 
+    applying a cosine taper (the same cosine taper is applied at the two ends of 
+    the interval); (iii) a forward-Fourier transform brings back the padded 
+    cross correlation to the frequency domain [1]_.
     
     Parameters
     ----------
@@ -169,11 +177,11 @@ def velocity_filter(freq, corr_spectrum, interstation_distance, cmin=1.0,
     corr : ndarray of shape (n,)
         Filtered cross-spectrum
         
-        
     References
     ----------
-    Magrini & Boschi 2021, Surface‐Wave Attenuation From Seismic Ambient Noise: 
-        Numerical Validation and Application, JGR
+    .. [1] Sadeghisorkhani et al. 2018, GSpecDisp: a matlab GUI package for 
+        phase-velocity dispersion measurements from ambient-noise correlations,
+        Computers & Geosciences 
     """
     
     dt = 1 / (2 * freq[-1])
@@ -191,7 +199,7 @@ def velocity_filter(freq, corr_spectrum, interstation_distance, cmin=1.0,
 
 def get_zero_crossings(freq, xcorr, dist, freqmin=0, freqmax=1, cmin=1, cmax=5, 
                        horizontal_polarization=False, return_indexes=False):
-    """
+    r"""
     Returns the zero crossings from the smoothed complex cross-correlation
     spectrum.
         
@@ -204,8 +212,8 @@ def get_zero_crossings(freq, xcorr, dist, freqmin=0, freqmax=1, cmin=1, cmax=5,
         Real or complex-valued array containing the cross-correlation. (Only 
         the real part is used.)
         
-    dist : float (in km)
-        Interstation distance
+    dist : float
+        Interstation distance in km
         
     freqmin, freqmax : float
         Restricts the zero crossings to the corresponding frequency range. 
@@ -218,19 +226,19 @@ def get_zero_crossings(freq, xcorr, dist, freqmin=0, freqmax=1, cmin=1, cmax=5,
         values are 1 and 5
         
     horizontal_polarization : bool
-        If True, the zero crossings from the cross-spectrum are compared to the 
-        difference function J0 - J2 (Bessel functions of the first kind of order 
-        0 and 2 respectively). Should be True for Love and radially-polarized
-        Rayleigh waves. If False (default) only J0 is used. [For technical 
-        detail, see, e.g., Kästle et al. 2016]
+        If `True`, the zero crossings from the cross-spectrum are compared to 
+        the difference function :math:`J_0 - J_2` (Bessel functions of the first 
+        kind of order 0 and 2 respectively) [1]_. Should be `True` for Love and 
+        radially-polarized Rayleigh waves. If `False` (default) only 
+        :math:`J_0` is used
     
     return_indexes : bool
-        If True, the different branches in the zero-crossings are enumerated
-        and returned. Default is False
+        If `True`, the different branches in the zero-crossings are enumerated
+        and returned. Default is `False`
         
     Returns
     -------
-    If return_indexes is False (default):
+    If `return_indexes` is `False` (default):
         ndarray of shape (m, 2)
             2-D array containing frequencies (1st column) and corresponding
             velocities (2nd column, in km/s) at the zero crossings
@@ -241,8 +249,9 @@ def get_zero_crossings(freq, xcorr, dist, freqmin=0, freqmax=1, cmin=1, cmax=5,
     
     References
     ----------
-    Kästle et al. 2016, Two-receiver measurements of phase velocity: cross-
-        validation of ambient-noise and earthquake-based observations, GJI
+    .. [1] Kästle et al. 2016, Two-receiver measurements of phase velocity: 
+        cross- validation of ambient-noise and earthquake-based observations, 
+        GJI
     """  
    
     def get_crossings(x, y, return_zeros=False):
@@ -346,7 +355,7 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
     velocity curve and to obtain a smooth dispersion curve. A reference 
     dispersion curve must be given to guide the algorithm in finding the 
     correct phase-velocity branch to start the picking, because parallel 
-    branches are subject to a 2 pi ambiguity.
+    branches are subject to a :math:`2 \pi` ambiguity.
     
     Parameters
     ----------
@@ -354,10 +363,11 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
         Frequency vector of the cross-spectrum
         
     corr_spectrum : ndarray of shape (n,)
-        Real or complex-valued array containing the cross-correlation. (Only the 
-        real part is used.)
+        Real or complex-valued array containing the cross-correlation. 
+        (Only the real part is used.)
         
-    interstation_distance : float (in km)
+    interstation_distance : float 
+        Inter-station distance in km
     
     ref_curve: ndarray of shape (m, 2) 
         Reference phase velocity curve, where the 1st column is frequency,
@@ -376,32 +386,32 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
         
     filt_width : int
         Controls the width of the smoothing window. Corresponds to the number 
-        of zero crossings that should be within one window. Default is 7
+        of zero crossings that should be within one window. Default is 3
         
     filt_height : float
         Controls the height of the smoothing window. Corresponds to the portion 
         of a cycle jump. Should never exceed 1, otherwise it will smooth over 
-        more than one cycle. Default is 0.8
+        more than one cycle. Default is 1
         
     x_step: float
         Controls the step width for the picking routine along with the x 
         (frequency) axis. Expressed in fractions of the expected step width 
-        between two zero crossings. If not provided, it chosen automatically   
+        between two zero crossings. If not provided, it is chosen automatically   
         
     horizontal_polarization : bool
-        If True, the zero crossings from the cross-spectrum are compared to the 
-        difference function J0 - J2 (Bessel functions of the first kind of order 
-        0 and 2 respectively). Should be True for Love and radially-polarized
-        Rayleigh waves. If False (default) only J0 is used. [For technical 
-        detail, see, Kästle et al. 2016]
+        If `True`, the zero crossings from the cross-spectrum are compared to 
+        the difference function :math:`J_0 - J_2` (Bessel functions of the first 
+        kind of order 0 and 2 respectively) [1]_. Should be `True` for Love and 
+        radially-polarized Rayleigh waves. If `False` (default) only 
+        :math:`J_0` is used
         
     plotting : bool        
         If True, a control plot is created and information on the picking 
         procedure are printed. Default is False
         
     savefig : str
-        Absolute path. If not None, and if plotting is True, the control plot 
-        is saved on disk at the absolute path provided
+        Absolute path. If not `None`, and if plotting is `True`, the control 
+        plot is saved on disk at the absolute path provided
         
         
     Returns
@@ -418,11 +428,11 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
     
     References
     ----------
-    Kästle et al. 2016, Two-receiver measurements of phase velocity: cross-
-        validation of ambient-noise and earthquake-based observations, GJI
-    
+    .. [1] Kästle et al. 2016, Two-receiver measurements of phase velocity: 
+        cross-validation of ambient-noise and earthquake-based observations, 
+        GJI
     """    
-    
+
     def dv_cycle_jump(frequency,velocity,interstation_distance):
         
         return np.abs(velocity-1./(1./(interstation_distance*frequency) + 
