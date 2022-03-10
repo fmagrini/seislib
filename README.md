@@ -24,7 +24,7 @@
 
 # ***Documentation***
 
-For more information on SeisLib, make sure to visit our [wiki page](https://seislib.readthedocs.io/en/latest/index.html)!
+For more information on SeisLib, make sure to visit our [wiki page](https://seislib.readthedocs.io/en/latest/)!
 
 <p>&nbsp;</p>
 
