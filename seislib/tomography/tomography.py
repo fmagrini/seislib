@@ -1075,13 +1075,13 @@ class SeismicTomography:
             The dictionary is structured as follows:
 
             - 'synth_data': ndarray of shape (m,), where m corresponds to the
-            number of rows in the A matrix (i.e., in the data kernel)
+              number of rows in the A matrix (i.e., in the data kernel)
                     
             - 'synth_model': inverse of `velocity_model`, used to create the
-            synthetic data
+              synthetic data
                     
             - 'retrieved_model': model retrieved from the inversion of the
-            synthetic data
+              synthetic data
                 
             - 'mesh': same as the input `mesh`
         """
@@ -1159,13 +1159,13 @@ class SeismicTomography:
             The dictionary is structured as follows:
 
             - 'synth_data': ndarray of shape (m,), where m corresponds to the
-            number of rows in the A matrix (i.e., in the data kernel)
+              number of rows in the A matrix (i.e., in the data kernel)
                     
             - 'synth_model': inverse of `velocity_model`, used to create the
-            synthetic data
+              synthetic data
                     
             - 'retrieved_model': model retrieved from the inversion of the
-            synthetic data
+              synthetic data
                 
             - 'mesh': same as the input `mesh`
         """
@@ -1246,17 +1246,18 @@ class SeismicTomography:
         Returns
         -------
         Dictionary object structured as follows:
-            'synth_data': ndarray of shape (m,), where m corresponds to the
-                number of rows in the A matrix (i.e., in the data kernel)
+
+            - 'synth_data': ndarray of shape (m,), where m corresponds to the
+              number of rows in the A matrix (i.e., in the data kernel)
                 
-            'synth_model': ndarray of shape (n,), synthetic model (slowness) 
-                used to create the synthetic data
+            - 'synth_model': ndarray of shape (n,), synthetic model (slowness) 
+              used to create the synthetic data
                 
-            'retrieved_model': model retrieved from the inversion of the
-                synthetic data
+            - 'retrieved_model': model retrieved from the inversion of the
+              synthetic data
                 
-            'mesh': ndarray of shape (n, 4), parameterization associated with 
-                the synthetic model
+            - 'mesh': ndarray of shape (n, 4), parameterization associated with 
+              the synthetic model
         """
         
         if refvel is None:

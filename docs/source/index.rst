@@ -35,6 +35,7 @@ Welcome to SeisLib's documentation!
    :caption: Getting Started
 	
    installation
+   cite
    
 .. toctree::
    :maxdepth: 2
@@ -56,11 +57,18 @@ Welcome to SeisLib's documentation!
    
 .. toctree::
    :maxdepth: 2
-   :caption: Plotting
+   :caption: Plotting & Colormaps
    
    seislib.plotting
+   seislib.colormaps
 
-
+.. toctree::
+   :maxdepth: 2
+   :caption: Utility Functions
+   
+   seislib.utils
+   
+   
 Indices and tables
 ==================
 

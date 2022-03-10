@@ -1,5 +1,6 @@
+============
 Installation
-------------
+============
 
 To use seislib, make sure you have all the **dependences** installed, i.e., **obspy**, 
 **cartopy**, and **cython**. We recommend installing such dependences using conda.

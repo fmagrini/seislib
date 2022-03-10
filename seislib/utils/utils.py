@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
+
+
 """
 
 import os
@@ -242,7 +241,7 @@ def bandpass_gaussian(data, dt, period, alpha):
     The bandpass filter is carried out with a Gaussian filter centered at 
     `period`, whose width is controlled by `alpha`::
 
-        exp[-alpha * ((f-f0)/f0)**2]
+        exp(-alpha * ((f-f0)/f0)**2)
 
     where f is frequency and f0 = 1 / period. 
     

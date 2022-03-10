@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-@author: Fabrizio Magrini
-@email: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
-
-seispy
-=============================================================================
+=======
+SeisLib
+=======
 """
 
 
