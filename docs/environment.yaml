@@ -5,11 +5,9 @@ channels:
 dependencies:
   - python>=3.7
   - sphinx==4.2.0
-  - obspy==1.2.2
-  - cartopy==0.18
-  - matplotlib==3.4.3
+  - obspy
+  - cartopy
   - numpydoc==1.1.0
   - pip:
     - sphinx_rtd_theme==1.0.0
     - sphinx==4.2.0
-    - numpydoc==1.1.0
