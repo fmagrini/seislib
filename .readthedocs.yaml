@@ -2,7 +2,7 @@
 version: 2
 
 conda:
-    environment: docs/environment.yml
+    environment: docs/environment.yaml
 
 build:
    image: latest
