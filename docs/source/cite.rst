@@ -27,7 +27,7 @@ Thank you very much!
 * Magrini, F., Diaferia, G., Boschi, L. & Cammarano, F., 2020. `Arrival-angle effects on two-receiver measurements of phase velocity <https://academic.oup.com/gji/article-abstract/220/3/1838/5672636?redirectedFrom=fulltext>`_. *Geophys. J. Int.*, 220, 1838-1844
 
 
-**Least-square imaging of surface-wave velocity**
+**Least-squares imaging of surface-wave velocity**
 
 * Boschi, L. & Dziewonski, A.M., 1999. `High- and low-resolution images of the Earth's mantle: Implications of different approaches to tomographic modeling <https://ui.adsabs.harvard.edu/abs/1999JGR...10425567B/abstract>`_. *J. Geophys. Res.*, 104(B11) 
 

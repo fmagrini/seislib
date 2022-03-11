@@ -178,10 +178,37 @@ class EQVelocity:
                                   etc.]
             }
         
-    Note that each event origin time corresponds to a sub-directory of
-    the source data (`src`). Also note that, since the `min_no_events` passed to 
-    :meth:`prepare_data` is 8, the length of the lists of events associated with each 
-    receiver pair will be at least 8.
+    .. note:: 
+        Each event origin time corresponds to a sub-directory of
+        the source data (`src`). Since the `min_no_events` passed to 
+        :meth:`prepare_data` is 8, the length of the lists of events 
+        associated with each receiver pair will be at least 8.
+
+    To visualize the location of the epicenters that will be used
+    to calculate inter-station dispersion curves, run, for example,::
+
+        eq.plot_events(color='r', 
+                       min_size=5, 
+                       max_size=250, 
+                       marker='*', 
+                       legend_dict=dict(fontsize=12))
+    
+    We can now extract the dispersion curves in a automated fashion. 
+    The following will allows us to extract dispersion measurements at 
+    75 different surface-wave periods, linearly spaced in the range 15-150 s. 
+    All  values of phase velocity outside the velocity range 2.5-5 km/s
+    will be discarded, and will only periods for which a ratio between
+    inter-station distance and wavelength > 1 will be considered. (The 
+    wavelength is inferred from the reference curve.)::
+
+        eq.extract_dispcurves(refcurve, 
+                              periodmin=15, 
+                              periodmax=150, 
+                              no_periods=75, 
+                              cmin=2.5, 
+                              cmax=5, 
+                              min_no_wavelengths=1, 
+                              plotting=True)
     """
     
     def __init__(self, src, savedir=None, component='Z', verbose=True):   
