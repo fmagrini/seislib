@@ -677,14 +677,14 @@ class AmbientNoiseAttenuation:
             Length of the time windows (in s) used to perform the 
             cross-correlations
         
-        .. warning::
-
-            The operation might take a relatively large space on disk, depending on
-            the amount of continuous seismograms available and on the sampling rate
-            chosen. (Even more than the size of the original data.) This,
-            however, is necessary to speed up (consistently) all the subsequent 
-            operations, involving cross-correlations and calculation of the average
-            power spectral density of each sub-array.
+        Notes
+        -----
+        The operation might take a relatively large space on disk, depending on
+        the amount of continuous seismograms available and on the sampling rate
+        chosen. (Even more than the size of the original data.) This,
+        however, is necessary to speed up (consistently) all the subsequent 
+        operations, involving cross-correlations and calculation of the average
+        power spectral density of each sub-array.
         """
         def fourier_transform(x, window_samples):      
             taper = cosine_taper(window_samples, p=0.05)

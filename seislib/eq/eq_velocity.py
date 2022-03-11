@@ -194,7 +194,7 @@ class EQVelocity:
                        legend_dict=dict(fontsize=12))
     
     We can now extract the dispersion curves in a automated fashion. 
-    The following will allows us to extract dispersion measurements at 
+    The following will allow us to extract dispersion measurements at 
     75 different surface-wave periods, linearly spaced in the range 15-150 s. 
     All  values of phase velocity outside the velocity range 2.5-5 km/s
     will be discarded, and will only periods for which a ratio between
