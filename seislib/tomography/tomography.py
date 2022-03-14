@@ -167,18 +167,18 @@ class SeismicTomography:
     -------------------------------------        
     
     .. hint:: 
-        we could have directly passed the data matrix without
+        We could have directly passed the data matrix without
         loading it from disk. If `data` is your ndarray of shape (m, 5),
         you can pass it to `tomo` by::
         
-            tomo.add_data(data=your_matrix)
+            tomo.add_data(data=data)
 
     .. hint:: 
-        you can add, sequentially, how many data sets you wish. The data
+        You can add, sequentially, how many data sets you wish. The data
         information will be automatically updated
 
     .. hint:: 
-        to display general information on the data, type `print(tomo)`. 
+        To display general information on the data, type `print(tomo)`. 
         To display general information on the parameterization, type 
         `print(tomo.grid)`. (See also the documentation on 
         :class:`seislib.tomogaphy.grid.EqualAreaGrid`)

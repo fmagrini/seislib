@@ -212,6 +212,16 @@ class ANDownloader:
                                   stations_config=stations_config,
                                   verbose=True)
         downloader.start()
+
+    .. note::
+        You can kill the above process without any fear: the next time you 
+        will run the code, it will pick up where it left off.
+
+    .. hint::
+        If instead you want to modify your `station_configs`, make sure to
+        either delete the .xml file created at the previous run of the 
+        algorithm or use a different `inventory_name`!
+
     """
     
     def __init__(self, savedir, inventory_name, provider='iris', user=None,
