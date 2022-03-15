@@ -1353,7 +1353,7 @@ class SeismicTomography:
             
         Returns
         -------
-        If show is False
+        If show is True
             `None`
         Otherwise
             an instance of `matplotlib.collections.QuadMesh`, together with an 
@@ -1539,7 +1539,7 @@ class SeismicTomography:
     
         Returns
         -------
-        `None` if `show` is `False`. Otherwise a `GeoAxesSubplot` instance
+        `None` if `show` is `True`. Otherwise a `GeoAxesSubplot` instance
         """
       
         return plotting.plot_rays(self.data_coords, 
@@ -1645,7 +1645,7 @@ class SeismicTomography:
         
         Returns
         -------
-        If `show` is `False`
+        If `show` is `True`
             `None` 
         Otherwise 
             `GeoAxesSubplot` instance together with an instance of 

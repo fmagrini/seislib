@@ -722,7 +722,7 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
 
     Returns
     -------
-    `None` if `show` is `False`. Otherwise a `GeoAxesSubplot` instance
+    `None` if `show` is `True`. Otherwise a `GeoAxesSubplot` instance
     """
     def get_map_boundaries(data):
         lats = np.concatenate((data[:,0], data[:, 2]))
@@ -879,7 +879,7 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
     
     Returns
     -------
-    If `show` is `False`
+    If `show` is `True`
         `None` 
     Otherwise 
         `GeoAxesSubplot` instance together with an instance of 
@@ -1037,7 +1037,7 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
         
     Returns
     -------
-    If show is False
+    If show is True
         `None`
     Otherwise
         an instance of `matplotlib.collections.QuadMesh`, together with an 
