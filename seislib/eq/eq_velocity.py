@@ -223,7 +223,8 @@ class EQVelocity:
         self.component = component
         self.savedir = os.path.join(savedir, 'eq_velocity', component)
         os.makedirs(self.savedir, exist_ok=True)
-        self.events = sorted(os.listdir(self.src))
+        self.events = sorted([i for i in os.listdir(self.src) \
+                              if os.path.isdir(os.path.join(self.src, i))])
         
         
     def __str__(self):

@@ -24,7 +24,7 @@ from obspy.clients.fdsn.header import FDSNNoDataException, FDSNException
 from obspy.io.mseed import InternalMSEEDError
 from http.client import IncompleteRead
 from collections import defaultdict
-from seislib.utils import resample, rotate_stream
+from seislib.utils import resample, rotate_stream, remove_file
 from seislib.plotting import plot_stations
 warnings.simplefilter(action='ignore')
 ONE_YEAR = 365 * 86400
@@ -922,6 +922,7 @@ class EQDownloader:
             return set([i.strip() for i in open(done_file)])
         
         def get_starttime(savedir, inv):
+            remove_file(os.path.join(savedir, '.DS_STORE')) # mac tmp file
             events = sorted(os.listdir(savedir), key=lambda i: float(i))
             if not events:
                 return None
