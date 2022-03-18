@@ -986,6 +986,8 @@ class AmbientNoiseAttenuation:
             #In rare cases one of the PSD positions is zero ---> nans
             if np.any(np.isnan(egf)):
                 mask = np.isfinite(egf)
+                if not frequency[mask].size:
+                    return None
                 egf = np.interp(frequency, frequency[mask], egf[mask])
                 
             return egf
