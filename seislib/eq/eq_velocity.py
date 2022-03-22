@@ -28,6 +28,8 @@ from seislib.utils import load_pickle, save_pickle, remove_file
 from seislib.utils import gaussian, skewed_normal, next_power_of_2
 from seislib.plotting import plot_stations, plot_events
 from seislib.exceptions import DispersionCurveException
+from seislib.tomography import SeismicTomography
+
 
 
 def _read(*args, verbose=True, **kwargs):
@@ -795,7 +797,8 @@ class EQVelocity:
             update_done(sta1, sta2)
                 
     
-    def prepare_input_tomography(self, savedir, period, outfile='input_%.2fs.txt'):
+    def prepare_input_tomography(self, savedir, period, min_no_wavelengths=1.5,
+                                 outfile='input_%.2fs.txt'):
         """ 
         Prepares a txt file for each specified period, to be used for 
         calculating phase-velocity maps using :class:`seislib.tomography.SeismicTomography`.
@@ -809,7 +812,14 @@ class EQVelocity:
         period : float, array-like
             Period (or periods) at which the dispersion curves will be 
             interpolated using :meth:`interpolate_dispcurves`
-            
+
+        min_no_wavelengths : float
+            Ratio between the estimated wavelength :math:`\lambda = T c_{ref}`
+            of the surface-wave at a given period *T* and interstation distance
+            :math:`\Delta`. Whenever this ratio is > `min_no_wavelength`, 
+            the period in question is not used to retrieve a dispersion measurement. 
+            Values < 1 are suggested against. Default is 1.5
+
         outfile : str
             Format for the file names. It must include either %s or %.Xf (where
             X is integer), since this will be replaced by each period analysed
@@ -841,15 +851,19 @@ class EQVelocity:
         """
         os.makedirs(savedir, exist_ok=True)
         period = np.array([period]) if np.isscalar(period) else np.array(period)
-        coords, measurements = self.interpolate_dispcurves(period)
+        coords, velocity = self.interpolate_dispcurves(period)
+        dist = SeismicTomography.gc_distance(*coords.T)
+        wavelength = velocity * period
+        ratios = dist.reshape(-1, 1) / wavelength
+        velocity_final = np.where(ratios>min_no_wavelengths, velocity, np.nan)
         for iperiod, p in enumerate(period):
             save = os.path.join(savedir, outfile%p)
-            vel = measurements[:, iperiod]
+            vel = velocity_final[:, iperiod]
             notnan = np.flatnonzero(~np.isnan(vel))
             if self.verbose:
                 print('Measurements at %.2fs:'%p, notnan.size)
             np.savetxt(save, np.column_stack((coords[notnan], vel[notnan])))
-
+            
     
     def interpolate_dispcurves(self, period):
         """ 

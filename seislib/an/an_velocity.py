@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from seislib.utils import rotate_stream, load_pickle, save_pickle, remove_file
 from seislib.an import noisecorr, velocity_filter, extract_dispcurve
 from seislib.plotting import plot_stations
+from seislib.tomography import SeismicTomography
 
 
 def _read(*args, verbose=True, **kwargs):
@@ -628,7 +629,8 @@ class AmbientNoiseVelocity:
             update_done(sta1, sta2)
             
     
-    def prepare_input_tomography(self, savedir, period, outfile='input_%.2fs.txt'):
+    def prepare_input_tomography(self, savedir, period, min_no_wavelengths=2,
+                                 outfile='input_%.2fs.txt'):
         """ 
         Prepares a .txt file for each specified period, to be used for 
         calculating phase-velocity maps using 
@@ -643,6 +645,13 @@ class AmbientNoiseVelocity:
         period : float, iterable of floats
             Period (or periods) at which the dispersion curves will be 
             interpolated (see :meth:`interpolate_dispcurves`)
+            
+        min_no_wavelengths : float
+            Ratio between the estimated wavelength :math:`\lambda = T c_{ref}`
+            of the surface-wave at a given period *T* and interstation distance
+            :math:`\Delta`. Whenever this ratio is > `min_no_wavelength`, 
+            the period in question is not used to retrieve a dispersion measurement. 
+            Values < 1 are suggested against. Default is 2
             
         outfile : str
             Format for the file names. It must include either %s or %.Xf (where
@@ -673,10 +682,15 @@ class AmbientNoiseVelocity:
         """
         os.makedirs(savedir, exist_ok=True)
         period = np.array([period]) if np.isscalar(period) else np.array(period)
-        coords, measurements = self.interpolate_dispcurves(1/period)
+        coords, velocity = self.interpolate_dispcurves(1/period)
+        dist = SeismicTomography.gc_distance(*coords.T)
+        wavelength = velocity * period
+        ratios = dist.reshape(-1, 1) / wavelength
+        velocity_final = np.where(ratios>min_no_wavelengths, velocity, np.nan)
+
         for iperiod, p in enumerate(period):
             save = os.path.join(savedir, outfile%p)
-            vel = measurements[:, iperiod]
+            vel = velocity_final[:, iperiod]
             notnan = np.flatnonzero(~np.isnan(vel))
             if self.verbose:
                 print('Measurements at %.2fs:'%p, notnan.size)
