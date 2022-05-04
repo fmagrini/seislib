@@ -121,7 +121,7 @@ from obspy import UTCDateTime as UTC
 from obspy.signal.invsim import cosine_taper
 from obspy.geodetics.base import gps2dist_azimuth
 from obspy.io.sac.util import SacIOError
-from seislib import EqualAreaGrid
+from seislib.tomography import EqualAreaGrid, RegularGrid
 from seislib.utils import load_pickle, save_pickle, remove_file, resample
 from seislib.utils import azimuth_backazimuth
 from seislib.plotting import add_earth_features
@@ -472,7 +472,7 @@ class AmbientNoiseAttenuation:
             
     
     def parameterize(self, cell_size, overlap=0.5, min_no_stations=6,
-                     plotting=True, plot_resolution='110m'):
+                     regular_grid=False, plotting=True, plot_resolution='110m'):
         """
         Creates the equal area (possibly overlapping) parameterization used in 
         the subsequent analysis. The equal-area grid is created through the 
@@ -512,7 +512,11 @@ class AmbientNoiseAttenuation:
             Minimum number of stations falling within each grid-cell. If the
             value is not reached, the grid-cell in question is removed from the
             parameterization
-            
+        
+        regular_grid : bool
+            If False (default), the study area is discretized using an equal-area
+            parameterization. Otherwise, a regular grid is employed.
+        
         plotting : bool
             If `True`, a figure on the resulting parameterization is displayed
             
@@ -627,12 +631,13 @@ class AmbientNoiseAttenuation:
         station_coords = np.array(station_coords)  
         latmin, latmax = station_coords[:,0].min(), station_coords[:,0].max()
         lonmin, lonmax = station_coords[:,1].min(), station_coords[:,1].max()
-        grid = EqualAreaGrid(cell_size, 
-                             latmin=latmin,
-                             latmax=latmax,
-                             lonmin=lonmin,
-                             lonmax=lonmax,
-                             )
+        grid_type = EqualAreaGrid if not regular_grid else RegularGrid
+        grid = grid_type(cell_size, 
+                         latmin=latmin,
+                         latmax=latmax,
+                         lonmin=lonmin,
+                         lonmax=lonmax,
+                         )
         if overlap > 0:
             mesh = add_overlap(grid, overlap_east=overlap, overlap_north=overlap)
         grid.update_grid_params(mesh)
@@ -677,14 +682,14 @@ class AmbientNoiseAttenuation:
             Length of the time windows (in s) used to perform the 
             cross-correlations
         
-        Notes
-        -----
-        The operation might take a relatively large space on disk, depending on
-        the amount of continuous seismograms available and on the sampling rate
-        chosen. (Even more than the size of the original data.) This,
-        however, is necessary to speed up (consistently) all the subsequent 
-        operations, involving cross-correlations and calculation of the average
-        power spectral density of each sub-array.
+        .. warning::
+
+            The operation might take a relatively large space on disk, depending on
+            the amount of continuous seismograms available and on the sampling rate
+            chosen. (Even more than the size of the original data.) This,
+            however, is necessary to speed up (consistently) all the subsequent 
+            operations, involving cross-correlations and calculation of the average
+            power spectral density of each sub-array.
         """
         def fourier_transform(x, window_samples):      
             taper = cosine_taper(window_samples, p=0.05)
@@ -986,8 +991,6 @@ class AmbientNoiseAttenuation:
             #In rare cases one of the PSD positions is zero ---> nans
             if np.any(np.isnan(egf)):
                 mask = np.isfinite(egf)
-                if not frequency[mask].size:
-                    return None
                 egf = np.interp(frequency, frequency[mask], egf[mask])
                 
             return egf

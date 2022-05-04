@@ -868,12 +868,13 @@ class RegularGrid(_Grid):
         lonmin = -180 if lonmin is None else lonmin
         lonmax = +180 if lonmax is None else lonmax
         mesh = []
-        for lat1 in np.arange(latmin, latmax, cell_size):
+        for lat1 in np.arange(latmin, latmax, cell_size)[::-1]:
             lat2 = lat1 + cell_size
             for lon1 in np.arange(lonmin, lonmax, cell_size):
                 lon2 = lon1 + cell_size
                 mesh.append([lat1, lat2, lon1, lon2])
-        return np.round(mesh, 4)[::-1]
+        return np.round(mesh, 4)
+
 
 
 
