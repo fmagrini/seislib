@@ -13,8 +13,8 @@
 * Automated **download** of seismograms recording strong earthquakes
 * Retrieval of frequency-dependent **Rayleigh and Love phase velocities**, based on pairs of receivers lying on the same great-circle path as the epicentre (**Two-Station Method**)
 
-## **Least-Square Imaging of Lateral Variations in Surface-Wave Velocity**
-* **Equal-area parameterizations**, suited for data sets collected at local, regional, and global scale
+## **Least-Squares Imaging of Lateral Variations in Surface-Wave Velocity**
+* **Equal-area and regular parameterizations**, suited for data sets collected at local, regional, and global scale
 * **Adaptive parameterizations**, with finer resolution in the areas characterized by relatively high density of measurements
 * **Linearized inversion** of velocity measurements **based on ray theory**
 * **Computational speed optimized** (via Cython) for very **large data sets**
