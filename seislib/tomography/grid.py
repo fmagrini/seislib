@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-Equal-Area Parameterization
-===========================
+Parameterization
+================
 
 By default, SeisLib discretizes the Earth's surface by means of equal-area grids. 
 These prevent from artificially increasing the resolution of the resulting 
@@ -415,7 +415,7 @@ class _Grid():
 
 class EqualAreaGrid(_Grid):
     """
-    Class that allows to generate an equal-area grid covering the whole
+    Class that allows for creating an equal-area grid covering the whole
     Earth's surface.
 
 
@@ -731,7 +731,7 @@ class EqualAreaGrid(_Grid):
 
 class RegularGrid(_Grid):
     r"""
-    Class that allows to generate a regular grid in the format required by
+    Class that allows allows for creating a regular grid in the format required by
     :class:`seislib.tomography.tomography.SeismicTomography`. This class is
     particularly suited to tomographic applications at local scale, where the 
     use of equal-area parameterizations does not have clear advantages.
