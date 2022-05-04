@@ -28,162 +28,14 @@ SQUARE_DEGREES = 41252.961249419277010
 FOUR_PI = 4 * pi
 
 
-class EqualAreaGrid():
-    """
-    Class that allows to generate an equal-area grid covering the whole
-    Earth's surface.
 
 
-    Parameters
-    ----------
-    cell_size : int
-        Size of each side of the equal-area grid
-        
-    latmin, lonmin, latmax, lonmax : float, optional
-        Boundaries (in degrees) of the grid
-        
-    verbose : bool
-        If True, information about the grid will be displayed. Default is 
-        True    
 
-
-    Attributes
-    ----------
-    verbose : bool
-        If True, information about the grid will be displayed.
-
-    refined : int
-        Number of times the grid has been "refined"
-
-    lon_span : ndarray of shape (n,)
-        Longitudinal span of each block in the `n` latitudinal bands
-        defining the grid
-
-    mesh : ndarray of shape (m, 4)
-        Blocks bounded by parallel1, parallel2, meridian1, meridian2
-
-    latmin, lonmin, latmax, lonmax : float
-        Minimum and maximum latitudes and longitudes of the blocks
-        defining the grid
-
+class _Grid():
     
-    Examples
-    --------
-    Let's first define an equal-area grid of :math:`10^{\circ} \times 10^{\circ}`.
-    By default, this is created on the global scale.
-
-    >>> grid = EqualAreaGrid(cell_size=10, verbose=True)
-    -------------------------------------
-    Optimal grid found in 10 iterations
-    -------------------------------------
-    -------------------------------------
-    GRID PARAMETERS
-    Lonmin - Lonmax : -180.000 - 180.000
-    Latmin - Latmax : -90.000 - 90.000
-    Number of cells : 412
-    Grid cells of 10.006° : 412
-    -------------------------------------
-
-    >>> print(grid.mesh)
-    [[ 80.2098   90.     -180.      -60.    ]
-    [  80.2098   90.      -60.       60.    ]
-    [  80.2098   90.       60.      180.    ]
-    ..., 
-    [ -90.      -80.2098 -180.      -60.    ]
-    [ -90.      -80.2098  -60.       60.    ]
-    [ -90.      -80.2098   60.      180.    ]]
-
-    We can now restrict the above parameterization to an arbitrary region, for
-    example:
-
-    >>> grid.set_boundaries(latmin=0, 
-    ...                     lonmin=0,
-    ...                     latmax=10,
-    ...                     lonmax=10,
-    ...                     inplace=True)
-    *** GRID UPDATED ***
-    -------------------------------------
-    GRID PARAMETERS
-    Lonmin - Lonmax : -10.000 - 20.000
-    Latmin - Latmax : -10.065 - 10.065
-    Number of cells : 6
-    Grid cells of 10.006° : 6
-    -------------------------------------
-
-    >>> print(grid.mesh)
-    [[ 0.      10.0645 -10.       0.    ]
-    [  0.      10.0645   0.      10.    ]
-    [  0.      10.0645  10.      20.    ]
-    [-10.0645   0.     -10.       0.    ]
-    [-10.0645   0.       0.      10.    ]
-    [-10.0645   0.      10.      20.    ]]
-
-
-    .. hint::
-
-        The same result can be obtained by passing the boundaries of the
-        region of interest directly in the initialization of the class 
-        instance, e.g.::
-
-            grid = EqualAreaGrid(cell_size=10, 
-                                 latmin=0, 
-                                 lonmin=0,
-                                 latmax=10,
-                                 lonmax=10,
-                                 verbose=True)
-
-    We can refine any block, say at the 0th and 1st index, simply by:
-
-    >>> grid.refine_mesh([0, 1], inplace=True)
-    *** GRID UPDATED ***
-    -------------------------------------
-    GRID PARAMETERS
-    Lonmin - Lonmax : -10.000 - 20.000
-    Latmin - Latmax : -10.065 - 10.065
-    Number of cells : 12
-    Grid cells of 10.006° : 4
-    Grid cells of 5.003° : 8
-    -------------------------------------
-
-    >>> print(grid.mesh)
-    [[ 5.03225  10.0645  -10.       -5.     ]
-    [  5.03225  10.0645   -5.        0.     ]
-    [  0.        5.03225 -10.       -5.     ]
-    [  0.        5.03225  -5.        0.     ]
-    [  5.03225  10.0645    0.        5.     ]
-    [  5.03225  10.0645    5.       10.     ]
-    [  0.        5.03225   0.        5.     ]
-    [  0.        5.03225   5.       10.     ]
-    [  0.       10.0645   10.       20.     ]
-    [-10.0645    0.      -10.        0.     ]
-    [-10.0645    0.        0.       10.     ]
-    [-10.0645    0.       10.       20.     ]]
-
-    Note that the size of the two blocks defined at the first two 
-    rows of the above have been halved.
-
-    To display the grid, use the :meth:`plot` method
-    >>> grid.plot(projection='Mercator')
-    """
+    def __init__(self):    
+        pass
     
-    def __init__(self, cell_size, latmin=None, lonmin=None, latmax=None, 
-                 lonmax=None, verbose=True):
-        self.verbose = verbose
-        self.refined = 0 #number of times the grid has been "refined", i.e., the some of its pixels has been divided in 4
-        ncells, cell_size, lon_span = self.best_grid_parameters(cell_size)
-        self.ncells_per_level = Counter({0 : ncells})
-        self.cell_size_per_level = {0 : cell_size}
-        self.lon_span = lon_span
-        self.mesh = self.global_mesh(ncells, lon_span)
-        self.set_boundaries(latmin=latmin, latmax=latmax, lonmin=lonmin, 
-                            lonmax=lonmax, mesh=self.mesh, inplace=True)
-        self.latmin = np.min(self.mesh[:,0])
-        self.lonmin = np.min(self.mesh[:,2])
-        self.latmax = np.max(self.mesh[:,1])
-        self.lonmax = np.max(self.mesh[:,3])
-        if self.verbose:
-            print(self)
-
         
     def __str__(self):
         string = '-------------------------------------\n'
@@ -241,133 +93,7 @@ class EqualAreaGrid():
             print('*** GRID UPDATED ***')
             print(self)
 
-    
-    def grid_parameters(self, nrings):
-        """
-        Computes the grid parameters (number of cells, cells area, cells side, 
-        longitude span as a function of latitude) [1]_.
-    
-        
-        Parameters
-        ----------
-        nrings : int
-            Number of latitudinal rings used to subdivide the Earth.
-            
-            
-        Returns
-        -------
-        ncells : int
-            Number of grid cells
-            
-        cell_side : float
-            Latitudinal extent of the blocks in degrees, (corresponding to the 
-            sqrt of the area)
-            
-        lon_span : ndarray
-            Longitudinal span the grid cells in each latitudinal band
-            
-        
-        References
-        ----------
-        .. [1] Malkin 2019, A new equal-area isolatitudinal grid on a spherical 
-            surface, The Astronomical Journal
-        """
-        lon_span = np.zeros(nrings) # longitudinal cell span, degrees
-        nrings_half = nrings // 2
-        lat_step = 90 / nrings_half # initial lat step
-        ncells_half = 0
-        for i in range(nrings_half): # North hemisphere
-            central_lat = cos(radians( lat_step/2 + lat_step*(nrings_half-1-i) ))
-            cells_per_ring = int(round( 360 / (lat_step/central_lat) ))
-            lon_span[i] = 360 / cells_per_ring # (in degrees)
-            ncells_half = ncells_half + cells_per_ring
-        
-        # South hemisphere
-        lon_span[-nrings_half:] = lon_span[:nrings_half][::-1] 
-        ncells = ncells_half * 2
-        cell_area = SQUARE_DEGREES / ncells #Cell area, sq. deg
-        cell_side = sqrt(cell_area)
-        return ncells, cell_side, lon_span
-    
-    
-    def best_grid_parameters(self, cell_side):
-        """
-        Finds the spatial parameterization that most closely approximates the 
-        size of the grid cells required by the user. It exploits a 1-D grid 
-        search
-        
-        Parameters
-        ----------
-        cell_side : float
-            Side's size of the desidered grid cells
-        
-        
-        Returns
-        -------
-        grid parameters associated with the best parameterization. (See :meth:`grid_parameters`)
-        """
-        last_sizes = np.array([np.nan, np.nan, np.nan])
-        for counter, nrings in enumerate(range(2, 41070, 2), 1):
-            ncells, final_side, lon_span = self.grid_parameters(nrings)
-            last_sizes[-1] = np.abs(final_side - cell_side)
-            if np.nanargmin(last_sizes) == 1:
-                if self.verbose:
-                    print('-------------------------------------')
-                    print('Optimal grid found in %s iterations'%counter)
-                    print('-------------------------------------')
-                return self.grid_parameters(nrings-2)
-            else:
-                last_sizes = np.roll(last_sizes, -1)
-        else:
-            raise Exception('*cell_size* is too small')
-            
-            
-    def global_mesh(self, ncells, lon_span):
-        """
-        Builds an equal-area global mesh given the number of cells and longitude 
-        span as a function of latitude. [1]_
-        
-        
-        Parameters
-        ----------
-        ncells : int
-            Number of grid cells
-            
-        lon_span : ndarray
-            Longitudinal span the grid cells in each latitudinal ring
-        
-        Returns
-        -------
-        grid : ndarray (n, 4)
-            Array containing n pixels bounded by parallel1, parallel2, 
-            meridian1, meridian2. The grid is rounded to the 4rd decimal digit,
-            for improved numerical stability in most applications
-            
-            
-        References
-        ----------
-        .. [1] Malkin 2019, A new equal-area isolatitudinal grid on a spherical 
-            surface, The Astronomical Journal
-        """
-        grid = np.zeros((ncells, 4)) #4 cols: lat1, lat2, lon1, lon2
-        cell_area = self.cell_size_per_level[0]**2
-        lat2 = 90
-        cell_idx = 0
-        for dlon in lon_span:
-            arg = sin(radians(lat2)) - (cell_area*FOUR_PI/SQUARE_DEGREES)/(radians(dlon))
-            if -1.01 < arg < -1: #avoids numerical errors
-                arg = -1
-            lat1 = degrees(asin(arg))
-            lon1 = -180
-            for _ in range(int(round(360 / dlon))):
-                lon2 = lon1 + dlon
-                grid[cell_idx] = (lat1, lat2, lon1, lon2)
-                lon1 = lon2
-                cell_idx += 1
-            lat2 = lat1        
-        return np.round(grid, 4)
-    
-    
+
     def set_boundaries(self, latmin, latmax, lonmin, lonmax, mesh=None, 
                        inplace=True):
         """ Restricts the mesh to the required boundaries
@@ -430,40 +156,8 @@ class EqualAreaGrid():
         if inplace:
             return self.update_grid_params(mesh, refined=False)
         return mesh
-        
-    
-    def parallels_first_pixel(self, mesh=None):
-        """ 
-        Generator function yielding the indexes at which a change in the parallel 
-        coordinates is found.
-        
-        Parameters
-        ----------
-        mesh : ndarray (n, 4)
-            Array containing n pixels bounded by parallel1, parallel2, 
-            meridian1, meridian2. If `None`, the `mesh` stored in the 
-            :class:`EqualAreaGrid` instance (`self.mesh`) is used. Default 
-            is `None`.
 
-        Yields
-        ------
-        i : int
-        """
-        if mesh is None:
-            mesh = self.mesh
-        parallel1 = mesh[0][0]
-        parallel2 = mesh[0][1]
-        yield 0
-        for i in range(1, mesh.shape[0]):
-            new_parallel1 = mesh[i][0]
-            new_parallel2 = mesh[i][1]
-            if new_parallel1==parallel1 and new_parallel2==parallel2:
-                continue
-            parallel1 = new_parallel1
-            parallel2 = new_parallel2
-            yield i           
-            
-    
+
     @classmethod
     def pixel_index(cls, lat, lon, mesh):
         """ Returns the mesh index corresponding with the coordinates (lat, lon)
@@ -716,4 +410,482 @@ class EqualAreaGrid():
         if show:
             plt.show()
         return ax
+
+
+
+class EqualAreaGrid(_Grid):
+    """
+    Class that allows to generate an equal-area grid covering the whole
+    Earth's surface.
+
+
+    Parameters
+    ----------
+    cell_size : int
+        Size of each side of the equal-area grid
         
+    latmin, lonmin, latmax, lonmax : float, optional
+        Boundaries (in degrees) of the grid
+        
+    verbose : bool
+        If True, information about the grid will be displayed. Default is 
+        True    
+
+
+    Attributes
+    ----------
+    verbose : bool
+        If True, information about the grid will be displayed.
+
+    refined : int
+        Number of times the grid has been "refined"
+
+    lon_span : ndarray of shape (n,)
+        Longitudinal span of each block in the `n` latitudinal bands
+        defining the grid
+
+    mesh : ndarray of shape (m, 4)
+        Blocks bounded by parallel1, parallel2, meridian1, meridian2
+
+    latmin, lonmin, latmax, lonmax : float
+        Minimum and maximum latitudes and longitudes of the blocks
+        defining the grid
+
+    
+    Examples
+    --------
+    Let's first define an equal-area grid of :math:`10^{\circ} \times 10^{\circ}`.
+    By default, this is created on the global scale.
+
+    >>> grid = EqualAreaGrid(cell_size=10, verbose=True)
+    -------------------------------------
+    Optimal grid found in 10 iterations
+    -------------------------------------
+    -------------------------------------
+    GRID PARAMETERS
+    Lonmin - Lonmax : -180.000 - 180.000
+    Latmin - Latmax : -90.000 - 90.000
+    Number of cells : 412
+    Grid cells of 10.006° : 412
+    -------------------------------------
+
+    >>> print(grid.mesh)
+    [[ 80.2098   90.     -180.      -60.    ]
+    [  80.2098   90.      -60.       60.    ]
+    [  80.2098   90.       60.      180.    ]
+    ..., 
+    [ -90.      -80.2098 -180.      -60.    ]
+    [ -90.      -80.2098  -60.       60.    ]
+    [ -90.      -80.2098   60.      180.    ]]
+
+    We can now restrict the above parameterization to an arbitrary region, for
+    example:
+
+    >>> grid.set_boundaries(latmin=0, 
+    ...                     lonmin=0,
+    ...                     latmax=10,
+    ...                     lonmax=10,
+    ...                     inplace=True)
+    *** GRID UPDATED ***
+    -------------------------------------
+    GRID PARAMETERS
+    Lonmin - Lonmax : -10.000 - 20.000
+    Latmin - Latmax : -10.065 - 10.065
+    Number of cells : 6
+    Grid cells of 10.006° : 6
+    -------------------------------------
+
+    >>> print(grid.mesh)
+    [[ 0.      10.0645 -10.       0.    ]
+    [  0.      10.0645   0.      10.    ]
+    [  0.      10.0645  10.      20.    ]
+    [-10.0645   0.     -10.       0.    ]
+    [-10.0645   0.       0.      10.    ]
+    [-10.0645   0.      10.      20.    ]]
+
+
+    .. hint::
+
+        The same result can be obtained by passing the boundaries of the
+        region of interest directly in the initialization of the class 
+        instance, e.g.::
+
+            grid = EqualAreaGrid(cell_size=10, 
+                                 latmin=0, 
+                                 lonmin=0,
+                                 latmax=10,
+                                 lonmax=10,
+                                 verbose=True)
+
+    We can refine any block, say at the 0th and 1st index, simply by:
+
+    >>> grid.refine_mesh([0, 1], inplace=True)
+    *** GRID UPDATED ***
+    -------------------------------------
+    GRID PARAMETERS
+    Lonmin - Lonmax : -10.000 - 20.000
+    Latmin - Latmax : -10.065 - 10.065
+    Number of cells : 12
+    Grid cells of 10.006° : 4
+    Grid cells of 5.003° : 8
+    -------------------------------------
+
+    >>> print(grid.mesh)
+    [[ 5.03225  10.0645  -10.       -5.     ]
+    [  5.03225  10.0645   -5.        0.     ]
+    [  0.        5.03225 -10.       -5.     ]
+    [  0.        5.03225  -5.        0.     ]
+    [  5.03225  10.0645    0.        5.     ]
+    [  5.03225  10.0645    5.       10.     ]
+    [  0.        5.03225   0.        5.     ]
+    [  0.        5.03225   5.       10.     ]
+    [  0.       10.0645   10.       20.     ]
+    [-10.0645    0.      -10.        0.     ]
+    [-10.0645    0.        0.       10.     ]
+    [-10.0645    0.       10.       20.     ]]
+
+    Note that the size of the two blocks defined at the first two 
+    rows of the above have been halved.
+
+    To display the grid, use the :meth:`plot` method
+    >>> grid.plot(projection='Mercator')
+    """
+
+    def __init__(self, cell_size, latmin=None, lonmin=None, latmax=None, 
+                 lonmax=None, verbose=True):
+        self.verbose = verbose
+        self.refined = 0 #number of times the grid has been "refined", i.e., the some of its pixels has been divided in 4
+        ncells, cell_size, lon_span = self.best_grid_parameters(cell_size)
+        self.ncells_per_level = Counter({0 : ncells})
+        self.cell_size_per_level = {0 : cell_size}
+        self.lon_span = lon_span
+        self.mesh = self.global_mesh(ncells, lon_span)
+        self.set_boundaries(latmin=latmin, latmax=latmax, lonmin=lonmin, 
+                            lonmax=lonmax, mesh=self.mesh, inplace=True)
+        self.latmin = np.min(self.mesh[:,0])
+        self.lonmin = np.min(self.mesh[:,2])
+        self.latmax = np.max(self.mesh[:,1])
+        self.lonmax = np.max(self.mesh[:,3])
+        if self.verbose:
+            print(self)
+
+    
+    def grid_parameters(self, nrings):
+        """
+        Computes the grid parameters (number of cells, cells area, cells side, 
+        longitude span as a function of latitude) [1]_.
+    
+        
+        Parameters
+        ----------
+        nrings : int
+            Number of latitudinal rings used to subdivide the Earth.
+            
+            
+        Returns
+        -------
+        ncells : int
+            Number of grid cells
+            
+        cell_side : float
+            Latitudinal extent of the blocks in degrees, (corresponding to the 
+            sqrt of the area)
+            
+        lon_span : ndarray
+            Longitudinal span the grid cells in each latitudinal band
+            
+        
+        References
+        ----------
+        .. [1] Malkin 2019, A new equal-area isolatitudinal grid on a spherical 
+            surface, The Astronomical Journal
+        """
+        lon_span = np.zeros(nrings) # longitudinal cell span, degrees
+        nrings_half = nrings // 2
+        lat_step = 90 / nrings_half # initial lat step
+        ncells_half = 0
+        for i in range(nrings_half): # North hemisphere
+            central_lat = cos(radians( lat_step/2 + lat_step*(nrings_half-1-i) ))
+            cells_per_ring = int(round( 360 / (lat_step/central_lat) ))
+            lon_span[i] = 360 / cells_per_ring # (in degrees)
+            ncells_half = ncells_half + cells_per_ring
+        
+        # South hemisphere
+        lon_span[-nrings_half:] = lon_span[:nrings_half][::-1] 
+        ncells = ncells_half * 2
+        cell_area = SQUARE_DEGREES / ncells #Cell area, sq. deg
+        cell_side = sqrt(cell_area)
+        return ncells, cell_side, lon_span
+    
+    
+    def best_grid_parameters(self, cell_side):
+        """
+        Finds the spatial parameterization that most closely approximates the 
+        size of the grid cells required by the user. It exploits a 1-D grid 
+        search
+        
+        Parameters
+        ----------
+        cell_side : float
+            Side's size of the desidered grid cells
+        
+        
+        Returns
+        -------
+        grid parameters associated with the best parameterization. (See :meth:`grid_parameters`)
+        """
+        last_sizes = np.array([np.nan, np.nan, np.nan])
+        for counter, nrings in enumerate(range(2, 41070, 2), 1):
+            ncells, final_side, lon_span = self.grid_parameters(nrings)
+            last_sizes[-1] = np.abs(final_side - cell_side)
+            if np.nanargmin(last_sizes) == 1:
+                if self.verbose:
+                    print('-------------------------------------')
+                    print('Optimal grid found in %s iterations'%counter)
+                    print('-------------------------------------')
+                return self.grid_parameters(nrings-2)
+            else:
+                last_sizes = np.roll(last_sizes, -1)
+        else:
+            raise Exception('*cell_size* is too small')
+            
+            
+    def global_mesh(self, ncells, lon_span):
+        """
+        Builds an equal-area global mesh given the number of cells and longitude 
+        span as a function of latitude. [1]_
+        
+        
+        Parameters
+        ----------
+        ncells : int
+            Number of grid cells
+            
+        lon_span : ndarray
+            Longitudinal span the grid cells in each latitudinal ring
+        
+        Returns
+        -------
+        grid : ndarray (n, 4)
+            Array containing n pixels bounded by parallel1, parallel2, 
+            meridian1, meridian2. The grid is rounded to the 4rd decimal digit,
+            for improved numerical stability in most applications
+            
+            
+        References
+        ----------
+        .. [1] Malkin 2019, A new equal-area isolatitudinal grid on a spherical 
+            surface, The Astronomical Journal
+        """
+        grid = np.zeros((ncells, 4)) #4 cols: lat1, lat2, lon1, lon2
+        cell_area = self.cell_size_per_level[0]**2
+        lat2 = 90
+        cell_idx = 0
+        for dlon in lon_span:
+            arg = sin(radians(lat2)) - (cell_area*FOUR_PI/SQUARE_DEGREES)/(radians(dlon))
+            if -1.01 < arg < -1: #avoids numerical errors
+                arg = -1
+            lat1 = degrees(asin(arg))
+            lon1 = -180
+            for _ in range(int(round(360 / dlon))):
+                lon2 = lon1 + dlon
+                grid[cell_idx] = (lat1, lat2, lon1, lon2)
+                lon1 = lon2
+                cell_idx += 1
+            lat2 = lat1        
+        return np.round(grid, 4)
+            
+    
+    def parallels_first_pixel(self, mesh=None):
+        """ 
+        Generator function yielding the indexes at which a change in the parallel 
+        coordinates is found.
+        
+        Parameters
+        ----------
+        mesh : ndarray (n, 4)
+            Array containing n pixels bounded by parallel1, parallel2, 
+            meridian1, meridian2. If `None`, the `mesh` stored in the 
+            :class:`EqualAreaGrid` instance (`self.mesh`) is used. Default 
+            is `None`.
+
+        Yields
+        ------
+        i : int
+        """
+        if mesh is None:
+            mesh = self.mesh
+        parallel1 = mesh[0][0]
+        parallel2 = mesh[0][1]
+        yield 0
+        for i in range(1, mesh.shape[0]):
+            new_parallel1 = mesh[i][0]
+            new_parallel2 = mesh[i][1]
+            if new_parallel1==parallel1 and new_parallel2==parallel2:
+                continue
+            parallel1 = new_parallel1
+            parallel2 = new_parallel2
+            yield i           
+
+
+
+class RegularGrid(_Grid):
+    r"""
+    Class that allows to generate a regular grid in the format required by
+    :class:`seislib.tomography.tomography.SeismicTomography`. This class is
+    particularly suited to tomographic applications at local scale, where the 
+    use of equal-area parameterizations does not have clear advantages.
+
+
+    Parameters
+    ----------
+    cell_size : int
+        Size of each side of the regular grid
+        
+    latmin, lonmin, latmax, lonmax : float, optional
+        Boundaries (in degrees) of the grid
+        
+    verbose : bool
+        If True, information about the grid will be displayed. Default is 
+        True    
+
+
+    Attributes
+    ----------
+    verbose : bool
+        If True, information about the grid will be displayed.
+
+    refined : int
+        Number of times the grid has been "refined"
+
+    mesh : ndarray of shape (m, 4)
+        Blocks bounded by parallel1, parallel2, meridian1, meridian2
+
+    latmin, lonmin, latmax, lonmax : float
+        Minimum and maximum latitudes and longitudes of the blocks
+        defining the grid
+
+    
+    Examples
+    --------
+    Let's first define a regular grid of :math:`0.1^{\circ} \times 0.1^{\circ}`.
+    We will restrict the study area to :math:`9 \leq lon \leq 11` and 
+    :math:`40 \leq lat \leq 42`.
+
+    >>> grid = RegularGrid(cell_size=0.1, 
+                           latmin=40,
+                           latmax=42,
+                           lonmin=9,
+                           lonmax=11,
+                           verbose=True)
+    -------------------------------------
+    GRID PARAMETERS
+    Lonmin - Lonmax : 10.000 - 11.000
+    Latmin - Latmax : 40.000 - 41.000
+    Number of cells : 100
+    Grid cells of 0.100° : 100
+    -------------------------------------
+
+    >>> print(grid.mesh)
+    [[41.9 42.  10.9 11. ]
+     [41.9 42.  10.8 10.9]
+     [41.9 42.  10.7 10.8]
+     ...
+     [40.  40.1  9.2  9.3]
+     [40.  40.1  9.1  9.2]
+     [40.  40.1  9.   9.1]]
+
+
+    We can refine any block, say at the 0th and 1st index, simply by:
+
+    >>> grid.refine_mesh([0, 1], inplace=True)
+    *** GRID UPDATED ***
+    -------------------------------------
+    GRID PARAMETERS
+    Lonmin - Lonmax : 9.000 - 11.000
+    Latmin - Latmax : 40.000 - 42.000
+    Number of cells : 406
+    Grid cells of 0.100° : 398
+    Grid cells of 0.050° : 8
+    -------------------------------------
+
+    >>> print(grid.mesh)
+    [[41.95 42.   10.9  10.95]
+     [41.95 42.   10.95 11.  ]
+     [41.9  41.95 10.9  10.95]
+     ...
+     [40.   40.1   9.2   9.3 ]
+     [40.   40.1   9.1   9.2 ]
+     [40.   40.1   9.    9.1 ]]
+
+
+    Note that the size of the two blocks defined at the first two 
+    rows of the above have been halved.
+
+    To display the grid, use the :meth:`plot` method
+    >>> grid.plot(projection='Mercator')
+    """
+    def __init__(self, cell_size, latmin=None, lonmin=None, latmax=None, 
+                 lonmax=None, verbose=True):
+        self.verbose = verbose
+        self.mesh = self.create_mesh(cell_size,
+                                     latmin=latmin, 
+                                     latmax=latmax, 
+                                     lonmin=lonmin,
+                                     lonmax=lonmax)
+        self.latmin = np.min(self.mesh[:,0])
+        self.lonmin = np.min(self.mesh[:,2])
+        self.latmax = np.max(self.mesh[:,1])
+        self.lonmax = np.max(self.mesh[:,3])
+        self.refined = 0
+        self.ncells_per_level = Counter({0 : self.mesh.shape[0]})
+        self.cell_size_per_level = {0 : cell_size}
+        if self.verbose:
+            print(self)
+            
+
+    def create_mesh(self, cell_size, latmin=None, latmax=None, lonmin=None, 
+                    lonmax=None):
+        """ Creates the regular grid.
+        
+        Parameters
+        ----------
+        cell_size : int
+            Size of each side of the regular grid
+            
+        latmin, lonmin, latmax, lonmax : float, optional
+            Boundaries (in degrees) of the grid
+        
+        Returns
+        -------
+        grid : ndarray (n, 4)
+            Array containing n pixels bounded by parallel1, parallel2, 
+            meridian1, meridian2. The grid is rounded to the 4rd decimal digit,
+            for improved numerical stability in most applications
+        """
+        latmin = -90 if latmin is None else latmin
+        latmax = +90 if latmax is None else latmax
+        lonmin = -180 if lonmin is None else lonmin
+        lonmax = +180 if lonmax is None else lonmax
+        mesh = []
+        for lat1 in np.arange(latmin, latmax, cell_size):
+            lat2 = lat1 + cell_size
+            for lon1 in np.arange(lonmin, lonmax, cell_size):
+                lon2 = lon1 + cell_size
+                mesh.append([lat1, lat2, lon1, lon2])
+        return np.round(mesh, 4)[::-1]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

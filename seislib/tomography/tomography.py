@@ -64,7 +64,7 @@ import scipy.sparse
 import matplotlib.pyplot as plt
 #from scipy.linalg import pinvh, lstsq
 from obspy.geodetics import gps2dist_azimuth
-from seislib.tomography import EqualAreaGrid
+from seislib.tomography import EqualAreaGrid, RegularGrid
 from seislib import colormaps as scm
 import seislib.plotting as plotting
 from seislib.tomography._ray_theory._tomography import _compile_coefficients
@@ -88,6 +88,10 @@ class SeismicTomography:
         
     latmin, lonmin, latmax, lonmax : float, optional
         Boundaries (in degrees) of the grid
+        
+    regular_grid : bool
+        If False (default), the study area is discretized using an equal-area
+        parameterization. Otherwise, a regular grid is employed.
         
     verbose : bool
         If `True`, information about the grid and data will be displayed in
@@ -138,16 +142,17 @@ class SeismicTomography:
     respectively. (-180<=lon<180, -90<=lat<90). This matrix has been saved to 
     `/path/to/data.txt`
     
-    We will parameterize the resulting map with 2° grid cells, that will be
-    iteratively refined up to a maximum number of 2 times, to reach a
-    maximum resolution of 0.5° in the areas of the map characterized by a relatively
-    large number of measurements. (This refinement of the parameterization can 
-    be carried out an arbitrary number of times.)
+    We will discretize the study area using an equal-area parameterization, 
+    characterized by blocks of :math:`2^{\circ} \times 2^{\circ}. We will then
+    iteratively refine the parameterization up to a maximum number of 2 times, 
+    to reach a maximum resolution of 0.5° in the areas of the map characterized 
+    by a relatively large number of measurements. (This refinement can be 
+    carried out an arbitrary number of times.)
     
     First, we need to initialize the :class:`SeismicTomography` instance and 
     load our data into memory:
     
-    >>> tomo = SeismicTomography(cell_size=2, verbose=True)
+    >>> tomo = SeismicTomography(cell_size=2, regular_grid=False, verbose=True)
     >>> tomo.add_data(src='/path/to/data')
     -------------------------------------
     Optimal grid found in 46 iterations
@@ -167,22 +172,39 @@ class SeismicTomography:
     -------------------------------------        
     
     .. hint:: 
-        We could have directly passed the data matrix without
+        we could have directly passed the data matrix without
         loading it from disk. If `data` is your ndarray of shape (m, 5),
         you can pass it to `tomo` by::
         
-            tomo.add_data(data=data)
+            tomo.add_data(data=your_matrix)
 
     .. hint:: 
-        You can add, sequentially, how many data sets you wish. The data
+        you can add, sequentially, how many data sets you wish. The data
         information will be automatically updated
 
     .. hint:: 
-        To display general information on the data, type `print(tomo)`. 
+        to display general information on the data, type `print(tomo)`. 
         To display general information on the parameterization, type 
         `print(tomo.grid)`. (See also the documentation on 
-        :class:`seislib.tomogaphy.grid.EqualAreaGrid`)
-    
+        :class:`seislib.tomography.grid.EqualAreaGrid`)
+        
+    .. hint:: 
+        if you are interested in working at local scale, where the use of 
+        equal-area parameterizations does not have clear advantages, consider
+        setting `regular_grid=True` when initializing the instance of 
+        :class:`SeismicTomography`, together with the boundaries of the region 
+        you are interested in (`lonmin`, `lonmax`, `latmin`, `latmax`). For 
+        example::
+            
+            tomo = SeismicTomography(cell_size=0.05, 
+                                     regular_grid=True, 
+                                     latmin=40,
+                                     latmax=41,
+                                     lonmin=10,
+                                     lonmax=12,
+                                     verbose=True)
+            
+            
     Now we can restrict the boundaries of the (global) equal-area 
     parameterization to the minimum and maximum latitude and longitude 
     spanned by our data:
@@ -323,14 +345,15 @@ class SeismicTomography:
     """ 
     
     def __init__(self, cell_size=4, latmin=None, lonmin=None, latmax=None, 
-                 lonmax=None, verbose=True):    
+                 lonmax=None, verbose=True, regular_grid=False):    
         self.verbose = verbose
-        self.grid = EqualAreaGrid(cell_size=cell_size,
-                                  latmin=latmin,
-                                  lonmin=lonmin, 
-                                  latmax=latmax,
-                                  lonmax=lonmax,
-                                  verbose=verbose)
+        grid = EqualAreaGrid if not regular_grid else RegularGrid
+        self.grid = grid(cell_size=cell_size,
+                         latmin=latmin,
+                         lonmin=lonmin, 
+                         latmax=latmax,
+                         lonmax=lonmax,
+                         verbose=verbose)
 
                
     def __repr__(self):
@@ -729,7 +752,7 @@ class SeismicTomography:
     
     
     def solve(self, A=None, slowness=None, refvel=None, mesh=None, ndamp=0, 
-              rdamp=0):
+              rdamp=0):#, return_resmatrix=False):
         r"""
         Method for solving the (regularized) inverse problem Ax = b, 
         where A is the matrix of coefficients, x the 
@@ -808,7 +831,11 @@ class SeismicTomography:
             lhs += norm_damping(mesh=mesh, damp=ndamp)
         if rdamp > 0:
             lhs += roughness_damping(mesh=mesh, damp=rdamp)
-        rhs = A.T.dot(residuals)      
+        rhs = A.T.dot(residuals)  
+#        x = x0 + scipy.linalg.solve(lhs.todense(), rhs)
+#        if return_resmatrix:
+#            resmatrix = scipy.linalg.inv(lhs.todense()) @ A.T @ A
+#            return x, resmatrix
         return x0 + scipy.linalg.solve(lhs.todense(), rhs)
 
     
@@ -1353,7 +1380,7 @@ class SeismicTomography:
             
         Returns
         -------
-        If show is True
+        If show is False
             `None`
         Otherwise
             an instance of `matplotlib.collections.QuadMesh`, together with an 
@@ -1539,7 +1566,7 @@ class SeismicTomography:
     
         Returns
         -------
-        `None` if `show` is `True`. Otherwise a `GeoAxesSubplot` instance
+        `None` if `show` is `False`. Otherwise a `GeoAxesSubplot` instance
         """
       
         return plotting.plot_rays(self.data_coords, 
@@ -1645,7 +1672,7 @@ class SeismicTomography:
         
         Returns
         -------
-        If `show` is `True`
+        If `show` is `False`
             `None` 
         Otherwise 
             `GeoAxesSubplot` instance together with an instance of 
