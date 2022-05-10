@@ -8,6 +8,7 @@ import os
 from setuptools import find_packages
 
 
+
 def readme():
     with open("README.md", "r") as f:
         return f.read()
@@ -23,7 +24,7 @@ def configuration(parent_package="", top_path=None):
         delegate_options_to_subpackages=True,
         quiet=True)
 
-    # add the subpackage 'eikonalfm' to the config (to call it's setup.py later)
+    # add the subpackage 'seislib' to the config (to call it's setup.py later)
     config.add_subpackage("seislib")
 
     return config
@@ -33,38 +34,11 @@ def generate_cython():
     python = sys.executable
     cwd = os.path.abspath(os.path.dirname(__file__))
     print("Cythonizing sources")
-    os.chdir(os.path.join(cwd, 'seislib/clib'))
+    os.chdir(os.path.join(cwd, 'seislib/tomography/_ray_theory'))
     print(os.getcwd())
     os.system('%s ./setup_all.py build_ext --inplace'%python)
     os.chdir(cwd)
     return
-
-
-    
-VERSION = "0.3.0"
-pkg_metadata = dict(
-        name="seislib",
-        version=VERSION,
-        description="Multi-scale Seismic Imaging",
-        long_description=readme(),
-        long_description_content_type="text/markdown",
-        url="https://github.com/fmagrini/seislib",
-        author="Fabrizio Magrini",
-        author_email="fabrizio.magrini90@gmail.com",
-        license="MIT",
-        packages=find_packages(),
-        keywords="Seismic Imaging, Surface Waves, Seismic Ambient Noise, Earthquake Seismology, Tomographic Inversion",
-        configuration=configuration,
-        install_requires=['obspy>=1.1.0',
-                          'numpy>=1.16.0',
-                          'scipy>=1.3.0',
-                          'matplotlib>=3.0.2',
-                          'cartopy>=0.17.0',
-                          'cython>=0.29.2'],
-        classifiers=["License :: OSI Approved :: MIT License",
-                     "Programming Language :: Python :: 3"
-                     "Programming Language :: Cython"]
-        )
 
 
 def parse_setuppy_commands():
@@ -102,12 +76,59 @@ def parse_setuppy_commands():
 
     # The following commands are supported, but we need to show more useful messages to the user
     if "install" in args:
-        print("Note: if you need reliable uninstall behavior, you should install with pip instead of using `setup.py install`:"
-              "  - `pip install .`       (from a git repo or downloaded source release)"
-              "  - `pip install eikonal-fm`   (last eikonal-fm release on PyPI)")
         return True
 
     return False
+
+
+def get_maps():
+    cwd = os.getcwd()
+    src = os.path.join(cwd, 'seislib', 'colormaps')
+    maps_dirs = [i for i in os.listdir(src) if os.path.isdir(os.path.join(src, i))]
+    return ['colormaps/%s/*'%m for m in maps_dirs]
+    
+
+here = os.path.abspath(os.path.dirname(__file__))
+about = {}
+with open(os.path.join(here, 'seislib', "__version__.py")) as f:
+    exec(f.read(), about)
+
+
+pkg_metadata = dict(
+        name="seislib",
+        version=about["__version__"],
+        description="Multi-scale Seismic Imaging",
+        long_description=readme(),
+        long_description_content_type="text/markdown",
+        url="https://github.com/fmagrini/seislib",
+        author="Fabrizio Magrini",
+        author_email="fabrizio.magrini90@gmail.com",
+        license="MIT",
+        packages=find_packages(),
+        package_data={  
+            "seislib": ["tomography/_ray_theory/*", "colormaps/*"] + get_maps()
+            },
+        include_package_data=True,
+        python_requires=">=3.6",
+        keywords="Seismic Imaging, Surface Waves, Seismic Ambient Noise, Earthquake Seismology, Tomographic Inversion",
+        configuration=configuration,
+        install_requires=['obspy>=1.1.0',
+                          'numpy>=1.16.0',
+                          'scipy>=1.3.0',
+                          'matplotlib>=3.0.2',
+                          'cartopy>=0.17.0',
+                          'cython>=0.29'],
+        classifiers=["License :: OSI Approved :: MIT License",
+                     "Programming Language :: Python :: 3",
+                     "Programming Language :: Cython"]
+        )
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -132,3 +153,6 @@ if __name__ == "__main__":
     # for example when pip is used to install this when NumPy is not yet present in the system.
 
     setup(**pkg_metadata)
+    
+    
+    

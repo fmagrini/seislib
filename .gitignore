@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 *.pyd
 *.so
+*.cpp
+*.c
+
 
 # Setuptools/distutils distribution folder.
 dist/

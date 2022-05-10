@@ -1,16 +1,15 @@
-include MANIFEST.in
 include README.md
-include LICENSE.txt
-include seislib/*.py
-include seislib/an/*.py
-include seislib/clib/*.pyx
-include seislib/clib/*.pxd
-include seislib/eq/*.py
-include seislib/exceptions/*.py
-include seislib/plotting/*.py
-include seislib/tomography/*.py
-include seislib/utils/*.py
-recursive-include seislib/colormaps *
-global-exclude *.cpp
-global-exclude *.c
-global-exclude *.so
+recursive-include seislib *.py *.txt *.pdf *.pyx *.pxd
+recursive-include seislib/colormaps *.py *.txt *.pdf 
+recursive-include include seislib/colormaps/*/ *.py *.txt 
+
+include seislib/tomography/_ray_theory/*.py
+include seislib/tomography/_ray_theory/*.pyx
+include seislib/tomography/_ray_theory/*.pxd
+
+recursive-include doc *
+prune docs/build
+prune docs/source/generated
+prune */__pycache__
+prune */*/__pycache__
+prune */*/*/__pycache__

@@ -1,19 +1,24 @@
 """
-    Scientific colormaps created by Fabio Crameri 
-    (https://www.fabiocrameri.ch/colourmaps/).
+===========================================
+Colormaps (:mod:`seislib.colormaps`)
+===========================================
+
+SeisLib comes with the beautiful scientific
+colormaps created by Fabio Crameri. These can
+be simply used as traditional `matplotlib` colormaps,
+for example::
     
-    Usage
-    -----
     import seislib.colormaps as scm
+    import numpy as np
+    import matplotlib.pyplot as plt
     
-    plt.imshow(data, cmap=scm.berlin)
+    X, Y = np.meshgrid(np.linspace(0, 10), np.linspace(0, 10))
+    Z = np.sin(X) * np.cos(Y)
+    plt.pcolormesh(X, Y, Z, cmap=scm.batlow)
 
+Make sure to check `Fabio Crameri's website 
+<https://www.fabiocrameri.ch/colourmaps/>`_ for more information!
 
-    Available colourmaps
-    ---------------------
-    acton, bamako, batlow, berlin, bilbao, broc, buda, cork, davos, devon,
-    grayC, hawaii, imola, lajolla, lapaz, lisbon, nuuk, oleron, oslo, roma,
-    tofino, tokyo, turku, vik
 """
 
 import os
