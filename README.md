@@ -58,6 +58,7 @@ The last command will compile the Cython files. If you work on an anaconda envir
 <p>&nbsp;</p>
 
 # ***References***
+- Magrini, F., Lauro, S., Kästle, E. & Boschi, L., 2022. Surface-wave tomography using SeisLib: a Python package for multi-scale seismic imaging. *Geophys. J. Int.*, ggac236, https://doi.org/10.1093/gji/ggac236
 - Boschi, L. & Dziewonski, A.M., 1999. High- and low-resolution images of the Earth's mantle: Implications of different approaches to tomographic modeling. *J. Geophys. Res.*, 104(B11)
 - Boschi, L., Magrini, F., Cammarano, F., & van der Meijde, M. 2019. On seismic ambient noise cross-correlation and surface-wave attenuation. *Geophys. J. Int.*, 219(3), 1568-1589
 - Kästle, E., Soomro, R., Weemstra, C., Boschi, L. & Meier, T., 2016. Two-receiver measurements of phase velocity: cross-validation of ambient-noise and earthquake-based observations. *Geophys. J. Int.*, 207, 1493-1512
