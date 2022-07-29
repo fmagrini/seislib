@@ -8,6 +8,7 @@ To use seislib, make sure you have all the **dependences** installed, i.e., **ob
 .. code-block:: console
 
    ~$ conda create -n seislib python=3.9 numpy=1.20
+   ~$ conda activate seislib
    ~$ conda install -c conda-forge obspy
    ~$ conda install -c conda-forge cartopy=0.18
    ~$ conda install -c anaconda cython
