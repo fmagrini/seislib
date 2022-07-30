@@ -30,10 +30,11 @@ For more information on SeisLib, make sure to visit our [wiki page](https://seis
 
 # ***Installation***
 
-First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. We recommend installing such dependences using conda.
+First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. We recommend installing such dependences using conda (see below). You will also need ***gcc*** or equivalent, to compile the cython parts of the library.
 
 ```bash
 conda create -n seislib python=3.9 numpy=1.20
+conda activate seislib
 conda install -c conda-forge obspy
 conda install -c conda-forge cartopy=0.18
 conda install -c anaconda cython
