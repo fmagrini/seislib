@@ -23,6 +23,7 @@ from collections import defaultdict, Counter, Iterable
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
+from shapely.geometry import Point, Polygon
 from seislib.plotting import add_earth_features
 SQUARE_DEGREES = 41252.961249419277010
 FOUR_PI = 4 * pi
@@ -158,25 +159,22 @@ class _Grid():
         return mesh
 
 
-    @classmethod
-    def pixel_index(cls, lat, lon, mesh):
+    def index_lon_lat(self, lon, lat):
         """ Returns the mesh index corresponding with the coordinates (lat, lon)
         
         Parameters
         ----------
-        lat, lon : float
+        lon, lat : float
             Geographic coordinates. Their units should be consistent with those
             of `mesh`
             
-        mesh : ndarray (n, 4)
-            Array containing `n` pixels bounded by parallel1, parallel2, 
-            meridian1, meridian2.
         
         Returns
         -------
         idx : int
             Mesh index corresponding to (lat, lon)
         """
+        mesh = self.mesh
         latmax = np.max(mesh[:, 1])
         lonmax = np.max(mesh[:, 3])
         if lat == latmax:
@@ -188,6 +186,89 @@ class _Grid():
         idx = np.intersect1d(ilat, ilon)
         return int(idx)
     
+    
+    def midpoints_lon_lat(self):
+        """ Returns the midpoints (lon, lat) of each grid's block
+        
+        
+        Returns
+        -------
+        lon, lat : ndarray of shape (n,)
+        """
+        lat = np.mean(self.mesh[:, :2], axis=1)
+        lon = np.mean(self.mesh[:, 2:], axis=1)
+        return lon, lat
+    
+    
+    def indexes_in_region(self, latmin, latmax, lonmin, lonmax):
+        """
+        Returns the mesh indexes whose midpoints (lon, lat) fall inside the 
+        specified rectangular region.
+        
+        Parameters
+        ----------
+        latmin, latmax : float
+            Latitudinal boundaries defining the rectangular region
+            
+        lonmin, lonmax : float
+            Longitudinal boundaries defining the rectangular region
+            
+        Returns
+        -------
+        idx : ndarray
+            Mesh indexes falling inside the rectangular region.
+        """
+        lons, lats = self.midpoints_lon_lat()
+        idx = [i for i, (lat, lon) in enumerate(zip(lats, lons)) if \
+               lonmin<lon<lonmax and latmin<lat<latmax]
+        return np.asarray(idx)
+    
+    
+    def indexes_out_region(self, latmin, latmax, lonmin, lonmax):
+        """
+        Returns the mesh indexes whose midpoints (lon, lat) fall outside the 
+        specified rectangular region.
+        
+        Parameters
+        ----------
+        latmin, latmax : float
+            Latitudinal boundaries defining the rectangular region
+            
+        lonmin, lonmax : float
+            Longitudinal boundaries defining the rectangular region
+            
+        Returns
+        -------
+        idx : ndarray
+            Mesh indexes falling outside the rectangular region.
+        """
+        idx_inside = self.indexes_in_region(latmin, latmax, lonmin, lonmax)
+        return np.flatnonzero(~np.in1d(np.arange(self.mesh.shape[0]), idx_inside))
+    
+    
+    def indexes_in_polygon(self, poly):
+        """
+        Returns the mesh indexes whose midpoints (lon, lat) fall outside the 
+        specified rectangular region.
+        
+        Parameters
+        ----------
+        poly : ndarray of shape (n, 2), shapely.geometry.Polygon
+            Array of points (lon, lat) describing the polygon or instance of 
+            `shapely.geometry.Polygon`
+            
+        Returns
+        -------
+        idx : ndarray
+            Mesh indexes falling inside the polygon.
+        """
+        lons, lats = self.midpoints_lon_lat()
+        if not isinstance(poly, Polygon):
+            poly = Polygon(poly)
+        idx = [i for i, (lon, lat) in enumerate(zip(lons, lats)) \
+               if poly.contains(Point(lon, lat))]
+        return np.asarray(idx)
+
     
     def refine_mesh(self, ipixels, mesh=None, inplace=False):
         """ Halves the size of the specified pixels
