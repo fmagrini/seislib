@@ -19,7 +19,7 @@ can be performed an arbitrary number of times.
 from math import radians, degrees
 from math import cos, pi, asin, sin
 from math import sqrt
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, Iterable
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
@@ -421,7 +421,7 @@ class EqualAreaGrid(_Grid):
 
     Parameters
     ----------
-    cell_size : int
+    cell_size : float
         Size of each side of the equal-area grid
         
     latmin, lonmin, latmax, lonmax : float, optional
@@ -739,8 +739,11 @@ class RegularGrid(_Grid):
 
     Parameters
     ----------
-    cell_size : int
-        Size of each side of the regular grid
+    cell_size : float, (2,) tuple
+        Size of each side of the regular grid. If a (2,) tuple is passed, this
+        will be interpreted as `(dlon, dlat)`, where `dlon` and `dlat` are the
+        longitudinal and latitudinal steps characterizing the grid
+        
         
     latmin, lonmin, latmax, lonmax : float, optional
         Boundaries (in degrees) of the grid
@@ -828,7 +831,13 @@ class RegularGrid(_Grid):
     def __init__(self, cell_size, latmin=None, lonmin=None, latmax=None, 
                  lonmax=None, verbose=True):
         self.verbose = verbose
-        self.mesh = self.create_mesh(cell_size,
+        if isinstance(cell_size, Iterable):
+            dlon, dlat = cell_size
+            cell_size = dlat
+        else:
+            dlon = dlat = cell_size
+        self.mesh = self.create_mesh(dlon,
+                                     dlat,
                                      latmin=latmin, 
                                      latmax=latmax, 
                                      lonmin=lonmin,
@@ -837,6 +846,7 @@ class RegularGrid(_Grid):
         self.lonmin = np.min(self.mesh[:,2])
         self.latmax = np.max(self.mesh[:,1])
         self.lonmax = np.max(self.mesh[:,3])
+
         self.refined = 0
         self.ncells_per_level = Counter({0 : self.mesh.shape[0]})
         self.cell_size_per_level = {0 : cell_size}
@@ -844,14 +854,14 @@ class RegularGrid(_Grid):
             print(self)
             
 
-    def create_mesh(self, cell_size, latmin=None, latmax=None, lonmin=None, 
+    def create_mesh(self, dlon, dlat, latmin=None, latmax=None, lonmin=None, 
                     lonmax=None):
         """ Creates the regular grid.
         
         Parameters
         ----------
-        cell_size : int
-            Size of each side of the regular grid
+        dlon, dlat : float
+            Longitudinal and latitudinal steps characterizing the grid
             
         latmin, lonmin, latmax, lonmax : float, optional
             Boundaries (in degrees) of the grid
@@ -867,11 +877,12 @@ class RegularGrid(_Grid):
         latmax = +90 if latmax is None else latmax
         lonmin = -180 if lonmin is None else lonmin
         lonmax = +180 if lonmax is None else lonmax
+        
         mesh = []
-        for lat1 in np.arange(latmin, latmax, cell_size)[::-1]:
-            lat2 = lat1 + cell_size
-            for lon1 in np.arange(lonmin, lonmax, cell_size):
-                lon2 = lon1 + cell_size
+        for lat1 in np.arange(latmin, latmax, dlat)[::-1]:
+            lat2 = lat1 + dlat
+            for lon1 in np.arange(lonmin, lonmax, dlon):
+                lon2 = lon1 + dlon
                 mesh.append([lat1, lat2, lon1, lon2])
         return np.round(mesh, 4)
 
