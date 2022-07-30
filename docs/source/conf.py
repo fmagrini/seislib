@@ -12,8 +12,14 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))
-
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.path.abspath('../..'))
+#sys.path.insert(0, os.path.join(here, '../..'))
+#sys.path.insert(0, os.path.join(here, '../../seislib'))
+#sys.path.insert(0, os.path.join(here, '../../seislib/tomography/_ray_theory'))
+#print('================================================')
+#print(sys.executable)
+#print(sys.path)
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +28,6 @@ copyright = '2022, Fabrizio Magrini'
 author = 'Fabrizio Magrini'
 
 # The full version, including alpha/beta/rc tags
-here = os.path.abspath(os.path.dirname(__file__))
 about = {}
 with open(os.path.join(here, '../../' 'seislib', "__version__.py")) as f:
     exec(f.read(), about)
