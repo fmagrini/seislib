@@ -19,7 +19,8 @@ can be performed an arbitrary number of times.
 from math import radians, degrees
 from math import cos, pi, asin, sin
 from math import sqrt
-from collections import defaultdict, Counter, Iterable
+from collections import defaultdict, Counter
+from collections.abc import Iterable
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
