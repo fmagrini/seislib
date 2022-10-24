@@ -612,7 +612,7 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
         y = np.geomspace(min_size, max_size)
         return np.interp(mag, x, y)
     
-    def get_integer_magnitudes(mag):
+    def get_rounded_magnitudes(mag):
         magmin, magmax = min(mag), max(mag)
         return np.round(np.geomspace(magmin, magmax, legend_markers), 1)
     
@@ -632,21 +632,22 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
         
     marker = kwargs.pop('marker', '*')
     zorder = kwargs.pop('zorder', 100)
+    color = kwargs.pop('color', kwargs.pop('c', 'r'))
     s = kwargs.pop('s', None)
     if s is None:
         s = get_markers_size(mag, kwargs)
     if isinstance(s, Iterable):
-        mags_legend = get_integer_magnitudes(mag)
+        mags_legend = get_rounded_magnitudes(mag)
         idx = [np.argmin(np.abs(mag - mag_i)) for mag_i in mags_legend]
         idx_all = np.setdiff1d(range(len(mag)), idx)
-        ax.scatter(lon[idx_all], lat[idx_all], marker=marker, transform=transform, 
-                   s=s[idx_all], zorder=100, **kwargs) 
+        ax.scatter(lon[idx_all], lat[idx_all], c=color, marker=marker, 
+                   transform=transform, s=s[idx_all], zorder=100, **kwargs) 
         for i, mag_legend in zip(idx, mags_legend):
-            ax.scatter(lon[i], lat[i], marker=marker, transform=transform, 
+            ax.scatter(lon[i], lat[i], c=color, marker=marker, transform=transform, 
                        s=s[i], label=mag_legend, zorder=100, **kwargs) 
         ax.legend(**legend_dict)
     else:
-        ax.scatter(lon, lat, marker=marker, transform=transform, s=s, 
+        ax.scatter(lon, lat, c=color, marker=marker, transform=transform, s=s, 
                    zorder=zorder, **kwargs) 
     if show:
         plt.show()
