@@ -1875,7 +1875,7 @@ class TwoStationMethod:
             title of the resulting figure. Otherwise they are ignored
         
         manual_picking : bool
-            If True, the user is required to pick the dispersion curve manually.
+            If True, the user is required to pick each dispersion curve manually.
             The picking is carried out through an interactive plot.
             
         Returns
