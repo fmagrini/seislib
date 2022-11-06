@@ -11,7 +11,7 @@ under the hood, by :class:`seislib.an.AmbientNoiseVelocity` and
 
 """
 import numpy as np
-from scipy.signal import detrend, find_peaks
+from scipy.signal import detrend, find_peaks, savgol_filter
 from scipy.stats import linregress
 from scipy.interpolate import interp1d, griddata
 from scipy.special import j0, jn_zeros, jv
@@ -334,11 +334,22 @@ def get_zero_crossings(freq, xcorr, dist, freqmin=0, freqmax=1, cmin=1, cmax=5,
     return crossings if return_indexes else crossings[:, :2]
 
 
-def extract_dispcurve(frequencies, corr_spectrum, interstation_distance, 
-                      ref_curve, freqmin=0, freqmax=1, cmin=1, cmax=5, 
-                      filt_width=3, filt_height=1.0, x_step=None, 
-                      pick_threshold=2, horizontal_polarization=False, 
-                      plotting=False, savefig=None):
+def extract_dispcurve(frequencies, 
+                      corr_spectrum, 
+                      interstation_distance, 
+                      ref_curve, 
+                      freqmin=0, 
+                      freqmax=1, 
+                      cmin=1, 
+                      cmax=5, 
+                      filt_width=3, 
+                      filt_height=1.0, 
+                      x_step=None, 
+                      pick_threshold=2, 
+                      horizontal_polarization=False, 
+                      manual_picking=False,
+                      plotting=False, 
+                      savefig=None):
     """
     Function for picking the phase-velocity curve from the zero crossings of
     the frequency-domain representation of the stacked cross correlation.
@@ -404,7 +415,11 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
         kind of order 0 and 2 respectively) [1]_. Should be `True` for Love and 
         radially-polarized Rayleigh waves. If `False` (default) only 
         :math:`J_0` is used
-        
+ 
+    manual_picking : bool
+        If True, the user is required to pick the dispersion curve manually.
+        The picking is carried out through an interactive plot.
+    
     plotting : bool        
         If True, a control plot is created and information on the picking 
         procedure are printed. Default is False
@@ -970,8 +985,39 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
                 print("      maxamp=%.2f minamp=%.2f vpick=%.2f" %(maxamp,minamp,vpick))
             
         return picks
+      
+    def pick_curve_manually(crossings, refcurve):
+            
+        from IPython import get_ipython
+        get_ipython().magic('matplotlib auto')
+        title = r'$\bf{Pick}$: Left click, $\bf{Delete}$: Right click, $\bf{When\ finished}$: Enter'
+        question = r'$\bf{Are\ you\ satisfied?\ Answer\ in\ the\ console\ (y/n)}$'
+        while True:
+            fig = plt.figure(figsize=(13, 9))
+            plt.plot(*zero_crossings[:, :2].T, 
+                     color='b',
+                     marker='o', 
+                     lw=0, 
+                     label='Crossings')
+            plt.plot(*refcurve.T, label='Reference', color='k')
+            plt.suptitle(title, fontsize=23)
+            plt.legend()
+            dispcurve = np.array(plt.ginput(-1, 0))
+            if not dispcurve.size:
+                raise DispersionCurveException
+#            dispcurve[:,1] = savgol_filter(dispcurve[:,1], 5, 2)
+            plt.plot(*dispcurve.T, label='Picked', color='r', lw=2)
+            plt.legend()
+            plt.suptitle(question, fontsize=23)
+            print('Are you satisfied (y/n)? Answer below')
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            answer = input()
+            plt.show()
+            plt.close()
+            if answer.lower() == 'y': return (zero_crossings[:, :2], dispcurve)
+            
         
-
     # Main function
         
     # get the zero crossings of the cross correlation spectrum
@@ -984,7 +1030,11 @@ def extract_dispcurve(frequencies, corr_spectrum, interstation_distance,
                                         cmax=cmax, 
                                         horizontal_polarization=horizontal_polarization,
                                         return_indexes=True)
-        
+    
+    if manual_picking:
+        return pick_curve_manually(zero_crossings,
+                                   ref_curve)
+    
     w_axis = np.unique(zero_crossings[:,0])
     w_axis = w_axis[(np.min(ref_curve[:,0])<w_axis)*(w_axis<np.max(ref_curve[:,0]))] 
     maxfreq = np.max(w_axis)

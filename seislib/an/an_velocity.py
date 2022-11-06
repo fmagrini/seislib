@@ -367,7 +367,7 @@ class AmbientNoiseVelocity:
     def extract_dispcurves(self, refcurve, freqmin=0.01, freqmax=0.5, cmin=1.5,
                            cmax=4.5, distmax=None, window_length=3600, 
                            overlap=0.5, min_no_days=30, reverse_iteration=False,
-                           plotting=False):
+                           plotting=False, manual_picking=False):
         """ 
         Automatic extraction of the dispersion curves for all available pairs
         of receivers.
@@ -431,7 +431,11 @@ class AmbientNoiseVelocity:
         plotting : bool
             If `True`, a figure is created for each retrieved dispersion curve.
             This is automatically displayed and saved in $self.savedir/figures
-        
+            
+        manual_picking : bool
+            If True, the user is required to pick the dispersion curve manually.
+            The picking is carried out through an interactive plot.
+            
         Returns
         -------
         None
@@ -529,7 +533,7 @@ class AmbientNoiseVelocity:
             plt.subplots_adjust(top=0.85)
             plt.suptitle(suptitle, y=0.98)
             if savefig is not None:
-                plt.savefig(savefig, dpi=(150))
+                plt.savefig(savefig, dpi=(200))
             plt.show()
         
         save_pv = os.path.join(self.savedir, 'dispcurves')
@@ -608,6 +612,7 @@ class AmbientNoiseVelocity:
                         cmin=cmin, 
                         cmax=cmax,
                         horizontal_polarization=horizontal_polarization,
+                        manual_picking=manual_picking
                         )
             except:
                 update_done(sta1, sta2)

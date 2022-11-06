@@ -621,10 +621,20 @@ class EQVelocity:
             print('FILES REMOVED:', deleted_files)
     
     
-    def extract_dispcurves(self, refcurve, periodmin=15, periodmax=150, 
-                           no_periods=75, cmin=2.5, cmax=5, min_no_wavelengths=1.5,
-                           approach='freq', prob_min=0.25, prior_sigma_10s=0.7,
-                           prior_sigma_200s=0.3, plotting=False):
+    def extract_dispcurves(self, 
+                           refcurve, 
+                           periodmin=15, 
+                           periodmax=150, 
+                           no_periods=75, 
+                           cmin=2.5, 
+                           cmax=5, 
+                           min_no_wavelengths=1.5,
+                           approach='freq', 
+                           prob_min=0.25, 
+                           prior_sigma_10s=0.7,
+                           prior_sigma_200s=0.3, 
+                           manual_picking=False,
+                           plotting=False):
         """
         Automatic extraction of the dispersion curves for all available pairs
         of receivers.
@@ -701,6 +711,10 @@ class EQVelocity:
         plotting : bool
             If `True`, a figure is created for each retrieved dispersion curve.
             This is automatically displayed and saved in $self.savedir/figures
+            
+        manual_picking : bool
+            If True, the user is required to pick the dispersion curve manually.
+            The picking is carried out through an interactive plot.
         """
         def percentage_done(no_pairs, no_done):
             return '\nPERCENTAGE DONE: %.2f\n'%(no_done/no_pairs * 100)
@@ -785,7 +799,8 @@ class EQVelocity:
                                                       sta1=sta1,
                                                       sta2=sta2,
                                                       prior_sigma_10s=prior_sigma_10s,
-                                                      prior_sigma_200s=prior_sigma_200s)
+                                                      prior_sigma_200s=prior_sigma_200s,
+                                                      manual_picking=manual_picking)
                 except:
                     update_done(sta1, sta2)
                     continue
@@ -1773,7 +1788,8 @@ class TwoStationMethod:
     @classmethod
     def extract_dispcurve(cls, refcurve, src, dist_km, prob_min=0.25, smoothing=0.3,
                           min_derivative=-0.01, prior_sigma_10s=0.7, prior_sigma_200s=0.3, 
-                          plotting=False, savefig=None, sta1=None, sta2=None):
+                          plotting=False, savefig=None, sta1=None, sta2=None,
+                          manual_picking=False):
         """ 
         Extraction of the dispersion curve from a given set of dispersion
         measurements. These (one per earthquake) should be stored in a directory
@@ -1857,6 +1873,10 @@ class TwoStationMethod:
             Station codes of the two receivers used to calculate the dispersion
             curve. If `plotting` is True, they are displayed in title of the
             title of the resulting figure. Otherwise they are ignored
+        
+        manual_picking : bool
+            If True, the user is required to pick the dispersion curve manually.
+            The picking is carried out through an interactive plot.
             
         Returns
         -------
@@ -2128,10 +2148,60 @@ class TwoStationMethod:
             plt.subplots_adjust(top=0.91)
             plt.suptitle(suptitle, y=0.98)
             if savefig is not None:
-                plt.savefig(savefig, dpi=(150))
+                plt.savefig(savefig, dpi=(200))
             plt.show()
 
+        def pick_curve_manually(data, mesh, p_post, refcurve, dist, no_earthquakes,
+                                plotting=False, savefig=None, sta1=None, sta2=None):
 
+            def plot_mesh_and_data():
+                plt.pcolormesh(*mesh, p_post)
+                plt.plot(data[:,0], data[:,1], 'ro', ms=0.5, label='Obs. Dispersion')
+                plt.plot(*refcurve.T, label='Reference', color='k')
+                plt.ylim(*ylim)
+                plt.xlim(*xlim)
+            
+            from IPython import get_ipython
+            get_ipython().magic('matplotlib auto')
+            title = r'$\bf{Pick}$: Left click, $\bf{Delete}$: Right click, $\bf{When\ finished}$: Enter'
+            question = r'$\bf{Are\ you\ satisfied?\ Answer\ in\ the\ console\ (y/n)}$'
+            xlim = np.min(mesh[0][0]), np.max(mesh[0][0])
+            ylim = np.min(mesh[1][:, 0]), np.max(mesh[1][:, 0])
+            while True:
+                fig = plt.figure(figsize=(13, 9))
+                plot_mesh_and_data()
+                plt.suptitle(title, fontsize=23)
+                plt.legend()
+                dispcurve = np.array(plt.ginput(-1, 0))
+                if not dispcurve.size:
+                    raise DispersionCurveException
+    #            dispcurve[:,1] = savgol_filter(dispcurve[:,1], 5, 2)
+                plt.plot(*dispcurve.T, label='Picked', color='b', lw=2)
+                plt.legend()
+                plt.suptitle(question, fontsize=23)
+                print('Are you satisfied (y/n)? Answer below')
+                fig.canvas.draw()
+                fig.canvas.flush_events()
+                answer = input()
+                plt.show()
+                plt.close()
+                if answer.lower() == 'y': 
+                    if plotting:
+                        suptitle = 'Dist: %.2f km No. Earthquakes: %d'%(dist, no_earthquakes)
+                        if sta1 is not None and sta2 is not None:
+                            suptitle = '%s - %s '%(sta1, sta2) + suptitle
+                        fig = plt.figure(figsize=(13, 9))
+                        plot_mesh_and_data()
+                        plt.plot(*dispcurve.T, label='Picked', color='b', lw=2)
+                        plt.legend(loc='upper right')  
+                        plt.suptitle(suptitle, y=0.98)
+                        if savefig is not None:
+                            plt.savefig(savefig, dpi=(200))
+                        plt.show()
+                        plt.close()
+                    return dispcurve
+            
+        
         refcurve = cls.convert_to_kms(refcurve)
         ref_model = interp1d(refcurve[:,0], 
                              refcurve[:,1],
@@ -2139,29 +2209,44 @@ class TwoStationMethod:
                              fill_value='extrapolate')
         data = load_dispersion_measurements(src)
         period, c, mesh, p_post = posterior_prob(data, dist_km)
-        p_prior = prior_prob(period=period, 
-                             c=c, 
-                             ref_model=ref_model, 
-                             p_post=p_post, 
-                             prior_sigma_10s=prior_sigma_10s, 
-                             prior_sigma_200s=prior_sigma_200s)
-        p_cond = p_prior * p_post
-        p_cond_filtered = np.where(p_cond<prob_min, 0, p_cond)
-        dispcurve = get_dispcurve(period, c, p_cond_filtered, smoothing,
-                                  min_derivative=min_derivative)
-        if plotting:
-            plot(data=data, 
-                 mesh=mesh, 
-                 p_prior=p_prior, 
-                 p_post=p_post, 
-                 p_cond=p_cond, 
-                 p_cond_filtered=p_cond_filtered, 
-                 dispcurve=dispcurve, 
-                 dist=dist_km,
-                 no_earthquakes=len(os.listdir(src)), 
-                 sta1=sta1,
-                 sta2=sta2, 
-                 savefig=savefig)
+        if manual_picking:
+            dispcurve = pick_curve_manually(data=data, 
+                                            mesh=mesh, 
+                                            p_post=p_post, 
+                                            refcurve=refcurve, 
+                                            plotting=plotting,
+                                            savefig=savefig,
+                                            dist=dist_km,
+                                            no_earthquakes=len(os.listdir(src)),
+                                            sta1=sta1,
+                                            sta2=sta2)
+        else:
+            p_prior = prior_prob(period=period, 
+                                 c=c, 
+                                 ref_model=ref_model, 
+                                 p_post=p_post, 
+                                 prior_sigma_10s=prior_sigma_10s, 
+                                 prior_sigma_200s=prior_sigma_200s)
+            p_cond = p_prior * p_post
+            p_cond_filtered = np.where(p_cond<prob_min, 0, p_cond)
+            dispcurve = get_dispcurve(period, 
+                                      c, 
+                                      p_cond_filtered, 
+                                      smoothing,
+                                      min_derivative=min_derivative)
+            if plotting:
+                plot(data=data, 
+                     mesh=mesh, 
+                     p_prior=p_prior, 
+                     p_post=p_post, 
+                     p_cond=p_cond, 
+                     p_cond_filtered=p_cond_filtered, 
+                     dispcurve=dispcurve, 
+                     dist=dist_km,
+                     no_earthquakes=len(os.listdir(src)), 
+                     sta1=sta1,
+                     sta2=sta2, 
+                     savefig=savefig)
         return dispcurve
 
 
