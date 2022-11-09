@@ -362,9 +362,19 @@ class _Grid():
         newmesh[i_newpixel+3, 3] = meridian2
     
     
-    def plot(self, ax=None, mesh=None, projection='Mercator',  show=True, 
-             map_boundaries=None, bound_map=True, oceans_color='aqua', 
-             lands_color='coral', scale='110m'):
+    def plot(self, 
+             ax=None, 
+             mesh=None, 
+             projection='Mercator', 
+             meridian_min=-180,
+             meridian_max=180,
+             show=True, 
+             map_boundaries=None, 
+             bound_map=True, 
+             oceans_color='water', 
+             lands_color='land', 
+             scale='110m', 
+             **kwargs):
         """
         Plots the (adaptive) equal-area grid
         
@@ -383,7 +393,14 @@ class _Grid():
             Name of the geographic projection used to create the `GeoAxesSubplot`.
             (Visit the cartopy website for a list of valid projection names.)
             If ax is not None, `projection` is ignored. Default is 'Mercator'
-                        
+        
+        meridian_min, meridian_max : float
+            Minimum and maximum longitude used to bound the parallels. In most
+            situations this arguments can be ignored. When plotting the grid
+            on particular projections (e.g. LambertConformal), however, these
+            values should be tuned: otherwise the parallel lines will not be
+            displayed in the final plot. (Due to an unsolved issue in CartoPy.)
+        
         show : bool
             If `True` (default), the map will be showed once generated.
           
@@ -399,6 +416,10 @@ class _Grid():
             Color of oceans and continents in the map. They should be valid 
             matplotlib colors (see `matplotlib.colors` documentation for more 
             details) or be part of `cartopy.cfeature.COLORS`
+        
+        **kwargs
+            Additional keyword arguments passed to
+            `matplotlib.pyplot.plot`
         
         Returns
         -------
@@ -433,26 +454,32 @@ class _Grid():
                         parallels[parallel].append([meridian1, meridian2])
             return parallels
                         
-        def drawmeridians(mesh, ax):
+        def drawmeridians(mesh, ax, **kwargs_plot):
             drawn_meridians = defaultdict(set)
+            
             # Draw meridians
             for lat1, lat2, lon1, lon2 in mesh:
-                ax.plot([lon1, lon1], [lat1, lat2], color='k', linestyle='-', 
-                        lw=1, zorder=100, transform=ccrs.Geodetic())
+                ax.plot([lon1, lon1], 
+                        [lat1, lat2], 
+                        transform=ccrs.Geodetic(),
+                        **kwargs_plot)
                 drawn_meridians[(lat1, lat2)].add(lon1)
                 if lon2 not in drawn_meridians[(lat1, lat2)]:
-                    ax.plot([lon2, lon2], [lat1, lat2], color='k', linestyle='-', 
-                            lw=1, zorder=100, transform=ccrs.Geodetic())
+                    ax.plot([lon2, lon2], 
+                            [lat1, lat2], 
+                            transform=ccrs.Geodetic(),
+                            **kwargs_plot)
                     drawn_meridians[(lat1, lat2)].add(lon2)
             return
         
-        def drawparallels(mesh, ax):
+        def drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs_plot):
             parallels = get_parallels(mesh)
             for parallel in parallels:
                 for lon1, lon2 in parallels[parallel]:
-                    ax.plot([lon1, lon2], [parallel, parallel], color='k', 
-                            linestyle='-', lw=1, zorder=100, 
-                            transform=ccrs.PlateCarree())
+                    ax.plot([max(lon1, meridian_min), min(lon2, meridian_max)], 
+                            [parallel, parallel], 
+                            transform=ccrs.PlateCarree(),
+                            **kwargs_plot)
             return
         
         
@@ -472,7 +499,12 @@ class _Grid():
     
         if mesh is None:
             mesh = self.mesh
-
+            
+        kwargs_grid = {'color': kwargs.pop('color', kwargs.pop('c', 'k')),
+                       'ls': kwargs.pop('ls', kwargs.pop('linestyle', '-')),
+                       'lw': kwargs.pop('lw', kwargs.pop('linewidth', 1)),
+                       'zorder': kwargs.pop('zorder', 100)}
+        
         if ax is None:
             fig = plt.figure()
             ax = fig.add_subplot(1, 1, 1, projection=eval('ccrs.%s()'%projection))
@@ -481,8 +513,8 @@ class _Grid():
                                lands_color=lands_color,
                                scale=scale,
                                edgecolor='none')
-        drawmeridians(mesh, ax)
-        drawparallels(mesh, ax)
+        drawmeridians(mesh, ax, **kwargs_grid)
+        drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs_grid)
         
         if map_boundaries is None and bound_map:
             map_boundaries = get_map_boundaries(mesh)
