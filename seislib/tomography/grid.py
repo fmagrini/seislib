@@ -500,10 +500,11 @@ class _Grid():
         if mesh is None:
             mesh = self.mesh
             
-        kwargs_grid = {'color': kwargs.pop('color', kwargs.pop('c', 'k')),
-                       'ls': kwargs.pop('ls', kwargs.pop('linestyle', '-')),
-                       'lw': kwargs.pop('lw', kwargs.pop('linewidth', 1)),
-                       'zorder': kwargs.pop('zorder', 100)}
+        kwargs_default = {'color': kwargs.pop('color', kwargs.pop('c', 'k')),
+                          'ls': kwargs.pop('ls', kwargs.pop('linestyle', '-')),
+                          'lw': kwargs.pop('lw', kwargs.pop('linewidth', 1)),
+                          'zorder': kwargs.pop('zorder', 100)}
+        kwargs.update(kwargs_default)
         
         if ax is None:
             fig = plt.figure()
@@ -513,8 +514,8 @@ class _Grid():
                                lands_color=lands_color,
                                scale=scale,
                                edgecolor='none')
-        drawmeridians(mesh, ax, **kwargs_grid)
-        drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs_grid)
+        drawmeridians(mesh, ax, **kwargs)
+        drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs)
         
         if map_boundaries is None and bound_map:
             map_boundaries = get_map_boundaries(mesh)
