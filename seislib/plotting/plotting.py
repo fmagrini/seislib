@@ -1100,7 +1100,9 @@ def plot_map(mesh, c, ax=None, projection='Mercator', map_boundaries=None,
     if show:
         plt.show()
     else:
-        return img, cb if colorbar else img        
+        if not colorbar:
+            return img
+        return img, cb
 
 
 def scientific_label(obj, precision):
