@@ -456,29 +456,31 @@ class _Grid():
                         
         def drawmeridians(mesh, ax, **kwargs_plot):
             drawn_meridians = defaultdict(set)
+            transform = ccrs.Geodetic()
             
             # Draw meridians
             for lat1, lat2, lon1, lon2 in mesh:
                 ax.plot([lon1, lon1], 
                         [lat1, lat2], 
-                        transform=ccrs.Geodetic(),
+                        transform=transform,
                         **kwargs_plot)
                 drawn_meridians[(lat1, lat2)].add(lon1)
                 if lon2 not in drawn_meridians[(lat1, lat2)]:
                     ax.plot([lon2, lon2], 
                             [lat1, lat2], 
-                            transform=ccrs.Geodetic(),
+                            transform=transform,
                             **kwargs_plot)
                     drawn_meridians[(lat1, lat2)].add(lon2)
             return
         
         def drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs_plot):
+            transform = ccrs.PlateCarree()
             parallels = get_parallels(mesh)
             for parallel in parallels:
                 for lon1, lon2 in parallels[parallel]:
                     ax.plot([max(lon1, meridian_min), min(lon2, meridian_max)], 
                             [parallel, parallel], 
-                            transform=ccrs.PlateCarree(),
+                            transform=transform,
                             **kwargs_plot)
             return
         
