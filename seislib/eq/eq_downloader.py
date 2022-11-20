@@ -216,23 +216,6 @@ class EQDownloader:
                 minlongitude=90,
                 maxlongitude=140)    
       
-    All earthquakes characterized by a magnitude between 6 and 8.5, by a 
-    maximum depth of 50 km, and generated between the 1.1.2000 and 1.1.2021 
-    will be used, to identify the surface-wave in the seismograms recorded
-    at the considered seismic stations. The distance between each earthquake
-    and a given receiver should be more than 20° (expressed in km) and less
-    than 140° (in km)::
-    
-      events_config=dict(
-              starttime=UTC(2000, 1, 1),
-              endtime=UTC(2021, 1, 1),
-              depthmax=50,
-              magmin=6, 
-              magmax=8.5,
-              distmin=degrees2kilometers(20),
-              distmax=degrees2kilometers(140),
-                  )      
-      
     The above also specifies the preference of downloading 3-component seismograms (ZNE), 
     as implied by the asterisk sign. For a given receiver recording an earthquake, either 
     of the LH, BH, or HH channels will be downloaded, with priority given from left to right, 
