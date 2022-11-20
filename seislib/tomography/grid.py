@@ -573,7 +573,8 @@ class EqualAreaGrid(_Grid):
     --------
     Let's first define an equal-area grid of :math:`10^{\circ} \times 10^{\circ}`.
     By default, this is created on the global scale.
-
+    
+    >>> from seislib.tomography import EqualAreaGrid
     >>> grid = EqualAreaGrid(cell_size=10, verbose=True)
     -------------------------------------
     Optimal grid found in 10 iterations
@@ -891,7 +892,8 @@ class RegularGrid(_Grid):
     Let's first define a regular grid of :math:`0.1^{\circ} \times 0.1^{\circ}`.
     We will restrict the study area to :math:`9 \leq lon \leq 11` and 
     :math:`40 \leq lat \leq 42`.
-
+    
+    >>> from seislib.tomography import RegularGrid
     >>> grid = RegularGrid(cell_size=0.1, 
                            latmin=40,
                            latmax=42,

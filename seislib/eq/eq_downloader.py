@@ -215,7 +215,7 @@ class EQDownloader:
                 minlatitude=-18,
                 minlongitude=90,
                 maxlongitude=140)    
-      
+            
     The above also specifies the preference of downloading 3-component seismograms (ZNE), 
     as implied by the asterisk sign. For a given receiver recording an earthquake, either 
     of the LH, BH, or HH channels will be downloaded, with priority given from left to right, 
@@ -242,6 +242,8 @@ class EQDownloader:
                     )      
         
     We initialize the EQDownloader instance, and then start it::
+        
+        from seislib.eq import EQDownloader
         
         downloader = EQDownloader(savedir='/path/to/directory',
                                   inv_provider='iris',

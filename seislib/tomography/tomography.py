@@ -196,6 +196,8 @@ class SeismicTomography:
         you are interested in (`lonmin`, `lonmax`, `latmin`, `latmax`). For 
         example::
             
+            from seislib.tomography import SeismicTomography
+            
             tomo = SeismicTomography(cell_size=0.05, 
                                      regular_grid=True, 
                                      latmin=40,

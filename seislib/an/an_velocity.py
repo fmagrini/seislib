@@ -88,6 +88,7 @@ class AmbientNoiseVelocity:
     dispersion curves for vertically-polarized Rayleigh waves (on the vertical 
     - Z - component).
     
+    >>> from seislib.an import AmbientNoiseVelocity
     >>> an = AmbientNoiseVelocity(
     ...         src=src,
     ...         component='Z')

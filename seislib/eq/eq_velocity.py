@@ -113,6 +113,7 @@ class EQVelocity:
     for vertically-polarized Rayleigh waves (on the vertical - Z - component). We first 
     define the `EQVelocity` instance and prepare the data for the subsequent analysis:
     
+    >>> from seislib.eq import EQVelocity
     >>> eq = EQVelocity(src, component='Z')
     >>> eq.prepare_data(azimuth_tolerance=7, 
                         distmin=None, 
@@ -1268,6 +1269,8 @@ class TwoStationMethod:
     reference curve) and inter-station distance is not smaller than 1.5.
 
     First, we initialize the TwoStationMethod class as::
+        
+        from seislib.eq import TwoStationMethod
 
         tsm = TwoStationMethod(refcurve=refcurve,
                                periodmin=15,
