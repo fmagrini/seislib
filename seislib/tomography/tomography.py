@@ -152,6 +152,7 @@ class SeismicTomography:
     First, we need to initialize the :class:`SeismicTomography` instance and 
     load our data into memory:
     
+    >>> from seislib.tomography import SeismicTomography
     >>> tomo = SeismicTomography(cell_size=2, regular_grid=False, verbose=True)
     >>> tomo.add_data(src='/path/to/data')
     -------------------------------------
@@ -991,6 +992,7 @@ class SeismicTomography:
         
         Examples
         --------
+        >>> from seislib.tomography import SeismicTomography
         >>> tomo = SeismicTomography(5)
         >>> lat = np.mean(tomo.grid.mesh[:, :2], axis=1)
         >>> lon = np.mean(tomo.grid.mesh[:, 2:], axis=1)
@@ -1050,6 +1052,7 @@ class SeismicTomography:
 
         Examples
         --------
+        >>> from seislib.tomography import SeismicTomography
         >>> tomo = SeismicTomography(1, latmin=-20, latmax=20, lonmin=-20, lonmax=20)
         >>> lat = np.mean(tomo.grid.mesh[:, :2], axis=1)
         >>> lon = np.mean(tomo.grid.mesh[:, 2:], axis=1)
@@ -1140,9 +1143,9 @@ class SeismicTomography:
         return results
         
 
-    def checkerboard_test(self, kx, ky, latmin=None, latmax=None, lonmin=None, 
-                          lonmax=None, cell_size=5, anom_amp=0.1, refvel=None, 
-                          noise=0, ndamp=0, rdamp=0):
+    def checkerboard_test(self, kx, ky, regular_grid=False, latmin=None, 
+                          latmax=None, lonmin=None, lonmax=None, cell_size=5, 
+                          anom_amp=0.1, refvel=None, noise=0, ndamp=0, rdamp=0):
         """ 
         Resolution test, known as "checkerboard test". The method first builds
         synthetic data (velocities) using a :meth:`checkerboard` pattern as 
@@ -1154,6 +1157,10 @@ class SeismicTomography:
             Frequency of anomalies along longitude (`kx`) and latitude (`ky`) within
             the boundaries defined by `lonmin`, `lonmax`, `latmin`, `latmax`
             
+        regular_grid : bool
+            If False (default), the study area is discretized using an equal-area
+            parameterization. Otherwise, a regular grid is employed.
+        
         latmin, latmax, lonmin, lonmax : float, optional
             Boundaries of the checkerboard, in degrees. (-180<lon<180, 
             -90<lat<90)
@@ -1210,12 +1217,13 @@ class SeismicTomography:
                                                  lonmax=lonmax,
                                                  anom_amp=anom_amp
                                                  )
-        mesh = EqualAreaGrid(cell_size, 
-                             latmin=latmin, 
-                             latmax=latmax, 
-                             lonmin=lonmin,
-                             lonmax=lonmax,
-                             verbose=False).mesh
+        grid = EqualAreaGrid if not regular_grid else RegularGrid
+        mesh = grid(cell_size=cell_size,
+                         latmin=latmin,
+                         lonmin=lonmin, 
+                         latmax=latmax,
+                         lonmax=lonmax,
+                         verbose=False).mesh
         lons = (mesh[:,2] + mesh[:,3]) / 2
         lats = (mesh[:,0] + mesh[:,1]) / 2                                        
         velocity = pattern(lons, lats)
@@ -1227,9 +1235,10 @@ class SeismicTomography:
                                     rdamp=rdamp)
         
     
-    def spike_test(self, x0, y0, sigma_x, sigma_y, latmin=None, latmax=None, 
-                   lonmin=None, lonmax=None, cell_size=5, anom_amp=0.1, 
-                   refvel=None, noise=0, ndamp=0, rdamp=0):
+    def spike_test(self, x0, y0, sigma_x, sigma_y, regular_grid=False, 
+                   latmin=None, latmax=None, lonmin=None, lonmax=None, 
+                   cell_size=5, anom_amp=0.1, refvel=None, noise=0, ndamp=0, 
+                   rdamp=0):
         """ 
         Resolution test, known as "spike test". The method first builds
         synthetic data (velocities) using a spike pattern as an input (velocity) 
@@ -1244,7 +1253,12 @@ class SeismicTomography:
         sigma_x, sigma_y : float (default is 1)
             Standard deviations in the longitude and latitude directions of the
             3-D Gaussian
-            
+
+        regular_grid : bool
+            If False (default), the study area is discretized using an equal-area
+            parameterization. Otherwise, a regular grid is employed.
+
+
         latmin, latmax, lonmin, lonmax : float, optional
             Boundaries of the checkerboard, in degrees
             
@@ -1298,12 +1312,13 @@ class SeismicTomography:
                                           sigma_x=sigma_x, 
                                           sigma_y=sigma_y, 
                                           anom_amp=anom_amp)
-        mesh = EqualAreaGrid(cell_size, 
-                             latmin=latmin, 
-                             latmax=latmax, 
-                             lonmin=lonmin,
-                             lonmax=lonmax,
-                             verbose=False).mesh
+        grid = EqualAreaGrid if not regular_grid else RegularGrid
+        mesh = grid(cell_size=cell_size,
+                         latmin=latmin,
+                         lonmin=lonmin, 
+                         latmax=latmax,
+                         lonmax=lonmax,
+                         verbose=False).mesh
         lons = (mesh[:,2] + mesh[:,3]) / 2
         lats = (mesh[:,0] + mesh[:,1]) / 2                                        
         velocity = pattern(lons, lats)

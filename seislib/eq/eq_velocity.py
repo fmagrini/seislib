@@ -847,7 +847,8 @@ class EQVelocity:
         located in /path/to/data, and you had initialized your 
         class:`EQVelocity` instance, to calculate inter-station 
         dispersion curves, as::
-
+            
+            from seislib.eq import EQVelocity
             eq = EQVelocity(src=SRC, component='Z')
             eq.prepare_data(azimuth_tolerance=7,
                             distmin=None, 
@@ -911,7 +912,9 @@ class EQVelocity:
         located in /path/to/data, and you had initialized your 
         class:`EQVelocity` instance, to calculate inter-station 
         dispersion curves, as::
-
+            
+            from seislib.eq import EQVelocity
+            
             eq = EQVelocity(src=SRC, component='Z')
             eq.prepare_data(azimuth_tolerance=7,
                             distmin=None, 
