@@ -349,7 +349,9 @@ def extract_dispcurve(frequencies,
                       horizontal_polarization=False, 
                       manual_picking=False,
                       plotting=False, 
-                      savefig=None):
+                      savefig=None,
+                      sta1=None,
+                      sta2=None):
     """
     Function for picking the phase-velocity curve from the zero crossings of
     the frequency-domain representation of the stacked cross correlation.
@@ -986,7 +988,7 @@ def extract_dispcurve(frequencies,
             
         return picks
       
-    def pick_curve_manually(crossings, refcurve):
+    def pick_curve_manually(crossings, refcurve, sta1=None, sta2=None, dist=None):
             
         from IPython import get_ipython
         get_ipython().magic('matplotlib auto')
@@ -1001,6 +1003,10 @@ def extract_dispcurve(frequencies,
                      label='Crossings')
             plt.plot(*refcurve.T, label='Reference', color='k')
             plt.suptitle(title, fontsize=23)
+            if sta1 is not None and sta2 is not None:
+                plt.title('%s - %s Dist: %.2f km'%(sta1, sta2, dist))
+            plt.xlabel('Frequency [Hz]')
+            plt.ylabel('Phase Velocity [km/s]')
             plt.legend()
             dispcurve = np.array(plt.ginput(-1, 0))
             if not dispcurve.size:
@@ -1033,7 +1039,10 @@ def extract_dispcurve(frequencies,
     
     if manual_picking:
         return pick_curve_manually(zero_crossings,
-                                   ref_curve)
+                                   ref_curve,
+                                   dist=interstation_distance,
+                                   sta1=sta1,
+                                   sta2=sta2)
     
     w_axis = np.unique(zero_crossings[:,0])
     w_axis = w_axis[(np.min(ref_curve[:,0])<w_axis)*(w_axis<np.max(ref_curve[:,0]))] 

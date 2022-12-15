@@ -621,7 +621,9 @@ class AmbientNoiseVelocity:
                         cmin=cmin, 
                         cmax=cmax,
                         horizontal_polarization=horizontal_polarization,
-                        manual_picking=manual_picking
+                        manual_picking=manual_picking,
+                        sta1=sta1,
+                        sta2=sta2
                         )
                 if save_xcorr:
                     np.save(xcorr_file, np.column_stack((freq, xcorr)))
