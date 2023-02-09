@@ -15,6 +15,7 @@ import os
 import warnings
 import time
 import shutil
+import socket
 from collections import defaultdict, Counter
 from datetime import datetime
 import numpy as np
@@ -793,6 +794,9 @@ class ANDownloader:
                         except TypeError:
                             continue
                         except ConnectionResetError:
+                            time.sleep(0.5)
+                            continue
+                        except socket.timeout:
                             time.sleep(0.5)
                             continue
             return inv

@@ -15,6 +15,7 @@ dispersion curves based on a two-station method.
 import os
 import warnings
 import time
+import socket
 from obspy import read_inventory, Catalog
 from obspy import UTCDateTime as UTC
 from obspy.core import AttribDict
@@ -365,6 +366,9 @@ class EQDownloader:
                         except TypeError:
                             continue
                         except ConnectionResetError:
+                            time.sleep(0.5)
+                            continue
+                        except socket.timeout:
                             time.sleep(0.5)
                             continue
             return inv
