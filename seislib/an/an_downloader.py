@@ -788,7 +788,12 @@ class ANDownloader:
                         except FDSNNoDataException:
                             break
                         except FDSNException:
-                            time.sleep(1)
+                            time.sleep(0.5)
+                            continue
+                        except TypeError:
+                            continue
+                        except ConnectionResetError:
+                            time.sleep(0.5)
                             continue
             return inv
         
