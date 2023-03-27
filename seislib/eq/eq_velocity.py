@@ -433,8 +433,13 @@ class EQVelocity:
         return False        
         
         
-    def prepare_data(self, azimuth_tolerance=5, distmin=None, distmax=None, 
-                     min_no_events=5, recompute=False, delete_unused_files=False):
+    def prepare_data(self, 
+                     azimuth_tolerance=5, 
+                     distmin=None, 
+                     distmax=None, 
+                     min_no_events=5, 
+                     recompute=False, 
+                     delete_unused_files=False):
         """
         Saves to disk the geographic coordinates of the seismic receivers and of
         the seismic events, along with the triplets of epicenters-receivers to 
@@ -550,8 +555,10 @@ class EQVelocity:
         self.stations = stations
         self.events_info = events_info
         self.triplets = triplets
+        if delete_unused_files:
+            self.delete_unused_files()
             
-    
+            
     def get_events_used(self):
         """ 
         Retrieves the events id for which triplets of epicenter-receivers are
@@ -604,7 +611,7 @@ class EQVelocity:
         deleted_files = 0
         deleted_folders = 0
         events_used = self.get_events_used()
-        for event in sorted(events_used):
+        for event in sorted(self.events):
             folder = os.path.join(self.src, event)
             sacfiles = set([i for i in os.listdir(folder) if i.endswith('.sac')])
             if not sacfiles:
@@ -619,8 +626,7 @@ class EQVelocity:
                 deleted_files += remove_files(folder, to_delete)
         if self.verbose:
             print('DIRECTORIES REMOVED:', deleted_folders)
-            print('FILES REMOVED:', deleted_files)
-    
+            print('FILES REMOVED:', deleted_files)    
     
     def extract_dispcurves(self, 
                            refcurve, 
