@@ -19,7 +19,6 @@ from . import exceptions
 from . import plotting
 from . import tomography
 from . import utils
-#from .tomography.tomography import SeismicTomography
 
 
 
