@@ -1801,7 +1801,7 @@ class TwoStationMethod:
     def extract_dispcurve(cls, refcurve, src, dist_km, prob_min=0.25, smoothing=0.3,
                           min_derivative=-0.01, prior_sigma_10s=0.7, prior_sigma_200s=0.3, 
                           plotting=False, savefig=None, sta1=None, sta2=None,
-                          manual_picking=False):
+                          manual_picking=False, show=True):
         """ 
         Extraction of the dispersion curve from a given set of dispersion
         measurements. These (one per earthquake) should be stored in a directory
@@ -2110,7 +2110,7 @@ class TwoStationMethod:
         
 
         def plot(data, mesh, p_prior, p_post, p_cond, p_cond_filtered, dispcurve, 
-                 dist, no_earthquakes, sta1=None, sta2=None, savefig=None):
+                 dist, no_earthquakes, sta1=None, sta2=None, savefig=None, show=True):
             suptitle = 'Dist: %.2f km No. Earthquakes: %d'%(dist, no_earthquakes)
             if sta1 is not None and sta2 is not None:
                 suptitle = '%s - %s '%(sta1, sta2) + suptitle
@@ -2161,7 +2161,10 @@ class TwoStationMethod:
             plt.suptitle(suptitle, y=0.98)
             if savefig is not None:
                 plt.savefig(savefig, dpi=(200))
-            plt.show()
+            if not show:
+                plt.close()
+            else:
+                plt.show()
 
         def pick_curve_manually(data, mesh, p_post, refcurve, dist, no_earthquakes,
                                 plotting=False, savefig=None, sta1=None, sta2=None):
@@ -2258,7 +2261,8 @@ class TwoStationMethod:
                      no_earthquakes=len(os.listdir(src)), 
                      sta1=sta1,
                      sta2=sta2, 
-                     savefig=savefig)
+                     savefig=savefig,
+                     show=show)
         return dispcurve
 
 
