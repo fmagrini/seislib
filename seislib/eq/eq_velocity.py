@@ -641,7 +641,8 @@ class EQVelocity:
                            prior_sigma_10s=0.7,
                            prior_sigma_200s=0.3, 
                            manual_picking=False,
-                           plotting=False):
+                           plotting=False,
+                           show=True):
         """
         Automatic extraction of the dispersion curves for all available pairs
         of receivers.
@@ -807,7 +808,8 @@ class EQVelocity:
                                                       sta2=sta2,
                                                       prior_sigma_10s=prior_sigma_10s,
                                                       prior_sigma_200s=prior_sigma_200s,
-                                                      manual_picking=manual_picking)
+                                                      manual_picking=manual_picking,
+                                                      show=show)
                 except:
                     update_done(sta1, sta2)
                     continue
