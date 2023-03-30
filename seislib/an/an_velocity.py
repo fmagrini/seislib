@@ -506,7 +506,7 @@ class AmbientNoiseVelocity:
             return dist, az, baz            
         
         def plot(dispcurve, refcurve, crossings, xcorr, sta1, sta2, dist, 
-                 days_overlap, savefig=None):
+                 days_overlap, savefig=None, show=True):
             
             suptitle = '%s - %s | '%(sta1, sta2)
             suptitle += 'Dist: %.1f km | Overlapping days: %.1f'%(dist, days_overlap)
