@@ -368,7 +368,8 @@ class AmbientNoiseVelocity:
     def extract_dispcurves(self, refcurve, freqmin=0.01, freqmax=0.5, cmin=1.5,
                            cmax=4.5, distmax=None, window_length=3600, 
                            overlap=0.5, min_no_days=30, reverse_iteration=False,
-                           save_xcorr=False, plotting=False, manual_picking=False):
+                           save_xcorr=False, plotting=False, manual_picking=False,
+                           show=True):
         """ 
         Automatic extraction of the dispersion curves for all available pairs
         of receivers.
@@ -538,7 +539,10 @@ class AmbientNoiseVelocity:
             plt.suptitle(suptitle, y=0.98)
             if savefig is not None:
                 plt.savefig(savefig, dpi=(200))
-            plt.show()
+            if not show:
+                plt.close()
+            else:
+                plt.show()
         
         save_pv = os.path.join(self.savedir, 'dispcurves')
         save_tmp = os.path.join(self.savedir, 'tmp')
@@ -640,7 +644,8 @@ class AmbientNoiseVelocity:
                      sta2=tr2.id, 
                      dist=dist, 
                      days_overlap=days_overlap, 
-                     savefig=fig_file)
+                     savefig=fig_file,
+                     show=show)
                 
             phase_vel[:,1] *= 1000 # converts to m/s
             np.save(dispcurve_file, phase_vel)
