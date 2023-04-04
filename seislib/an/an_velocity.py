@@ -438,8 +438,13 @@ class AmbientNoiseVelocity:
             This is automatically displayed and saved in $self.savedir/figures
             
         manual_picking : bool
-            If True, the user is required to pick each dispersion curve manually.
-            The picking is carried out through an interactive plot.
+            If `True`, the user is required to pick each dispersion curve manually.
+            The picking is carried out through an interactive plot
+            
+        show : bool
+            If `False`, the figure is closed before being shown. This is only
+            relevant when the user has the interactive plot enabled: in that
+            case, the figure will not be displayed. Default is `True`
             
         Returns
         -------
@@ -733,9 +738,13 @@ class AmbientNoiseVelocity:
             
         Returns
         -------
+        codes : ndarray of shape (n, 2)
+            Codes associated with the station pairs for which a dispersion curve
+            has been calculated
+            
         coords : ndarray of shape (n, 4)
-            Coordinates (lat1, lon1, lat2, lon2) of the station pairs for which
-            a dispersion curve has been calculated
+            Coordinates (lat1, lon1, lat2, lon2) of the station pairs corresponding
+            to the station codes
             
         measurements : ndarray of shape (n, f)
             Phase velocities calculated for each station pair in `coords` at
@@ -772,6 +781,7 @@ class AmbientNoiseVelocity:
         freq_size = 1 if np.isscalar(frequency) else len(frequency)
         measurements = np.zeros((files_size, freq_size))        
         coords = np.zeros((files_size, 4))
+        codes = []
         for i, file in enumerate(files):
             display_progress(no_files=files_size, done=i, verbose=self.verbose)
             freq, vel = np.load(os.path.join(src, file)).T
@@ -781,7 +791,8 @@ class AmbientNoiseVelocity:
             sta1 = '.'.join(code1.split('.')[:2])
             sta2 = '.'.join(code2.split('.')[:2])
             coords[i] = (*self.stations[sta1], *self.stations[sta2])
-        return coords, measurements
+            codes.append((sta1, sta2))
+        return np.array(codes), coords, measurements
     
     
     def plot_stations(self, ax=None, show=True, oceans_color='water', 
