@@ -876,7 +876,7 @@ class EQVelocity:
         """
         os.makedirs(savedir, exist_ok=True)
         period = np.array([period]) if np.isscalar(period) else np.array(period)
-        coords, velocity = self.interpolate_dispcurves(period)
+        codes, coords, velocity = self.interpolate_dispcurves(period)
         dist = SeismicTomography.gc_distance(*coords.T)
         wavelength = velocity * period
         ratios = dist.reshape(-1, 1) / wavelength
@@ -938,7 +938,7 @@ class EQVelocity:
         available dispersion curves as follows::
 
             period = [20, 30, 40, 50]
-            coords, measurements = eq.interpolate_dispcurves(period)  
+            codes, coords, measurements = eq.interpolate_dispcurves(period)  
         """   
         def display_progress(no_files, done, verbose=False):
             if verbose and not done % int(0.05*no_files + 1):

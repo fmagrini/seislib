@@ -710,7 +710,7 @@ class AmbientNoiseVelocity:
         """
         os.makedirs(savedir, exist_ok=True)
         period = np.array([period]) if np.isscalar(period) else np.array(period)
-        coords, velocity = self.interpolate_dispcurves(1/period)
+        codes, coords, velocity = self.interpolate_dispcurves(1/period)
         dist = SeismicTomography.gc_distance(*coords.T)
         wavelength = velocity * period
         ratios = dist.reshape(-1, 1) / wavelength
@@ -769,7 +769,7 @@ class AmbientNoiseVelocity:
         available dispersion curves as follows::
 
             frequency = [1/30, 1/20, 1/10, 1/5]
-            coords, measurements = an.interpolate_dispcurves(frequency)        
+            codes, coords, measurements = an.interpolate_dispcurves(frequency)        
         """
         def display_progress(no_files, done, verbose=False):
             if verbose and not done % int(0.05*no_files + 1):
