@@ -424,81 +424,7 @@ class _Grid():
         Returns
         -------
         `None`, if `show` is True, else a `GeoAxesSubplot` instance
-        """
-        def get_parallels(mesh):
-            parallels = defaultdict(list)
-            for parallel1, parallel2, meridian1, meridian2 in mesh:
-                for parallel in [parallel1, parallel2]:
-                    if not parallels[parallel]:
-                        parallels[parallel].append([meridian1, meridian2])
-                        continue
-                    for merid_list in parallels[parallel]:
-                        merid1, merid2 = merid_list
-                        if merid1>=meridian1 and merid2<=meridian2:
-                            merid_list[0] = meridian1
-                            merid_list[1] = meridian2
-                            break
-                        elif merid1<=meridian1 and merid2>=meridian2:
-                            merid_list[0] = merid1
-                            merid_list[1] = merid2
-                            break
-                        elif merid1<=meridian1 and meridian1<=merid2<=meridian2:
-                            merid_list[0] = merid1
-                            merid_list[1] = meridian2
-                            break
-                        elif meridian1<=merid1<=meridian2 and merid2>=meridian2:
-                            merid_list[0] = meridian1
-                            merid_list[1] = merid2
-                            break
-                    else:
-                        parallels[parallel].append([meridian1, meridian2])
-            return parallels
-                        
-        def drawmeridians(mesh, ax, **kwargs_plot):
-            drawn_meridians = defaultdict(set)
-            transform = ccrs.Geodetic()
-            
-            # Draw meridians
-            for lat1, lat2, lon1, lon2 in mesh:
-                ax.plot([lon1, lon1], 
-                        [lat1, lat2], 
-                        transform=transform,
-                        **kwargs_plot)
-                drawn_meridians[(lat1, lat2)].add(lon1)
-                if lon2 not in drawn_meridians[(lat1, lat2)]:
-                    ax.plot([lon2, lon2], 
-                            [lat1, lat2], 
-                            transform=transform,
-                            **kwargs_plot)
-                    drawn_meridians[(lat1, lat2)].add(lon2)
-            return
-        
-        def drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs_plot):
-            transform = ccrs.PlateCarree()
-            parallels = get_parallels(mesh)
-            for parallel in parallels:
-                for lon1, lon2 in parallels[parallel]:
-                    ax.plot([max(lon1, meridian_min), min(lon2, meridian_max)], 
-                            [parallel, parallel], 
-                            transform=transform,
-                            **kwargs_plot)
-            return
-        
-        
-        def get_map_boundaries(mesh):
-            latmin, lonmin = np.min(mesh, axis=0)[::2]
-            latmax, lonmax = np.max(mesh, axis=0)[1::2]
-            dlon = (lonmax - lonmin) * 0.01
-            dlat = (latmax - latmin) * 0.01
-            
-            lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
-            lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
-            latmin = latmin-dlat if latmin-dlat > -90 else latmin
-            latmax = latmax+dlat if latmax+dlat < 90 else latmax
-            
-            return (lonmin, lonmax, latmin, latmax)
-        
-    
+        """       
         if mesh is None:
             mesh = self.mesh
             
@@ -516,11 +442,10 @@ class _Grid():
                                lands_color=lands_color,
                                scale=scale,
                                edgecolor='none')
-        drawmeridians(mesh, ax, **kwargs)
-        drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs)
-        
+        self._drawmeridians(mesh, ax, **kwargs)
+        self._drawparallels(mesh, ax, meridian_min, meridian_max, **kwargs)
         if map_boundaries is None and bound_map:
-            map_boundaries = get_map_boundaries(mesh)
+            map_boundaries = self._get_map_boundaries(mesh)
         if map_boundaries is not None:
             ax.set_extent(map_boundaries, ccrs.PlateCarree())     
         # Draw parallels
@@ -528,6 +453,81 @@ class _Grid():
             plt.show()
         return ax
 
+
+    def _get_parallels(self, mesh):
+        parallels = defaultdict(list)
+        for parallel1, parallel2, meridian1, meridian2 in mesh:
+            for parallel in [parallel1, parallel2]:
+                if not parallels[parallel]:
+                    parallels[parallel].append([meridian1, meridian2])
+                    continue
+                for merid_list in parallels[parallel]:
+                    merid1, merid2 = merid_list
+                    if merid1>=meridian1 and merid2<=meridian2:
+                        merid_list[0] = meridian1
+                        merid_list[1] = meridian2
+                        break
+                    elif merid1<=meridian1 and merid2>=meridian2:
+                        merid_list[0] = merid1
+                        merid_list[1] = merid2
+                        break
+                    elif merid1<=meridian1 and meridian1<=merid2<=meridian2:
+                        merid_list[0] = merid1
+                        merid_list[1] = meridian2
+                        break
+                    elif meridian1<=merid1<=meridian2 and merid2>=meridian2:
+                        merid_list[0] = meridian1
+                        merid_list[1] = merid2
+                        break
+                else:
+                    parallels[parallel].append([meridian1, meridian2])
+        return parallels
+                   
+    
+    def _drawmeridians(self, mesh, ax, **kwargs_plot):
+        drawn_meridians = defaultdict(set)
+        transform = ccrs.Geodetic()
+        
+        # Draw meridians
+        for lat1, lat2, lon1, lon2 in mesh:
+            ax.plot([lon1, lon1], 
+                    [lat1, lat2], 
+                    transform=transform,
+                    **kwargs_plot)
+            drawn_meridians[(lat1, lat2)].add(lon1)
+            if lon2 not in drawn_meridians[(lat1, lat2)]:
+                ax.plot([lon2, lon2], 
+                        [lat1, lat2], 
+                        transform=transform,
+                        **kwargs_plot)
+                drawn_meridians[(lat1, lat2)].add(lon2)
+        return
+    
+    
+    def _drawparallels(self, mesh, ax, meridian_min, meridian_max, **kwargs_plot):
+        transform = ccrs.PlateCarree()
+        parallels = self._get_parallels(mesh)
+        for parallel in parallels:
+            for lon1, lon2 in parallels[parallel]:
+                ax.plot([max(lon1, meridian_min), min(lon2, meridian_max)], 
+                        [parallel, parallel], 
+                        transform=transform,
+                        **kwargs_plot)
+        return
+
+    
+    def _get_map_boundaries(self, mesh):
+        latmin, lonmin = np.min(mesh, axis=0)[::2]
+        latmax, lonmax = np.max(mesh, axis=0)[1::2]
+        dlon = (lonmax - lonmin) * 0.01
+        dlat = (latmax - latmin) * 0.01
+        
+        lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
+        lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
+        latmin = latmin-dlat if latmin-dlat > -90 else latmin
+        latmax = latmax+dlat if latmax+dlat < 90 else latmax
+        
+        return (lonmin, lonmax, latmin, latmax)
 
 
 class EqualAreaGrid(_Grid):
