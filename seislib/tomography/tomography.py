@@ -1718,5 +1718,100 @@ class SeismicTomography:
                                           **kwargs)
 
 
+
+    def plot_stations(self, ax=None, show=True, oceans_color='water', 
+                      lands_color='land', edgecolor='k', projection='Mercator',
+                      resolution='110m', **kwargs):
+        """ Creates a maps of seismic receivers
+        
+        Parameters
+        ----------
+
+        ax : cartopy.mpl.geoaxes.GeoAxesSubplot
+            If not `None`, the receivers are plotted on the `GeoAxesSubplot` instance. 
+            Otherwise, a new figure and `GeoAxesSubplot` instance is created
+            
+        show : bool
+            If `True`, the plot is shown. Otherwise, a `GeoAxesSubplot` instance is
+            returned. Default is `True`
+            
+        oceans_color, lands_color : str
+            Color of oceans and lands. The arguments are ignored if ax is not
+            None. Otherwise, they are passed to `cartopy.feature.NaturalEarthFeature` 
+            (to the argument 'facecolor'). Defaults are 'water' and 'land'
+            
+        edgecolor : str
+            Color of the boundaries between, e.g., lakes and land. The argument 
+            is ignored if ax is not None. Otherwise, it is passed to 
+            cartopy.feature.NaturalEarthFeature (to the argument 'edgecolor'). 
+            Default is 'k' (black)
+            
+        projection : str
+            Name of the geographic projection used to create the `GeoAxesSubplot`.
+            (Visit the `cartopy website 
+            <https://scitools.org.uk/cartopy/docs/v0.15/crs/projections.html>`_ 
+            for a list of valid projection names.) If ax is not None, `projection` 
+            is ignored. Default is 'Mercator'
+        
+        resolution : {'10m', '50m', '110m'}
+            Resolution of the Earth features displayed in the figure. Passed to
+            `cartopy.feature.NaturalEarthFeature`. Default is '110m'
+                    
+        kwargs : 
+            Additional keyword arguments passed to `matplotlib.pyplot.scatter`
+            
+            
+        Returns
+        -------
+        If `show` is True
+            None
+
+        Otherwise 
+            `ax`, i.e. the `GeoAxesSubplot`
+        """        
+        import cartopy.crs as ccrs
+        from seislib.plotting import add_earth_features
+        
+        def get_map_boundaries(coords):
+            latmin, latmax = np.min(coords[:,0]), np.max(coords[:,0])
+            lonmin, lonmax = np.min(coords[:,1]), np.max(coords[:,1])
+            dlat = (latmax - latmin) * 0.03
+            dlon = (lonmax - lonmin) * 0.03
+            lonmin = lonmin-dlon if lonmin-dlon > -180 else lonmin
+            lonmax = lonmax+dlon if lonmax+dlon < 180 else lonmax
+            latmin = latmin-dlat if latmin-dlat > -90 else latmin
+            latmax = latmax+dlat if latmax+dlat < 90 else latmax
+            return (lonmin, lonmax, latmin, latmax)
+        
+        
+        stations = np.unique(np.reshape(self.data_coords, (-1, 2)), axis=0)
+        transform = ccrs.PlateCarree()
+        if ax is None:
+            projection = eval('ccrs.%s()'%projection)
+            fig = plt.figure()
+            ax = fig.add_subplot(1, 1, 1, projection=projection)
+            map_boundaries = get_map_boundaries(stations)
+            add_earth_features(ax, 
+                               scale=resolution,
+                               oceans_color=oceans_color, 
+                               edgecolor=edgecolor,
+                               lands_color=lands_color)
+            ax.set_extent(map_boundaries, transform)
+            
+        marker = kwargs.pop('marker', '^')
+        zorder = kwargs.pop('zorder', 100)
+        s = kwargs.pop('s', 100)
+        ax.scatter(*stations.T[::-1], 
+                   marker=marker, 
+                   transform=transform, 
+                   zorder=zorder, 
+                   s=s, 
+                   **kwargs) 
+        if show:
+            plt.show()
+        else:
+            return ax
+
+
         
         
