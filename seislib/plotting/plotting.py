@@ -52,43 +52,6 @@ def add_inset_axis(axis, rect, polar=False):
     figwidth, figheight = trans([width,height]) - trans([0,0])
     return fig.add_axes([figleft, figbottom, figwidth, figheight], polar=polar)
 
-
-def lower_threshold_projection(projection, thresh=1e3, **kwargs):
-    """ 
-    Effective work around to get a higher-resolution curvature of the 
-    great-circle paths to be plotted in a given projection. This is useful 
-    when plotting the great-circle paths in a relatively small region.
-    
-    Parameters
-    ----------
-    projection : class
-        Should be one of the cartopy projection classes, e.g., 
-        `cartopy.crs.Mercator`
-        
-    thresh : float
-        Smaller values achieve higher resolutions. Default is 1e3
-        
-    Returns
-    ------- 
-    Instance of the input (`projection`) class
-    
-    
-    Examples
-    --------
-    >>> proj = lower_threshold_projection(cartopy.crs.Mercator, 
-    ...                                   thresh=1e3)
-    
-    Note that the `cartopy.crs.Mercator` was not initialized (i.e., 
-    there are no brackets after the word `Mercator`)
-    """
-    class LowerThresholdProjection(projection):
-        
-        @property
-        def threshold(self):
-            return thresh
-        
-    return LowerThresholdProjection(**kwargs)
-
     
 def add_earth_features_GSHHS(ax, scale='auto', oceans_color='aqua', 
                              lands_color='coral', edgecolor='face'):
@@ -655,11 +618,22 @@ def plot_events(lat, lon, mag=None, ax=None, show=True, oceans_color='water',
         return ax
     
 
-def plot_rays(data_coords, ax=None, show=True, stations_color='r', 
-              paths_color='k', oceans_color='water', lands_color='land', 
-              edgecolor='k', stations_alpha=None, paths_alpha=0.3, 
-              projection='Mercator', resolution='110m', map_boundaries=None, 
-              bound_map=True, paths_width=0.2, **kwargs):
+def plot_rays(data_coords, 
+              ax=None, 
+              show=True, 
+              stations_color='r', 
+              paths_color='k', 
+              oceans_color='water', 
+              lands_color='land', 
+              edgecolor='k', 
+              stations_alpha=None, 
+              paths_alpha=0.3, 
+              projection='Mercator', 
+              resolution='110m', 
+              map_boundaries=None, 
+              bound_map=True, 
+              paths_width=0.2, 
+              **kwargs):
     """ 
     Utility function to display the great-circle paths associated with pairs
     of data coordinates
@@ -739,7 +713,8 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         return (lonmin, lonmax, latmin, latmax)        
     
     if ax is None:
-        projection = lower_threshold_projection(eval('ccrs.%s'%projection))
+        projection = eval('ccrs.%s()'%projection)
+        projection.threshold = 1e3
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
         add_earth_features(ax, 
@@ -789,12 +764,27 @@ def plot_rays(data_coords, ax=None, show=True, stations_color='r',
         return ax    
 
 
-def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
-                      vmin=None, vmax=None, stations_color='k', 
-                      oceans_color='lightgrey', lands_color='w', edgecolor='k', 
-                      stations_alpha=None, paths_alpha=None, resolution='110m',
-                      projection='Mercator', map_boundaries=None, bound_map=True, 
-                      paths_width=1, colorbar=True, cbar_dict={}, **kwargs):
+def plot_colored_rays(data_coords, 
+                      c, 
+                      ax=None, 
+                      show=True, 
+                      cmap=scm.roma,
+                      vmin=None, 
+                      vmax=None, 
+                      stations_color='k', 
+                      oceans_color='lightgrey', 
+                      lands_color='w', 
+                      edgecolor='k', 
+                      stations_alpha=None, 
+                      paths_alpha=None, 
+                      resolution='110m',
+                      projection='Mercator', 
+                      map_boundaries=None, 
+                      bound_map=True, 
+                      paths_width=1, 
+                      colorbar=True, 
+                      cbar_dict={}, 
+                      **kwargs):
     """ 
     Utility function to display the great-circle paths associated with pairs
     of data coordinates, colored according to their respective measurements
@@ -917,7 +907,8 @@ def plot_colored_rays(data_coords, c, ax=None, show=True, cmap=scm.roma,
 
     
     if ax is None:
-        projection = lower_threshold_projection(eval('ccrs.%s'%projection))
+        projection = eval('ccrs.%s()'%projection)
+        projection.threshold = 1e3
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection=projection)
         add_earth_features(ax, 
