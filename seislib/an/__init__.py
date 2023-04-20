@@ -42,12 +42,10 @@ calculate
     but not to its amplitude, the exponential damping term is neglected, simplifying 
     the problem of retrieving `c` from the data. This approach resulted in numerous 
     successful applications of velocity imaging and monitoring, and can nowadays be 
-    considered standard in ambient-noise tomography [3]_. (See 
-    :mod:`seislib.an.an_velocity`)
+    considered standard in ambient-noise tomography [3]_.
 - Rayleigh-wave attenuation:
     where the attenuation coefficient is retrieved by nonlinear inversion based on 
-    preliminary measurements of phase velocity [2]_. (See 
-    :mod:`seislib.an.an_attenuation`)
+    preliminary measurements of phase velocity [2]_.
 
 
 
