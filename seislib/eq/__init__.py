@@ -39,7 +39,7 @@ References
     of phase velocity, GJI
 
 """
-from .eq_velocity import *
-from .eq_downloader import *
+from ._eq_velocity import *
+from ._eq_downloader import *
 
 

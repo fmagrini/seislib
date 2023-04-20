@@ -23,5 +23,5 @@ a given block of the parameterization into four sub-blocks.
 .. [1] Boschi & Dziewonski 1999, High-and low-resolution images of the Earth's mantle: 
     Implications of different approaches to tomographic modeling, JGR
 """
-from .grid import *
-from .tomography import *
+from ._grid import *
+from ._tomography import *

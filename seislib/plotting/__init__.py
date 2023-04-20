@@ -26,4 +26,4 @@ and allows one to
 - Combine the above features to obtain high-quality figures.
 
 """
-from .plotting import *
+from ._plotting import *

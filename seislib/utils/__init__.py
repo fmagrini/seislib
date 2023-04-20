@@ -27,5 +27,5 @@ processing and analysing seismic data. These mainly build on
   physical parameters defined on equal-area grids
   
 """
-from .utils import *
+from ._utils import *
 
