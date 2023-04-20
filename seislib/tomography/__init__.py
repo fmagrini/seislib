@@ -25,3 +25,11 @@ a given block of the parameterization into four sub-blocks.
 """
 from ._grid import *
 from ._tomography import *
+
+
+__all__ = [
+    'EqualAreaGrid',
+    'RegularGrid',
+    'SeismicTomography'
+    ]
+

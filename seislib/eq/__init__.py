@@ -42,4 +42,4 @@ References
 from ._eq_velocity import *
 from ._eq_downloader import *
 
-
+__all__ = ['EQDownloader', 'EQVelocity', 'TwoStationMethod']

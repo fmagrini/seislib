@@ -27,3 +27,20 @@ and allows one to
 
 """
 from ._plotting import *
+
+__all__ = [
+    'add_earth_features',
+    'add_earth_features_GSHHS',
+    'add_inset_axis',
+    'colormesh',
+    'contour',
+    'contourf',
+    'make_colorbar',
+    'plot_colored_rays',
+    'plot_events',
+    'plot_map',
+    'plot_rays',
+    'plot_stations',
+    'scientific_label',    
+    ]
+

@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 @author: Fabrizio Magrini
-@email1: fabrizio.magrini@uniroma3.it
-@email2: fabrizio.magrini90@gmail.com
 """
 
 

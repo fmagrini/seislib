@@ -863,7 +863,7 @@ class RegularGrid(_Grid):
         longitudinal and latitudinal steps characterizing the grid
         
         
-    latmin, lonmin, latmax, lonmax : float, optional
+    latmin, lonmin, latmax, lonmax : float
         Boundaries (in degrees) of the grid
         
     verbose : bool
@@ -947,8 +947,7 @@ class RegularGrid(_Grid):
     To display the grid, use the :meth:`plot` method
     >>> grid.plot(projection='Mercator')
     """
-    def __init__(self, cell_size, latmin=None, lonmin=None, latmax=None, 
-                 lonmax=None, verbose=True):
+    def __init__(self, cell_size, latmin, lonmin, latmax, lonmax, verbose=True):
         self.verbose = verbose
         if isinstance(cell_size, Iterable):
             dlon, dlat = cell_size
@@ -982,7 +981,7 @@ class RegularGrid(_Grid):
         dlon, dlat : float
             Longitudinal and latitudinal steps characterizing the grid
             
-        latmin, lonmin, latmax, lonmax : float, optional
+        latmin, lonmin, latmax, lonmax : float
             Boundaries (in degrees) of the grid
         
         Returns
@@ -992,11 +991,6 @@ class RegularGrid(_Grid):
             meridian1, meridian2. The grid is rounded to the 4rd decimal digit,
             for improved numerical stability in most applications
         """
-        latmin = -90 if latmin is None else latmin
-        latmax = +90 if latmax is None else latmax
-        lonmin = -180 if lonmin is None else lonmin
-        lonmax = +180 if lonmax is None else lonmax
-        
         mesh = []
         for lat1 in np.arange(latmin, latmax, dlat)[::-1]:
             lat2 = lat1 + dlat
