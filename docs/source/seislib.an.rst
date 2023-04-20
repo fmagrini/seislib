@@ -5,24 +5,24 @@
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: seislib.an.an_downloader
+.. automodule:: seislib.an._an_downloader
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: seislib.an.an_velocity
+.. automodule:: seislib.an._an_velocity
    :members:
    :undoc-members:
    :show-inheritance:
    
    
-.. automodule:: seislib.an.an_attenuation
+.. automodule:: seislib.an._an_attenuation
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seislib.an.an_processing
+.. automodule:: seislib.an._an_processing
    :members:
    :undoc-members:
    :show-inheritance:

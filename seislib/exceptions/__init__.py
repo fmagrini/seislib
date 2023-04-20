@@ -1,3 +1,3 @@
 
-from .exceptions import *
+from ._exceptions import *
 

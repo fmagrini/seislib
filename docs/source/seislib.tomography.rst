@@ -5,13 +5,13 @@
    :undoc-members:
    :show-inheritance:
    
-.. automodule:: seislib.tomography.grid
+.. automodule:: seislib.tomography._grid
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-.. automodule:: seislib.tomography.tomography
+.. automodule:: seislib.tomography._tomography
    :members:
    :undoc-members:
    :show-inheritance:
