@@ -5,7 +5,7 @@
    :undoc-members:
    :show-inheritance:
    
-.. automodule:: seislib.plotting.plotting
+.. automodule:: seislib.plotting._plotting
    :members:
    :undoc-members:
    :show-inheritance:

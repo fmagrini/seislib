@@ -2,9 +2,9 @@
 Installation
 ============
 
-To use seislib, make sure you have all the **dependences** installed, i.e., **obspy**, 
-**cartopy**, and **cython**. We recommend installing such dependences using conda (see below).
-You will also need **gcc** or equivalent, to compile the cython parts of the library.
+To use ``seislib``, make sure you have all the **dependences** installed, i.e., ``obspy``, 
+``cartopy``, and ``cython``. We recommend installing such dependences using conda (see below).
+You will also need ``gcc`` or equivalent, to compile the cython parts of the library.
 
 .. code-block:: console
 
@@ -14,7 +14,7 @@ You will also need **gcc** or equivalent, to compile the cython parts of the lib
    ~$ conda install -c conda-forge cartopy=0.18
    ~$ conda install -c anaconda cython
 
-Note that we installed Python 3.9 (rather than Python 3.10) since numpy's version 1.22 currently leads to compatibility issues. Once the above dependences have been installed, you can proceed with the installation of **seislib**.
+Note that we installed Python 3.9 (rather than Python 3.10) since numpy's version 1.22 currently leads to compatibility issues. Once the above dependences have been installed, you can proceed with the installation of ``seislib``.
 
 .. code-block:: console
 
