@@ -1,9 +1,6 @@
 
 
 .. automodule:: seislib.eq
-   :members:
-   :undoc-members:
-   :show-inheritance:
    
 
 .. automodule:: seislib.eq._eq_downloader

@@ -1,9 +1,7 @@
 
 
 .. automodule:: seislib.an
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
 
 .. automodule:: seislib.an._an_downloader
    :members:
