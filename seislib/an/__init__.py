@@ -69,3 +69,7 @@ from ._an_velocity import *
 from ._an_attenuation import *
 from ._an_downloader import *
 
+__all__ = ['AmbientNoiseVelocity']
+
+
+
