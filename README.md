@@ -2,6 +2,9 @@
   <img width="90%" src="https://github.com/fmagrini/seislib/raw/master/docs/source/_static/seislib_logo.png">
 </p>
 
+[![PyPI version](https://img.shields.io/pypi/v/seislib?logo=pypi&style=flat-square&color=cae9ff&labelColor=f8f9fa)](https://pypi.org/project/seislib/)
+[![Documentation Status](https://img.shields.io/readthedocs/seislib?logo=readthedocs&style=flat-square&color=fed9b7&labelColor=f8f9fa&logoColor=eaac8b)](https://seislib.readthedocs.io/en/latest/?badge=latest)
+
 SeisLib is a Python package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
 
