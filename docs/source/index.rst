@@ -6,7 +6,7 @@
 Welcome to SeisLib's documentation!
 ===================================
 
-**seislib** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
+``seislib`` is a Python package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
 
 **Seismic Ambient Noise Interferometry**
