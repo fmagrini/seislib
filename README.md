@@ -1,36 +1,38 @@
-# **SeisLib: Multi-Scale Seismic Imaging with Python**
+<p align="center">
+  <img width="90%" src="https://github.com/fmagrini/seislib/raw/master/docs/source/_static/seislib_logo.png">
+</p>
 
-***SeisLib*** is a Python (and Cython) package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
+SeisLib is a Python package that allows for obtaining seismic images of the sub-surface from the local to the global scale. It is the result of a long-term effort of our team to make efficient and open source some of the Python codes behind our seismological publications over the last few years. The library is in rapid expansion and, at present, includes:
 
 
 ## **Seismic Ambient Noise Interferometry**
-*  Automated **download** of continuous seismograms
-* **Fast cross-correlation** of continuous seismograms in the **frequency domain**
-* Extraction of frequency-dependent **phase velocities** for both **Rayleigh and Love waves**, based on pairs of receivers
-* Retrieval of frequency-dependent **Rayleigh-wave attenuation coefficient**, based on dense seismic arrays
+*  Automated download of continuous seismograms
+* Fast cross-correlation of continuous seismograms in the frequency domain
+* Extraction of frequency-dependent phase velocities for both Rayleigh and Love waves based on pairs of receivers
+* Retrieval of frequency-dependent Rayleigh-wave attenuation coefficient based on dense seismic arrays
 
 ## **Surface-Wave Tomography based on Teleseismic Earthquakes**
-* Automated **download** of seismograms recording strong earthquakes
-* Retrieval of frequency-dependent **Rayleigh and Love phase velocities**, based on pairs of receivers lying on the same great-circle path as the epicentre (**Two-Station Method**)
+* Automated download of seismograms recording strong earthquakes
+* Retrieval of frequency-dependent Rayleigh and Love phase velocities based on pairs of receivers lying on the same great-circle path as the epicentre (Two-Station Method)
 
 ## **Least-Squares Imaging of Lateral Variations in Surface-Wave Velocity**
-* **Equal-area and regular parameterizations**, suited for data sets collected at local, regional, and global scale
-* **Adaptive parameterizations**, with finer resolution in the areas characterized by relatively high density of measurements
-* **Linearized inversion** of velocity measurements **based on ray theory**
-* **Computational speed optimized** (via Cython) for very **large data sets**
-* Possibility to perform **L-curve analyses and resolution tests (e.g., spike, checkerboard)**
+* Equal-area and regular parameterizations, suited for data sets collected at local, regional, and global scale
+* Adaptive parameterizations, with finer resolution in the areas characterized by relatively high density of measurements
+* Linearized inversion of velocity measurements based on ray theory
+* Computational speed optimized (via Cython) for very large data sets
+* Possibility to perform L-curve analyses and resolution tests (e.g., spike, checkerboard)
 
 <p>&nbsp;</p>
 
-# ***Documentation***
+## **Documentation**
 
 For more information on SeisLib, make sure to visit our [wiki page](https://seislib.readthedocs.io/en/latest/)!
 
 <p>&nbsp;</p>
 
-# ***Installation***
+## **Installation**
 
-First, make sure you have all the **dependences** installed, i.e., ***obspy***, ***cartopy***, and ***cython***. We recommend installing such dependences using conda (see below). You will also need ***gcc*** or equivalent, to compile the cython parts of the library.
+First, make sure you have all the dependencies installed, i.e., ``obspy``, ``cartopy``, and ``cython``. We recommend installing such dependences using conda (see below). You will also need ``gcc`` or equivalent, to compile the cython parts of the library.
 
 ```bash
 conda create -n seislib python=3.9 numpy=1.20
@@ -41,7 +43,7 @@ conda install -c anaconda cython
 ```
 
 
-Note that we installed Python 3.9 (rather than Python 3.10) since numpy's version 1.22 currently leads to compatibility issues. Once the above dependences have been installed, you can proceed with the installation of ***seislib***. 
+Note that we installed Python 3.9 (rather than Python 3.10) since numpy's version 1.22 currently leads to compatibility issues. Once the above dependences have been installed, you can proceed with the installation of ``seislib``. 
 
 ```
 pip install seislib
@@ -58,7 +60,7 @@ The last command will compile the Cython files. If you work on an anaconda envir
 
 <p>&nbsp;</p>
 
-# ***References***
+## **References**
 Specific to the Python package:
 - Magrini, F., Lauro, S., Kästle, E. & Boschi, L., 2022. Surface-wave tomography using SeisLib: a Python package for multi-scale seismic imaging. *Geophys. J. Int.*, ggac236, https://doi.org/10.1093/gji/ggac236
 
