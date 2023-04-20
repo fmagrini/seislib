@@ -5,9 +5,7 @@ conda:
     environment: docs/environment.yaml
 
 build:
-  os: ubuntu-22.04
-  tools:
-    python: "mambaforge-4.10"
+   image: latest
 
 # This part is necessary otherwise the project is not built
 python:
