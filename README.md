@@ -25,6 +25,10 @@ SeisLib is a Python package that allows for obtaining seismic images of the sub-
 * Computational speed optimized (via Cython) for very large data sets
 * Possibility to perform L-curve analyses and resolution tests (e.g., spike, checkerboard)
 
+<p align="center">
+  <img width="100%" src="https://github.com/fmagrini/seislib/raw/master/docs/source/_static/lib_diagram.png">
+</p>
+
 <p>&nbsp;</p>
 
 ## **Documentation**
