@@ -25,7 +25,10 @@ Welcome to SeisLib's documentation!
 	- Linearized inversion of velocity measurements based on ray theory
 	- Computational speed optimized (via Cython) for very large data sets
 	- Possibility to perform L-curve analyses and resolution tests (e.g., spike, checkerboard)
-	
+
+.. image:: _static/lib_diagram.png
+   :align: center
+
 .. note::
 
    This project is under active development.
