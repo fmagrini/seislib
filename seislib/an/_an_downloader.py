@@ -203,6 +203,8 @@ class ANDownloader:
     
     We initialize the ANDownloader instance, and then start it::
         
+        from seislib.an import ANDownloader
+        
         downloader = ANDownloader(savedir=/path/to/directory, 
                                   inventory_name='II.xml',
                                   provider='iris',
