@@ -126,9 +126,19 @@ class SeismicTomography:
         function call :meth:`add_data`
         
     A : ndarray of shape (n, m)
-        Where n is the number of data, m is the number of parameters (i.e.,
+        Jacobian matrix. Where n is the number of data, m is the number of 
+        parameters (i.e., number of rows in self.grid.mesh). Only available 
+        after function call :meth:`compile_coefficients`
+        
+    R : ndarray of shape (m, m)
+        Roughness operator, where m is the number of parameters (i.e., number 
+        of rows in self.grid.mesh). Only available after function call 
+        :meth:`solve`
+    
+    L : ndarray of shape (m, m)
+        Norm damping operator, where m is the number of parameters (i.e., 
         number of rows in self.grid.mesh). Only available after function call 
-        :meth:`compile_coefficients`
+        :meth:`solve`
             
     
     Examples
@@ -699,8 +709,11 @@ class SeismicTomography:
                                               hitcounts=hitcounts,
                                               region_to_refine=region_to_refine)
         self.grid.update_grid_params(np.degrees(newmesh), refined=True)
-        self.compile_coefficients(refine=True, coeff_matrix=A, 
+        self.compile_coefficients(refine=True, 
+                                  coeff_matrix=A, 
                                   keep_empty_cells=keep_empty_cells)
+        if hasattr(self, 'R'):
+            del self.R
 
     
     def raypaths_per_pixel(self):
@@ -752,6 +765,64 @@ class SeismicTomography:
         self.velocity = self.velocity[idata]
         del self.A
         self.update_data_info()
+    
+    
+    @staticmethod
+    def roughness_operator(mesh, return_sparse=True):
+        r"""
+        Computes the roughness operator associated with the parameterization
+        
+        Parameters
+        ----------
+        mesh : ndarray, shape (n, 4)
+            Grid cells in seislib format, consisting of n pixels described by 
+            lat1, lat2, lon1, lon2 (in degrees). If None (default), the mesh 
+            stored in the :class:`SeismicTomography` instance is used
+            
+        return_sparse : bool
+            If `True`, the matrix of roughness is converted to 
+            `scipy.sparse.csr_matrix`
+            
+        Returns
+        -------
+        ndarray of shape (n,n)
+            Roughness operator
+        """
+        mesh = np.radians(mesh)
+        R_lat, R_lon = _derivatives_lat_lon(mesh)
+        if return_sparse:
+            R_lat = scipy.sparse.csr_matrix(R_lat)
+            R_lon = scipy.sparse.csr_matrix(R_lon)
+        return R_lat.T.dot(R_lat) + R_lon.T.dot(R_lon)
+    
+    
+    @staticmethod
+    def norm_operator(mesh, return_sparse=True):
+        r"""
+        Computes the norm damping operator associated with the parameterization
+        
+        Parameters
+        ----------
+        mesh : ndarray, shape (n, 4)
+            Grid cells in seislib format, consisting of n pixels described by 
+            lat1, lat2, lon1, lon2 (in degrees). If None (default), the mesh 
+            stored in the :class:`SeismicTomography` instance is used
+            
+        return_sparse : bool
+            If `True`, the matrix of roughness is converted to 
+            `scipy.sparse.csr_matrix`
+            
+        Returns
+        -------
+        ndarray of shape (n,n)
+            Norm damping operator
+        """
+        mesh = np.radians(mesh)
+        L = np.identity(mesh.shape[0])
+        L *= np.diff(mesh[:, :2])**2
+        if return_sparse:
+            L = scipy.sparse.csr_matrix(L)
+        return L
     
     
     def solve(self, A=None, slowness=None, refvel=None, mesh=None, ndamp=0, 
@@ -808,42 +879,50 @@ class SeismicTomography:
         -------
         ndarray of shape (n,)
             Least-square solution (slowness, in s/m)
-        """
-        
-        def norm_damping(mesh, damp):
-            I = np.identity(mesh.shape[0])
-            I *= np.diff(mesh[:, :2])**2
-            return scipy.sparse.csr_matrix(I * damp**2)
-        
-        def roughness_damping(mesh, damp):
-            G_lat, G_lon = _derivatives_lat_lon(mesh)
-            G_lat = scipy.sparse.csr_matrix(G_lat)
-            G_lon = scipy.sparse.csr_matrix(G_lon)
-            return damp**2 * (G_lat.T.dot(G_lat) + G_lon.T.dot(G_lon))
-                        
+        """                       
         A = A if A is not None else self.A
         if not isinstance(A, scipy.sparse.csr_matrix):
             A = scipy.sparse.csr_matrix(A)
         slowness = slowness if slowness is not None else 1/self.velocity
         refvel = refvel if refvel is not None else self.refvel
-        mesh = np.radians(mesh) if mesh is not None else np.radians(self.grid.mesh)
+        mesh = mesh if mesh is not None else self.grid.mesh
         x0 = np.ones(A.shape[1]) * 1/refvel
         residuals = slowness - A.dot(x0)
         lhs = A.T @ A
         if ndamp > 0:
-            lhs += norm_damping(mesh=mesh, damp=ndamp)
+            if hasattr(self, 'L'):
+                L = self.L
+            else:
+                L = self.norm_operator(mesh)
+                self.L = L
+            lhs += ndamp**2 * L
         if rdamp > 0:
-            lhs += roughness_damping(mesh=mesh, damp=rdamp)
+            if hasattr(self, 'R'):
+                R = self.R 
+            else:
+                R = self.roughness_operator(mesh)
+                self.R = R
+            lhs += rdamp**2 * R
         rhs = A.T.dot(residuals)  
 #        x = x0 + scipy.linalg.solve(lhs.todense(), rhs)
 #        if return_resmatrix:
 #            resmatrix = scipy.linalg.inv(lhs.todense()) @ A.T @ A
 #            return x, resmatrix
-        return x0 + scipy.linalg.solve(lhs.todense(), rhs)
+        # return x0 + scipy.linalg.solve(lhs.todense(), rhs)
+        return x0 + scipy.sparse.linalg.minres(lhs, rhs)[0]
 
     
-    def lcurve(self, A=None, slowness=None, refvel=None, mesh=None, damping='roughness', 
-               n=20, damp_min=1e-5, damp_max=1e-1, logspace=True, show=True):
+    def lcurve(self, 
+               A=None, 
+               slowness=None, 
+               refvel=None, 
+               mesh=None, 
+               damping='roughness', 
+               n=20, 
+               damp_min=1e-5, 
+               damp_max=1e-1, 
+               logspace=True, 
+               show=True):
         """ L-curve analysis. The function calls iteratively the `solve` method
         
         Parameters
@@ -936,10 +1015,7 @@ class SeismicTomography:
             damp_range = np.linspace(damp_min, damp_max, n)
         result = []
         if damping == 'roughness':
-            G_lat, G_lon = _derivatives_lat_lon(mesh)
-            G_lat = scipy.sparse.csr_matrix(G_lat)
-            G_lon = scipy.sparse.csr_matrix(G_lon)
-            G = (G_lat.T.dot(G_lat) + G_lon.T.dot(G_lon))
+            R = getattr(self, 'R', self.roughness_operator(mesh))
         for damp in damp_range:
             if damping == 'roughness':
                 ndamp = 0
@@ -947,10 +1023,14 @@ class SeismicTomography:
             else:
                 ndamp = damp
                 rdamp = 0     
-            x = self.solve(A=A, slowness=slowness, mesh=mesh, ndamp=ndamp, 
-                           rdamp=rdamp, refvel=refvel)
+            x = self.solve(A=A, 
+                           slowness=slowness, 
+                           mesh=mesh, 
+                           ndamp=ndamp, 
+                           rdamp=rdamp, 
+                           refvel=refvel)
             residual_norm = np.linalg.norm(slowness - A.dot(x))
-            yaxis = np.linalg.norm(x) if ndamp else np.linalg.norm(G.dot(x))
+            yaxis = np.linalg.norm(x) if ndamp else np.linalg.norm(R.dot(x))
             result.append((residual_norm, yaxis))
         if show:
             ylabel = r'$||$ G $\cdot$ x $||$' if damping=='roughness' else r'$||$ x $||$'
