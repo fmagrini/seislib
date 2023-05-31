@@ -886,7 +886,7 @@ class SeismicTomography:
         slowness = slowness if slowness is not None else 1/self.velocity
         refvel = refvel if refvel is not None else self.refvel
         mesh = mesh if mesh is not None else self.grid.mesh
-        x0 = np.ones(A.shape[1]) * 1/refvel
+        x0 = np.full(A.shape[1], 1/refvel)
         residuals = slowness - A.dot(x0)
         lhs = A.T @ A
         if ndamp > 0:

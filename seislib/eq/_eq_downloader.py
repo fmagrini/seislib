@@ -953,7 +953,7 @@ class EQDownloader:
                 event.write(os.path.join(outdir, '%s.xml'%str(otime.timestamp)),
                             format='quakeml')
                 done_file = os.path.join(savedir, str(otime.timestamp), 'DONE.txt')
-                print(os.path.join(savedir, str(otime.timestamp)))
+
                 done_stations = get_done_stations(savedir, str(otime.timestamp))
                 if self.verbose:
                     print('EVENT:', otime.isoformat().split('T')[0])
