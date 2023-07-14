@@ -12,6 +12,7 @@ earthquakes, through the two-station method.
 
 import os
 import shutil
+import random
 import itertools as it
 from collections import defaultdict
 import numpy as np
@@ -641,6 +642,7 @@ class EQVelocity:
                            prior_sigma_10s=0.7,
                            prior_sigma_200s=0.3, 
                            manual_picking=False,
+                           shuffle=False,
                            plotting=False,
                            show=True):
         """
@@ -715,7 +717,13 @@ class EQVelocity:
             values give more "weight" to the reference curve in the picking of
             the phase velocities. Defaults are 0.7 and 0.3. See
             :meth:`TwoStationMethod.extract_dispcurve`. 
-            
+        
+        shuffle : bool
+            If `True`, the dispersion curves are calculated following a random
+            order. This is indicated for large data sets that need to be
+            processed through multiple processes to decrease the computational
+            time.
+        
         plotting : bool
             If `True`, a figure is created for each retrieved dispersion curve.
             This is automatically displayed and saved in $self.savedir/figures
@@ -745,6 +753,13 @@ class EQVelocity:
             dist /= 1000.
             return dist, az, baz  
         
+        def triplets_iterator(shuffle=False):
+            triplets = [(k, v) for k, v in self.triplets.items()]
+            if shuffle:
+                random.shuffle(triplets)
+            for triplet in triplets:
+                yield triplet
+            
 
         save_dispersion = os.path.join(self.savedir, 'dispersion')
         save_pv = os.path.join(self.savedir, 'dispcurves')
@@ -769,7 +784,8 @@ class EQVelocity:
                                min_no_wavelengths=min_no_wavelengths, 
                                approach=approach)
         done = load_done(save_done)
-        for ndone, ((sta1, sta2), events) in enumerate(self.triplets.items()):
+        triplets = triplets_iterator(shuffle=shuffle)
+        for ndone, ((sta1, sta2), events) in enumerate(triplets):
             if '%s__%s'%(sta1, sta2) in done:
                 continue
             if not ndone % 100:
