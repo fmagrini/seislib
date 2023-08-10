@@ -746,6 +746,8 @@ class AmbientNoiseAttenuation:
                 if np.all(data_tmp == 0):
                     continue
                 fft = fourier_transform(data_tmp, window_samples)
+                if np.any(np.isnan(fft)):
+                    continue
                 store.append(fft)
                 times_per_station[station_code].append(time)
             store = np.array(store)
@@ -934,9 +936,10 @@ class AmbientNoiseAttenuation:
             for sta in stations:
                 idx = np.flatnonzero(times[sta] == time)
                 if idx.size:
-                    ft = ffts[sta][np.asscalar(idx)]
-                    psd += np.real(ft)**2 + np.imag(ft)**2
-                    counter += 1
+                    ft = ffts[sta][idx.item()]
+                    if np.any((ft!=0) & (~np.isnan(ft))):
+                        psd += np.real(ft)**2 + np.imag(ft)**2
+                        counter += 1
     
             if counter*(counter-1)/2 >= min_no_pairs:
                 return psd / counter
