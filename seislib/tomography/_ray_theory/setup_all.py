@@ -9,7 +9,7 @@ Created on Sun Feb 17 23:05:58 2019
 
 On terminal:
     
-    python setup.py build_ext --inplace
+    python setup_all.py build_ext --inplace
 
 for html:
     cython -a example_cython.pyx
@@ -25,7 +25,7 @@ import os
 import platform
 
 
-names = ['_utils_bayes']
+names = ['_math', '_spherical_geometry', '_tomography']
 sources = ['%s.pyx'%name for name in names]
 extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp" ]
 
