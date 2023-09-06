@@ -56,13 +56,18 @@ def setup_cython_extension():
 	extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp" ]
 	platform_name = platform.system()
 	if platform_name.lower() == 'darwin':
-		versions = os.listdir('/usr/local/Cellar/gcc/')
-		version = max(versions, key=lambda i: int(i.split('.')[0]))
-		version_int = version.split('.')[0]
-		path = '/usr/local/Cellar/gcc/%s/lib/gcc/%s'%(version, version_int)
-		os.environ['CC'] = 'gcc-%s'%version_int
-		os.environ['CXX'] = 'g++-%s'%version_int
-		extra_link_args=['-Wl,-rpath,%s'%path]
+	        src_paths = ['/usr/local', '/opt/homebrew']
+                for src in src_paths:
+                    gcc_path = os.path.join(src, 'Cellar/gcc')
+                    if not os.path.exists(gcc_path):
+                        continue
+                    versions = os.listdir(gcc_path)
+                    version = max(versions, key=lambda i: int(i.split('.')[0]))
+                    version_int = version.split('.')[0]
+                    path = os.path.join(gcc_path, '%s/lib/gcc/%s'%(version, version_int))
+                    os.environ['CC'] = 'gcc-%s'%version_int
+                    os.environ['CXX'] = 'g++-%s'%version_int
+                    extra_link_args=['-Wl,-rpath,%s'%path]
 	else:
 		extra_link_args=['-fopenmp']
 	ext_modules = []
