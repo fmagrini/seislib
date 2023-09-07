@@ -49,32 +49,37 @@ with open(os.path.join(here, 'seislib', "__version__.py")) as f:
 
 
 def setup_cython_extension():
-	ext_path = "seislib/tomography/_ray_theory/"
-	ext_name = ext_path.replace("/", ".")
-	names = ['_math', '_spherical_geometry', '_tomography']
-	sources = ['%s.pyx'%name for name in names]
-	extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp" ]
-	platform_name = platform.system()
-	if platform_name.lower() == 'darwin':
-		versions = os.listdir('/usr/local/Cellar/gcc/')
-		version = max(versions, key=lambda i: int(i.split('.')[0]))
-		version_int = version.split('.')[0]
-		path = '/usr/local/Cellar/gcc/%s/lib/gcc/%s'%(version, version_int)
-		os.environ['CC'] = 'gcc-%s'%version_int
-		os.environ['CXX'] = 'g++-%s'%version_int
-		extra_link_args=['-Wl,-rpath,%s'%path]
-	else:
-		extra_link_args=['-fopenmp']
-	ext_modules = []
-	for name, source in zip(names, sources):
-		language = 'c++' if name!='_math' else None
-		ext_modules.append(Extension(f"{ext_name}{name}",
+    ext_path = "seislib/tomography/_ray_theory/"
+    ext_name = ext_path.replace("/", ".")
+    names = ['_math', '_spherical_geometry', '_tomography']
+    sources = ['%s.pyx'%name for name in names]
+    extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp"]
+    platform_name = platform.system()
+    if platform_name.lower() == 'darwin':
+        src_paths = ['/usr/local', '/opt/homebrew']
+        for src in src_paths:
+            gcc_path = os.path.join(src, 'Cellar/gcc')
+            if not os.path.exists(gcc_path):
+                continue
+            versions = os.listdir(gcc_path)
+            version = max(versions, key=lambda i: int(i.split('.')[0]))
+            version_int = version.split('.')[0]
+            path = os.path.join(gcc_path, '%s/lib/gcc/%s'%(version, version_int))
+            os.environ['CC'] = 'gcc-%s'%version_int
+            os.environ['CXX'] = 'g++-%s'%version_int
+            extra_link_args=['-Wl,-rpath,%s'%path]
+    else:
+        extra_link_args=['-fopenmp']
+    ext_modules = []
+    for name, source in zip(names, sources):
+        language = 'c++' if name!='_math' else None
+        ext_modules.append(Extension(f"{ext_name}{name}",
 							sources=[f"{ext_path}{source}"],
 							extra_compile_args=extra_compile_args,
 							extra_link_args=extra_link_args,
 							language=language,
 							include_dirs=[numpy.get_include()]))
-	return ext_modules
+    return ext_modules
 
 pkg_metadata = dict(
 		name="seislib",
