@@ -708,6 +708,12 @@ class AmbientNoiseAttenuation:
             dt = window_length if kind=='starttime' else 0
             tstamp = t.timestamp
             return UTC( (tstamp//window_length)*window_length + dt )
+        
+        def load_done_times():
+            try:
+                return load_pickle(os.path.join(save_ffts, 'times.pickle'))
+            except:
+                return {}
 
                     
         save_ffts = os.path.join(self.savedir, 'fft')
@@ -719,7 +725,6 @@ class AmbientNoiseAttenuation:
         freq = rfftfreq(window_samples, dt)
         np.save(os.path.join(save_ffts, 'frequencies.npy'), freq)
         
-        times_per_station = defaultdict(list)
         stations = set([code for codes in self.parameterization['station_codes'] \
                     for code in codes])
         for file in self.files:
@@ -740,6 +745,8 @@ class AmbientNoiseAttenuation:
             tr = tr.slice(tstart, tend)
             data = tr.data           
             times = np.arange(tstart.timestamp, tend.timestamp, window_length)
+            # times_per_station = defaultdict(list)
+            times_available = []
             store = []
             for i, time in enumerate(times):
                 data_tmp = data[i*window_samples : (i+1)*window_samples]
@@ -749,14 +756,19 @@ class AmbientNoiseAttenuation:
                 if np.any(np.isnan(fft)):
                     continue
                 store.append(fft)
-                times_per_station[station_code].append(time)
+                times_available.append(time)
+                # times_per_station[station_code].append(time)
             store = np.array(store)
             if store.size:
+                times_per_station = load_done_times()
+                times_per_station[station_code] = np.array(times_available)
+                save_pickle(os.path.join(save_ffts, 'times.pickle'), 
+                            times_per_station)        
                 np.save(os.path.join(save_ffts, '%s.npy'%station_code), store)
                 del store
                 gc.collect()
-        times_per_station = {k: np.array(v) for k, v in times_per_station.items()}
-        save_pickle(os.path.join(save_ffts, 'times.pickle'), times_per_station)
+        # times_per_station = {k: np.array(v) for k, v in times_per_station.items()}
+        
         
         
     def compute_corr_spectra(self, min_no_pairs=6, min_no_days=30, 
