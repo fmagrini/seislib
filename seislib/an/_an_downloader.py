@@ -385,9 +385,9 @@ class ANDownloader:
                 time.sleep(self.sleep_time_after_exception)
             except IncompleteRead:
                 self._exceptions['IncompleteRead'] += 1
+            except Exception as e:
+                self._exceptions['%s'%e]
         else:
-#            if self.verbose:
-#                print('NO DATA AVAILABLE')
             return
         if not st:
             return
@@ -801,6 +801,8 @@ class ANDownloader:
                         except socket.timeout:
                             time.sleep(0.5)
                             continue
+                        except KeyboardInterrupt:
+                            raise KeyboardInterrupt
             return inv
         
         if self.verbose:
@@ -960,7 +962,7 @@ class ANDownloader:
                              **kwargs) 
 
 
-    def start(self):
+    def _start(self):
         """ Starts the downloads
         
         The inventory of stations will be iterated over and, for each
@@ -985,7 +987,8 @@ class ANDownloader:
                     return []
             return [i.strip() for i in open(donefile)]
         
-        inventory = self.inventory_iterator(self.inventory, reverse=self.reversed_iterations)
+        inventory = self.inventory_iterator(self.inventory, 
+                                            reverse=self.reversed_iterations)
         for network, station in inventory:
             net, sta = network.code, station.code
             station_code = '%s.%s'%(net, sta)
@@ -1033,7 +1036,17 @@ class ANDownloader:
             self.update_done_stations(station_code)
             shutil.rmtree(tmp_folder)
             self.update_stats(stations=True)
-
+            
+    
+    def start(self):
+        while True:
+            try:
+                self._start()
+                break
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except:
+                pass
 
         
     
