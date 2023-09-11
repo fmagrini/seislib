@@ -753,7 +753,9 @@ class AmbientNoiseAttenuation:
                 if np.all(data_tmp == 0):
                     continue
                 fft = fourier_transform(data_tmp, window_samples)
-                if np.any(np.isnan(fft)):
+                if np.any(~np.isfinite(fft)):
+                    continue
+                if np.allclose(fft, 0):
                     continue
                 store.append(fft)
                 times_available.append(time)
