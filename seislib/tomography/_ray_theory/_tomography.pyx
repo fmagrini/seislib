@@ -22,6 +22,7 @@ import numpy as np
 cimport numpy as np
 from libc.stdlib cimport malloc, free
 cdef double TWOPI = 2 * PI
+cdef double HALFPI = PI / 2
 cdef extern from "math.h":
     float INFINITY
    
@@ -506,7 +507,7 @@ def _derivatives_lat_lon(double[:, ::1] mesh):
             lat_size_j = lat2_j - lat1_j
             lon_size_j = lon2_j - lon1_j
             
-            if lat1_i == lat2_j:
+            if lat1_i == lat2_j or (lat1_i==-HALFPI and lat2_j==HALFPI):
                 if lon1_j==lon1_i and lon2_j==lon2_i:
                     contact_size = lon_size_i
                 elif lon1_j<=lon1_i<lon2_j:
@@ -526,7 +527,7 @@ def _derivatives_lat_lon(double[:, ::1] mesh):
                 if contact_size > 0:
                     G_lat[ipixel, jpixel] = -contact_size / fundamental_size_lon / n_fundamental_blocks
 
-            elif lon2_i == lon1_j:                
+            elif lon2_i == lon1_j or (lon2_i==PI and lon1_j==-PI):                
                 if lat1_j==lat1_i and lat2_j==lat2_i:
                     contact_size = lat_size_i
                 elif lat1_i<lat1_j<lat2_i and lat2_i==lat2_j \
@@ -541,6 +542,7 @@ def _derivatives_lat_lon(double[:, ::1] mesh):
                     contact_size = 0
                 if contact_size > 0:
                     G_lon[ipixel, jpixel] = -contact_size / fundamental_size / n_fundamental_blocks
+
         
         # The derivative of the pixels at the E and S boundaries is set to zero
         nonzero_counter_lon = 0

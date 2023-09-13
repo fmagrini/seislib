@@ -581,6 +581,8 @@ class EQDownloader:
                 time.sleep(self.sleep_time_after_exception)
             except IncompleteRead:
                 self._exceptions['IncompleteRead'] += 1
+            except Exception as e:
+                self._exceptions['%s'%e]
                 
         return None
     
@@ -895,7 +897,7 @@ class EQDownloader:
             
     
     
-    def start(self):
+    def _start(self):
         """ Starts the downloads.
         
         The catalog of seismic events is iterated over and, for each event, all
@@ -1005,8 +1007,15 @@ class EQDownloader:
                     print(self)            
                 
             
-        
-        
+    def start(self):
+        while True:
+            try:
+                self._start()
+                break
+            except KeyboardInterrupt:
+                raise KeyboardInterrupt
+            except:
+                pass
 
 
 
