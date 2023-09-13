@@ -722,7 +722,8 @@ class AmbientNoiseVelocity:
             notnan = np.flatnonzero(~np.isnan(vel))
             if self.verbose:
                 print('Measurements at %.2fs:'%p, notnan.size)
-            np.savetxt(save, np.column_stack((coords[notnan], vel[notnan])))
+            if notnan.size:
+                np.savetxt(save, np.column_stack((coords[notnan], vel[notnan])))
         
     
     def interpolate_dispcurves(self, frequency):
