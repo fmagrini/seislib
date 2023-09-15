@@ -949,9 +949,11 @@ class AmbientNoiseAttenuation:
                 idx = np.flatnonzero(times[sta] == time)
                 if idx.size:
                     ft = ffts[sta][idx.item()]
-                    if np.any((ft!=0) & (~np.isnan(ft))):
-                        psd += np.real(ft)**2 + np.imag(ft)**2
-                        counter += 1
+                    psd_sta = np.real(ft)**2 + np.imag(ft)**2
+                    if np.all(psd_sta == 0):
+                        continue
+                    psd += psd_sta
+                    counter += 1
     
             if counter*(counter-1)/2 >= min_no_pairs:
                 return psd / counter
@@ -1000,14 +1002,10 @@ class AmbientNoiseAttenuation:
             ft1 = ffts[sta1][idx1]
             ft2 = ffts[sta2][idx2]
             psd = np.array([psd_dict[t] for t in common_times])
-            
-            corr_normalized = np.conj(ft1)*ft2 / psd
-            egf = np.sum(corr_normalized, axis=0) / psd.shape[0]
-            #In rare cases one of the PSD positions is zero ---> nans
-            if np.any(np.isnan(egf)):
-                mask = np.isfinite(egf)
-                egf = np.interp(frequency, frequency[mask], egf[mask])
-                
+            corr_normalized = np.conj(ft1) * ft2 / psd 
+            notnan = [i for i, c in enumerate(corr_normalized) \
+                      if ~np.any(np.isnan(c))]
+            egf = np.sum(corr_normalized[notnan], axis=0) / len(notnan)                
             return egf
         
         # MAIN FUNCTION COMPUTE_CORR_SPECTRA
@@ -1042,6 +1040,7 @@ class AmbientNoiseAttenuation:
                 if self.verbose:
                     print('- not enough simultaneous recordings')
                 continue
+
             
             ram_estimate = ram_required(stations)
             save_memory = True if ram_estimate>ram_available else False
