@@ -5,11 +5,12 @@ conda:
     environment: docs/environment.yaml
 
 build:
+   os: ubuntu-22.04
    image: latest
 
 # This part is necessary otherwise the project is not built
 python:
-   version: 3.7
+   version: 3.9
    install:
       - method: pip
         path: .
