@@ -1440,7 +1440,7 @@ class TwoStationMethod:
             taper
             
         taper_type : func
-            Taper function. Default is `scipy.signal.tukey 
+            Taper function. Default is `scipy.signal.windows.tukey 
             <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.tukey.html>`_
             
         alpha : float 
