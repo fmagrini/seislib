@@ -1423,7 +1423,7 @@ class TwoStationMethod:
     
     
     def build_taper(self, center_idx, taper_size, data_size, 
-                    taper_type=signal.tukey, alpha=0.1):
+                    taper_type=signal.windows.tukey, alpha=0.1):
         """ Defines the taper used for tapering the seismograms
         
         Parameters
@@ -1440,7 +1440,7 @@ class TwoStationMethod:
             taper
             
         taper_type : func
-            Taper function. Default is `scipy.signal.tukey 
+            Taper function. Default is `scipy.signal.windows.tukey 
             <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.tukey.html>`_
             
         alpha : float 

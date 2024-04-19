@@ -190,7 +190,7 @@ Defines the taper used for tapering the seismograms
 
 	**data_size** (``int``): Length of the data, which corresponds to the final size of the taper
 
-	**taper_type** (``func``): Taper function. Default is `scipy.signal.tukey <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.tukey.html>`_
+	**taper_type** (``func``): Taper function. Default is `scipy.signal.windows.tukey <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.tukey.html>`_
 
 	**alpha** (``float``): Shape parameter of the taper window.
 
