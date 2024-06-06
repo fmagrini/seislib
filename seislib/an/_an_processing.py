@@ -191,7 +191,10 @@ def velocity_filter(freq, corr_spectrum, interstation_distance, cmin=1.0,
     tcorr = np.fft.irfft(corr_spectrum)
     vel_filt = np.zeros(len(tcorr))
     vel_filt[idx_tmin : idx_tmax] = vel_filt_window
-    vel_filt[-idx_tmax+1 : -idx_tmin+1] = vel_filt_window #+1 is just for symmetry reasons
+    if idx_tmin == 0:
+        vel_filt[-idx_tmax : ] = vel_filt_window
+    else:
+        vel_filt[-idx_tmax : -idx_tmin] = vel_filt_window
     tcorr *= vel_filt
     corr = np.fft.rfft(tcorr)
     return corr
