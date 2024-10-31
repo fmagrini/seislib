@@ -28,10 +28,9 @@ import platform
 names = ['_math', '_spherical_geometry', '_tomography']
 sources = ['%s.pyx'%name for name in names]
 extra_compile_args = ["-O3", "-ffast-math", "-march=native", "-fopenmp" ]
+extra_link_args=['-fopenmp']
 
 platform_name = platform.system()
-
-
 if platform_name.lower() == 'darwin':
     src_paths = ['/usr/local', '/opt/homebrew']
     for src in src_paths:
@@ -44,11 +43,6 @@ if platform_name.lower() == 'darwin':
         path = os.path.join(gcc_path, '%s/lib/gcc/%s'%(version, version_int))
         os.environ['CC'] = 'gcc-%s'%version_int
         os.environ['CXX'] = 'g++-%s'%version_int
-        extra_link_args=['-Wl,-rpath,%s'%path]
-        
-
-else:
-    extra_link_args=['-fopenmp']
 
 
 for name, source in zip(names, sources):

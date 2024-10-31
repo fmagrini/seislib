@@ -70,6 +70,7 @@ def setup_cython_extension():
             extra_link_args=['-Wl,-rpath,%s'%path]
     else:
         extra_link_args=['-fopenmp']
+
     ext_modules = []
     for name, source in zip(names, sources):
         language = 'c++' if name!='_math' else None
