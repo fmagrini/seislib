@@ -1,7 +1,5 @@
 include README.md
 recursive-include seislib *.py *.txt *.pdf *.pyx *.pxd
-recursive-include seislib/colormaps *.py *.txt *.pdf 
-recursive-include include seislib/colormaps/*/ *.py *.txt 
 
 include seislib/tomography/_ray_theory/*.py
 include seislib/tomography/_ray_theory/*.pyx

@@ -34,12 +34,6 @@ def configuration(parent_package="", top_path=None):
 
 	return config
 
-
-def get_maps():
-	cwd = os.getcwd()
-	src = os.path.join(cwd, 'seislib', 'colormaps')
-	maps_dirs = [i for i in os.listdir(src) if os.path.isdir(os.path.join(src, i))]
-	return ['colormaps/%s/*'%m for m in maps_dirs]
 	
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -92,7 +86,7 @@ pkg_metadata = dict(
 		license="MIT",
 		packages=find_packages(),
 		package_data={  
-			"seislib": ["tomography/_ray_theory/*", "colormaps/*"] + get_maps()
+			"seislib": ["tomography/_ray_theory/*"]
 			},
 		include_package_data=True,
 		python_requires=">=3.6",
@@ -105,7 +99,8 @@ pkg_metadata = dict(
 						  'scipy>=1.3.0',
 						  'matplotlib>=3.4.3',
 						  'cartopy>=0.21.1',
-						  'cython>=0.29'],
+						  'cython>=0.29',
+        				  'cmcrameri>=1.8'],
 		classifiers=["License :: OSI Approved :: MIT License",
 					 "Programming Language :: Python :: 3",
 					 "Programming Language :: Cython"]

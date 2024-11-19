@@ -531,7 +531,7 @@ class _Grid():
 
 
 class EqualAreaGrid(_Grid):
-    """
+    r"""
     Class that allows for creating an equal-area grid covering the whole
     Earth's surface.
 

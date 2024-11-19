@@ -60,10 +60,9 @@ Welcome to SeisLib's documentation!
    
 .. toctree::
    :maxdepth: 2
-   :caption: Plotting & Colormaps
+   :caption: Plotting
    
    seislib.plotting
-   seislib.colormaps
 
 .. toctree::
    :maxdepth: 2

@@ -659,7 +659,7 @@ class AmbientNoiseVelocity:
     
     def prepare_input_tomography(self, savedir, period, min_no_wavelengths=2,
                                  outfile='input_%.2fs.txt'):
-        """ 
+        r""" 
         Prepares a .txt file for each specified period, to be used for 
         calculating phase-velocity maps using 
         :class:`seislib.tomography.tomography.SeismicTomography`.

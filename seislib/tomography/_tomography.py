@@ -64,8 +64,8 @@ import scipy.sparse
 import matplotlib.pyplot as plt
 #from scipy.linalg import pinvh, lstsq
 from obspy.geodetics import gps2dist_azimuth
+import cmcrameri.cm as cmc
 from seislib.tomography import EqualAreaGrid, RegularGrid
-from seislib import colormaps as scm
 import seislib.plotting as plotting
 from seislib.tomography._ray_theory._tomography import _compile_coefficients
 from seislib.tomography._ray_theory._tomography import _refine_parameterization
@@ -1684,7 +1684,7 @@ class SeismicTomography:
                                   **kwargs)
 
 
-    def plot_colored_rays(self, ax=None, show=True, cmap=scm.roma, vmin=None, 
+    def plot_colored_rays(self, ax=None, show=True, cmap=cmc.roma, vmin=None, 
                           vmax=None, stations_color='k', oceans_color='lightgrey', 
                           lands_color='w', edgecolor='k', stations_alpha=None, 
                           paths_alpha=None, projection='Mercator', resolution='110m',
@@ -1706,9 +1706,7 @@ class SeismicTomography:
             
         cmap : str or Colormap
             If str, it should be a valid matplotlib.cm.colormap name (see 
-            matplotlib documentation). Otherwise, it should be the name of a
-            colormap available in seislib.colormaps (see also the documentation at 
-            https://www.fabiocrameri.ch/colourmaps/)
+            matplotlib documentation).
             
         vmin, vmax : float
             Boundaries of the colormap. If None, the minimum and maximum values

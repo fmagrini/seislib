@@ -39,7 +39,7 @@ For more information on SeisLib, make sure to visit our [wiki page](https://seis
 
 ## **Installation**
 
-First, make sure you have all the dependencies installed, i.e., ``obspy``, ``cartopy``, and ``cython``. We recommend installing such dependences using conda (see below). You will also need ``gcc`` or equivalent, to compile the cython parts of the library.
+First, make sure you have all the dependencies installed, i.e., ``obspy``, ``cartopy``, ``cython``, and ``cmcrameri``. We recommend installing such dependences using conda (see below). You will also need ``gcc`` or equivalent, to compile the cython parts of the library.
 
 ```bash
 conda create -n seislib python=3.9 numpy=1.20
