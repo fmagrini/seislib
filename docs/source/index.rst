@@ -29,9 +29,10 @@ Welcome to SeisLib's documentation!
 .. image:: _static/lib_diagram.png
    :align: center
 
-.. note::
+.. warning::
 
-   This project is under active development.
+   In the transition from version 0.6.27 to 1.0.0, the `seislib.colormaps` module  was **removed** and replaced by the `cmcrameri` package, which provides the same colormaps previously available in SeisLib.
+
 
 .. toctree::
    :maxdepth: 1
