@@ -355,7 +355,7 @@ def extract_dispcurve(frequencies,
                       savefig=None,
                       sta1=None,
                       sta2=None):
-    """
+    r"""
     Function for picking the phase-velocity curve from the zero crossings of
     the frequency-domain representation of the stacked cross correlation.
     

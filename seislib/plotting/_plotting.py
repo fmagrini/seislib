@@ -14,7 +14,7 @@ from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
-import seislib.colormaps as scm
+import cmcrameri.cm as cmc
 
 
 
@@ -768,7 +768,7 @@ def plot_colored_rays(data_coords,
                       c, 
                       ax=None, 
                       show=True, 
-                      cmap=scm.roma,
+                      cmap=cmc.roma,
                       vmin=None, 
                       vmax=None, 
                       stations_color='k', 
@@ -807,9 +807,7 @@ def plot_colored_rays(data_coords,
         
     cmap : str or Colormap
         If str, it should be a valid matplotlib.cm.colormap name (see 
-        matplotlib documentation). Otherwise, it should be the name of a
-        colormap available in seislib.colormaps (see also the documentation at 
-        https://www.fabiocrameri.ch/colourmaps/)
+        matplotlib documentation).
         
     vmin, vmax : float
         Boundaries of the colormap. If None, the minimum and maximum values

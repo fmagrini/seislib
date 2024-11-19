@@ -11,7 +11,6 @@ import sys
 import os
 from .__version__ import __version__
 from . import an
-from . import colormaps
 from . import eq
 from . import exceptions
 from . import plotting
