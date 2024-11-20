@@ -169,7 +169,7 @@ class AmbientNoiseVelocity:
     frequency and the 2nd is phase velocity) will be saved to
     /path/to/an_velocity/Z/dispcurves.
 
-    .. versionadded:: 1.1.0
+    .. note::
        The function `extract_dispcurves` now accepts the argument `n_cpus`, enabling
        parallel calculation of dispersion curves. Set `n_cpus=1` to run in single-threaded
        mode, or specify the desired number of CPUs to leverage multiprocessing.
