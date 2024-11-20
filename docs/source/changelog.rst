@@ -1,5 +1,5 @@
 ********
-Changelog
+Change Log
 ********
 
 .. include:: ../../CHANGELOG.md
