@@ -6,7 +6,6 @@ dependencies:
   - python>=3.7
   - cython
   - sphinx==4.2.0
-  - myst-nb
   - obspy
   - cartopy
   - numpydoc==1.1.0

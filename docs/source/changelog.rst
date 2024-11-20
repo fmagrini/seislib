@@ -2,4 +2,4 @@
 Change Log
 ********
 
-.. include:: ../../CHANGELOG.md
+.. include:: ../../CHANGELOG.rst

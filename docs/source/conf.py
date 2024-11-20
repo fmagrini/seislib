@@ -41,7 +41,7 @@ release = about["__version__"]
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc', 'numpydoc', "myst_nb"
+    'sphinx.ext.autodoc', 'numpydoc'
     #'sphinx.ext.napoleon'
 ]
 napoleon_google_docstring = False
