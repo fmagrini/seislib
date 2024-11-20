@@ -100,7 +100,9 @@ pkg_metadata = dict(
 						  'matplotlib>=3.4.3',
 						  'cartopy>=0.21.1',
 						  'cython>=0.29',
-        				  'cmcrameri>=1.8'],
+        				  'cmcrameri>=1.8',
+              			  'joblib>=1.4',
+                   		  'portalocker>=3'],
 		classifiers=["License :: OSI Approved :: MIT License",
 					 "Programming Language :: Python :: 3",
 					 "Programming Language :: Cython"]
