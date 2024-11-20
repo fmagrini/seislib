@@ -1,5 +1,5 @@
 __major_version__  = 1
-__minor_version__  = 0
+__minor_version__  = 1
 __patch__          = 0
 __version_tuple__ = (
     __major_version__,
