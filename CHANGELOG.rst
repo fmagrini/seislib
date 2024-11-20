@@ -1,6 +1,3 @@
-Change Log
-==========
-
 v0.1.1 (20/11/2024)
 --------------------
 - New feature: multiprocessing capabilities enabled in `seislib.an.AmbientNoiseVelocity.extract_dispcurves`
