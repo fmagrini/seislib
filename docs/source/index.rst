@@ -71,12 +71,12 @@ Welcome to SeisLib's documentation!
    
    seislib.utils
    
-   
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. toctree::
+   :maxdepth: 1
+   :caption: Development
+
+   changelog
+   licence
 
 
