@@ -5,4 +5,4 @@ Licence
 MIT License
 ===========
 
-.. include:: ../../LICENCE.txt
+.. include:: ../../LICENSE.txt
