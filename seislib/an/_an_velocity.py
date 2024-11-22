@@ -222,9 +222,9 @@ class AmbientNoiseVelocity:
             e.g. ['net1.sta1.00.BHZ.sac', 'net1.sta2.00.BHZ.sac']
         """
         files = []
-        components = ["HZ"] if self.component == "Z" else ["HE", "HN"]
+        components = ["Z"] if self.component == "Z" else ["E", "N"]
         for file in sorted(os.listdir(self.src)):
-            channel = file.split(".")[-2][1:]
+            channel = file.split(".")[-2][-1]
             if channel in components:
                 files.append(file)
         return files
