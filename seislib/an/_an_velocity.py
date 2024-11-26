@@ -224,6 +224,8 @@ class AmbientNoiseVelocity:
         files = []
         components = ["Z"] if self.component == "Z" else ["E", "N"]
         for file in sorted(os.listdir(self.src)):
+            if file.startswith("."):  # Avoid hidden files
+                continue
             channel = file.split(".")[-2][-1]
             if channel in components:
                 files.append(file)
@@ -404,7 +406,6 @@ class AmbientNoiseVelocity:
         savefig=None,
         show=True,
     ):
-
         suptitle = "%s - %s | " % (sta1, sta2)
         suptitle += "Dist: %.1f km | Overlapping days: %.1f" % (dist, days_overlap)
         plt.figure(figsize=plt.figaspect(0.4))
