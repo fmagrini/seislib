@@ -1,3 +1,8 @@
+v1.1.2 (26/11/2024)
+--------------------
+- Bug fix: `AmbientNoiseVelocity.prepare_data` now avoids processing hidden files such as .DS_Store, which cause errors.
+
+
 v1.1.1 (22/11/2024)
 --------------------
 - `AmbientNoiseVelocity.prepare_data` now allows processing of channels without an H as second letter, e.g., DPZ.
