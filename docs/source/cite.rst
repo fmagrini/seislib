@@ -2,10 +2,9 @@
 How to cite
 ===========
 
-If you make use of SeisLib in your work, we would be grateful if you could reward our efforts 
-by citing the following article
+If you make use of SeisLib in your work, we would be grateful if you could cite the following article
 
-    Magrini, F., Lauro, S., Kästle, E. & Boschi, L., 2022. `Surface-wave tomography using SeisLib: a Python package for multi-scale seismic imaging. <https://academic.oup.com/gji/advance-article-abstract/doi/10.1093/gji/ggac236/6613195?login=false>`_ *Geophys. J. Int.*, ggac236, https://doi.org/10.1093/gji/ggac236
+    Magrini, F., Lauro, S., Kästle, E. & Boschi, L., 2022. `Surface-wave tomography using SeisLib: a Python package for multi-scale seismic imaging. <https://doi.org/10.1093/gji/ggac236>`_ *Geophys. J. Int.*
 
 
 Depending on the use you made of SeisLib, we kindly ask you to also consider the references below. Thank you very much!
