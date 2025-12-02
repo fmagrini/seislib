@@ -27,9 +27,4 @@ from ._grid import *
 from ._tomography import *
 
 
-__all__ = [
-    'EqualAreaGrid',
-    'RegularGrid',
-    'SeismicTomography'
-    ]
-
+__all__ = ["Grid", "EqualAreaGrid", "RegularGrid", "SeismicTomography"]

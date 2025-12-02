@@ -1,3 +1,13 @@
+v1.1.4 (2/12/2025)
+------------------
+- Enhancement: addedm method `Grid.from_state`
+
+
+v1.1.3 (2/12/2025)
+------------------
+- API change: `Grid` is now public
+- Enhancement: `EqualAreaGrid` and `RegularGrid` now enable saving and loading grid instances through the methods `save` and `load`
+
 v1.1.2 (26/11/2024)
 --------------------
 - Bug fix: `AmbientNoiseVelocity.prepare_data` now avoids processing hidden files such as .DS_Store, which cause errors.
