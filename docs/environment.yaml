@@ -5,10 +5,11 @@ channels:
 dependencies:
   - python>=3.7
   - cython
-  - sphinx==4.2.0
+  - sphinx==7.2.6
   - obspy
   - cartopy
-  - numpydoc==1.1.0
+  - numpydoc==1.6.0
+  - pip
   - pip:
     - sphinx_rtd_theme==1.0.0
     - seislib
