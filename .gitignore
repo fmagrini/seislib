@@ -26,3 +26,6 @@ cmake-build-debug/
 
 #linux
 .directory
+
+# HTML
+*.html
