@@ -99,6 +99,7 @@ cpdef ssize_t _pixel_index(double lat, double lon, double[:, ::1] mesh,
         if mesh[ipixel, 0] <= lat < mesh[ipixel, 1]: #parallel1<=lat<parallel2
             if mesh[ipixel, 2] <= lon < mesh[ipixel, 3]: #meridian1<=lon<meridian2
                 return ipixel
+    return -1
      
 
 @boundscheck(False)
