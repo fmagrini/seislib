@@ -1205,8 +1205,7 @@ class SeismicTomography:
         A_test = _compile_coefficients(data_coords=data_coords,
                                        mesh=np.radians(mesh), 
                                        mesh_latmax=mesh_latmax,
-                                       #mesh_lonmax=mesh_lonmax)
-                                       mesh_lonmax=mesh_lonmax).toarray()
+                                       mesh_lonmax=mesh_lonmax)
         dist = np.asarray(self.gc_distance(*self.data_coords.T))
         slowness = 1 / velocity_model
         synth_vel = dist / np.dot(A_test*dist.reshape(-1, 1), slowness)
