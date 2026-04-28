@@ -225,7 +225,7 @@ cpdef _compile_coefficients(double[:, ::1] data_coords, double[:, ::1] mesh,
                                 sorted_idx=sorted_idx)
             if coeff > 0: # Does not access memory unnecessarily
                 coeff_matrix[idata, ipixel] = coeff
-    return coeff_matrix
+    return np.asarray(coeff_matrix)
                 
 
 @cdivision(True)
@@ -400,7 +400,7 @@ def _select_parameters(double[:, ::1] coeff_matrix, np.int32_t[::1] indexes):
         for i_data in prange(data_size, nogil=True):
             if coeff_matrix[i_data, mesh_index] > 0:
                 newcoeff_matrix[i_data, newmesh_index] = coeff_matrix[i_data, mesh_index]                
-    return newcoeff_matrix
+    return np.asarray(newcoeff_matrix)
 
 
 @boundscheck(False)
