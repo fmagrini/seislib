@@ -667,7 +667,7 @@ class SeismicTomography:
             self.grid.select_cells(indexes=keep_pixels)
         
     
-    def refine_parameterization(self, hitcounts=100, keep_empty_cells=True,
+    def refine_parameterization(self, hitcounts=100, min_rays_subcells=None, keep_empty_cells=True,
                                 latmin=None, latmax=None, lonmin=None, lonmax=None):
         """ 
         Halves the dimension of the pixels intersected by a number of 
@@ -679,6 +679,13 @@ class SeismicTomography:
             Each parameter (grid cell) intersected by a number of raypaths
             equal or greater than this threshold is "refined", i.e., splitted
             in four equal-area sub-parameters. Default is 100
+            
+        min_rays_subcells : int        
+            When this parameter is specified, each subcell is tested to see if
+            it is well-sampled, i.e., intersected by a number of raypaths
+            equal or greater than this threshold. 
+            When not, the cell is not divided.
+            Default is `None`, meaning this criterion is not applied.
             
         keep_empty_cells : bool
             If `False`, cells intersected by no raypaths are removed
@@ -695,6 +702,12 @@ class SeismicTomography:
             `self.grid.mesh` and `self.A` are updated
         """
         mesh = np.radians(self.grid.mesh)
+        if min_rays_subcells is not None:
+            data_coords = np.radians(self.data_coords)
+        else:
+            data_coords = np.empty((0, 4), dtype=np.float64)
+            min_rays_subcells = -1
+
         if any([latmin, latmax, lonmin, lonmax]):
             latmin = latmin if latmin is not None else -90
             latmax = latmax if latmax is not None else +90
@@ -706,7 +719,9 @@ class SeismicTomography:
 
         newmesh, A = _refine_parameterization(mesh, 
                                               self.A, 
+                                              data_coords,
                                               hitcounts=hitcounts,
+                                              min_rays_subcells = min_rays_subcells,
                                               region_to_refine=region_to_refine)
         self.grid.update_grid_params(np.degrees(newmesh), refined=True)
         self.compile_coefficients(refine=True, 

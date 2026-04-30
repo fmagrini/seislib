@@ -317,12 +317,54 @@ cdef bool_cpp is_inside_region(double lat, double lon, double[:] region):
         return True
     return False
 
+@boundscheck(False)
+@wraparound(False) 
+cdef bool_cpp is_subcell_undersampled(double [:, ::1] mesh, 
+        double[:, ::1] coeff_matrix, double[:, ::1] data_coords, 
+        ssize_t i_pixel, int hitcounts):
+    # Potential cell to split; we need to find out whether the subcells have the required 
+    # number of rays >= hitcounts
+    cdef bool_cpp undersampled = False
+    cdef ssize_t data_size = coeff_matrix.shape[0]
+    cdef i_data, i_subcell
+    # The tempmesh represents the divided cell
+    cdef ssize_t nb_subcells = 4 # We divide each cell into this number of subcells
+    cdef double[:, ::1] tempmesh = np.zeros((nb_subcells, 4), dtype=np.double)
+    cdef double parallel1, parallel2, meridian1, meridian2
+
+    parallel1 = mesh[i_pixel, 0]
+    parallel2 = mesh[i_pixel, 1]
+    meridian1 = mesh[i_pixel, 2]
+    meridian2 = mesh[i_pixel, 3]
+    split_pixel(tempmesh, 0, parallel1, parallel2, meridian1, meridian2)
+
+    # Maximum latitude and longitude of the cell
+    cdef double mesh_latmax = np.max([parallel1, parallel2])
+    cdef double mesh_lonmax = np.max([meridian1, meridian2])
+
+    # We only keep the local rays that hit the current cell
+    temp_data_coords = []
+    for i_data in range(data_size):
+        if coeff_matrix[i_data, i_pixel] != 0:
+            temp_data_coords.append(data_coords[i_data, :])
+    temp_data_coords = np.array(temp_data_coords)
+
+    tempcoeff_matrix = _compile_coefficients(temp_data_coords, tempmesh, mesh_latmax, mesh_lonmax)
+    temp_rays_count = _raypaths_per_pixel(tempcoeff_matrix)
+
+    for i_subcell in range(nb_subcells):
+        if temp_rays_count[i_subcell] < hitcounts:
+            undersampled = True
+            break   
+
+    return undersampled
 
 @cdivision(True)
 @boundscheck(False)
 @wraparound(False) 
 def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix, 
-                             int hitcounts=100, double[:] region_to_refine=None):
+                            double[:, ::1] data_coords, int hitcounts=100, 
+                            int min_rays_subcells=-1, double[:] region_to_refine=None):
     cdef np.int32_t[::1] rays_count = _raypaths_per_pixel(coeff_matrix)
     cdef ssize_t data_size = coeff_matrix.shape[0]
     cdef ssize_t mesh_size = mesh.shape[0] #number of pixels
@@ -334,7 +376,8 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
     cdef double parallel1, parallel2, meridian1, meridian2
     cdef double coeff
     cdef double lat_pixel, lon_pixel
-    
+    cdef bool_cpp[::1] undersampled_subcells = np.ones(mesh_size, dtype = np.bool_)
+
     if region_to_refine is not None:
         focus_on_a_region = True
     for i_pixel in range(mesh_size):
@@ -345,8 +388,12 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
                                              lon=lon_pixel,
                                              region=region_to_refine)
         if rays_count[i_pixel]>=hitcounts and inside_region:
-            # Remove one pixel and add 4 -- the pixels itself divided by four
-            newmesh_size += 3
+            undersampled_subcells[i_pixel] = False
+            if min_rays_subcells > 0:
+                undersampled_subcells[i_pixel] = is_subcell_undersampled(mesh, coeff_matrix, data_coords, i_pixel, min_rays_subcells)
+            if not undersampled_subcells[i_pixel]:
+                # Remove one pixel and add 4 -- the pixels itself divided by four
+                newmesh_size += 3
             
     cdef double[:, ::1] newmesh = np.zeros((newmesh_size, 4), dtype=np.double)
     cdef double[:, ::1] newcoeff_matrix = np.zeros((data_size, newmesh_size), dtype=np.double)
@@ -362,7 +409,7 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
                                              lon=lon_pixel,
                                              region=region_to_refine)
                 
-        if rays_count[i_pixel]<hitcounts or not inside_region:
+        if rays_count[i_pixel]<hitcounts or not inside_region or undersampled_subcells[i_pixel]:
             newmesh[i_newpixel, 0] = mesh[i_pixel, 0]
             newmesh[i_newpixel, 1] = mesh[i_pixel, 1]
             newmesh[i_newpixel, 2] = mesh[i_pixel, 2]
