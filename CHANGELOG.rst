@@ -1,3 +1,9 @@
+v1.2.0 (4/5/2026)
+------------------
+- Enhancement: added optional subcell ray-hit validation to `SeismicTomography.refine_parameterization`.
+- Bug fix: tomography coefficient compilation now raises an error when measurement endpoints fall outside the grid.
+
+
 v1.1.4 (2/12/2025)
 ------------------
 - Enhancement: addedm method `Grid.from_state`

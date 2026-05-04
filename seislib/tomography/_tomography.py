@@ -668,7 +668,8 @@ class SeismicTomography:
         
     
     def refine_parameterization(self, hitcounts=100, keep_empty_cells=True,
-                                latmin=None, latmax=None, lonmin=None, lonmax=None):
+                                latmin=None, latmax=None, lonmin=None, lonmax=None,
+                                hitcounts_subcells=None):
         """ 
         Halves the dimension of the pixels intersected by a number of 
         raypaths >= hitcounts.        
@@ -679,7 +680,12 @@ class SeismicTomography:
             Each parameter (grid cell) intersected by a number of raypaths
             equal or greater than this threshold is "refined", i.e., splitted
             in four equal-area sub-parameters. Default is 100
-            
+
+        hitcounts_subcells : int, optional
+            If provided, a cell is refined only when each of the four resulting
+            subcells would be intersected by at least `hitcounts_subcells`
+            raypaths. Default is `None`, meaning this criterion is not applied.
+
         keep_empty_cells : bool
             If `False`, cells intersected by no raypaths are removed
             
@@ -695,6 +701,17 @@ class SeismicTomography:
             `self.grid.mesh` and `self.A` are updated
         """
         mesh = np.radians(self.grid.mesh)
+        if hitcounts_subcells is not None:
+            if isinstance(hitcounts_subcells, bool):
+                raise TypeError("hitcounts_subcells must be an integer or None, not bool")
+            if not isinstance(hitcounts_subcells, (int, np.integer)):
+                raise TypeError("hitcounts_subcells must be an integer or None")
+            if hitcounts_subcells <= 0:
+                raise ValueError("hitcounts_subcells must be a positive integer")
+            data_coords = np.radians(self.data_coords)
+        else:
+            data_coords = None
+
         if any([latmin, latmax, lonmin, lonmax]):
             latmin = latmin if latmin is not None else -90
             latmax = latmax if latmax is not None else +90
@@ -707,7 +724,9 @@ class SeismicTomography:
         newmesh, A = _refine_parameterization(mesh, 
                                               self.A, 
                                               hitcounts=hitcounts,
-                                              region_to_refine=region_to_refine)
+                                              region_to_refine=region_to_refine,
+                                              data_coords=data_coords,
+                                              hitcounts_subcells=hitcounts_subcells)
         self.grid.update_grid_params(np.degrees(newmesh), refined=True)
         self.compile_coefficients(refine=True, 
                                   coeff_matrix=A, 

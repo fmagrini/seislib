@@ -99,6 +99,7 @@ cpdef ssize_t _pixel_index(double lat, double lon, double[:, ::1] mesh,
         if mesh[ipixel, 0] <= lat < mesh[ipixel, 1]: #parallel1<=lat<parallel2
             if mesh[ipixel, 2] <= lon < mesh[ipixel, 3]: #meridian1<=lon<meridian2
                 return ipixel
+    return -1
      
 
 @boundscheck(False)
@@ -167,6 +168,11 @@ cpdef _compile_coefficients(double[:, ::1] data_coords, double[:, ::1] mesh,
         # if the two points lie withing the same pixel, the coefficient is 1
         ipixel_start = _pixel_index(latlon_1[0], latlon_1[1], mesh, mesh_latmax, mesh_lonmax)
         ipixel_end = _pixel_index(latlon_2[0], latlon_2[1], mesh, mesh_latmax, mesh_lonmax)
+        if ipixel_start < 0 or ipixel_end < 0:
+            raise ValueError(
+                "Cannot compile coefficient matrix: measurement %d has an "
+                "endpoint outside the tomography grid." % idata
+            )
         #calculate all parameters used later on in the process of finding the great 
         #circle intersections with the pixels of the mesh
         gc_arc_midpoint(latlon_1, latlon_2, midpoint)
@@ -318,11 +324,140 @@ cdef bool_cpp is_inside_region(double lat, double lon, double[:] region):
     return False
 
 
+@boundscheck(False)
+@wraparound(False)
+cdef ssize_t subpixel_index(double lat, double lon, double[4][4] submesh,
+                            double mesh_latmax, double mesh_lonmax) noexcept:
+    cdef ssize_t ipixel
+    if lat == mesh_latmax:
+        lat -= 0.000001
+    if lon == mesh_lonmax:
+        lon -= 0.000001
+    for ipixel in range(4):
+        if submesh[ipixel][0] <= lat < submesh[ipixel][1]:
+            if submesh[ipixel][2] <= lon < submesh[ipixel][3]:
+                return ipixel
+    return -1
+
+
+@cdivision(True)
+@boundscheck(False)
+@wraparound(False)
+cdef bool_cpp is_subcell_undersampled(double[:, ::1] mesh,
+                                      double[:, ::1] coeff_matrix,
+                                      double[:, ::1] data_coords,
+                                      ssize_t i_pixel,
+                                      int hitcounts_subcells):
+    cdef ssize_t data_size = coeff_matrix.shape[0]
+    cdef ssize_t i_data, i_subcell
+    cdef int counts[4]
+    cdef int enough_count = 0
+    cdef ssize_t ipixel_start, ipixel_end
+    cdef double parallel1 = mesh[i_pixel, 0]
+    cdef double parallel2 = mesh[i_pixel, 1]
+    cdef double meridian1 = mesh[i_pixel, 2]
+    cdef double meridian2 = mesh[i_pixel, 3]
+    cdef double mid_parallel = (parallel1 + parallel2) / 2
+    cdef double mid_meridian = (meridian1 + meridian2) / 2
+    cdef double submesh[4][4]
+    cdef double latlon_1[2]
+    cdef double latlon_2[2]
+    cdef double midpoint[2]
+    cdef double lon_intersections[2]
+    cdef double tmp_2d[2]
+    cdef double gc_plane[3]
+    cdef double latmin_latmax[2]
+    cdef double intersections[4][2]
+    cdef double distances[4]
+    cdef int sorted_idx[4]
+    cdef double gc_distance, midpoint_distance
+    cdef double latmin, latmax, lonmin, lonmax
+    cdef double child_parallel1, child_parallel2, child_meridian1, child_meridian2
+    cdef double coeff
+    cdef bool_cpp dlon_lessthan_pi
+
+    counts[:] = [0, 0, 0, 0]
+    submesh[0][:] = [mid_parallel, parallel2, meridian1, mid_meridian]
+    submesh[1][:] = [mid_parallel, parallel2, mid_meridian, meridian2]
+    submesh[2][:] = [parallel1, mid_parallel, meridian1, mid_meridian]
+    submesh[3][:] = [parallel1, mid_parallel, mid_meridian, meridian2]
+
+    for i_data in range(data_size):
+        if coeff_matrix[i_data, i_pixel] <= 0:
+            continue
+
+        latlon_1[:] = [data_coords[i_data, 0], data_coords[i_data, 1]]
+        latlon_2[:] = [data_coords[i_data, 2], data_coords[i_data, 3]]
+        ipixel_start = subpixel_index(latlon_1[0], latlon_1[1], submesh, parallel2, meridian2)
+        ipixel_end = subpixel_index(latlon_2[0], latlon_2[1], submesh, parallel2, meridian2)
+        gc_arc_midpoint(latlon_1, latlon_2, midpoint)
+        gc_distance = great_circle_distance(latlon_1, latlon_2)
+        if gc_distance == 0:
+            continue
+        midpoint_distance = gc_distance / 2
+        great_circle_plane(latlon_1, latlon_2, gc_plane)
+        bound_parallels(latlon_1, latlon_2, latmin_latmax)
+        latmin = latmin_latmax[0]
+        latmax = latmin_latmax[1]
+        lonmin = fmin(latlon_1[1], latlon_2[1])
+        lonmax = fmax(latlon_1[1], latlon_2[1])
+        dlon_lessthan_pi = lonmax-lonmin < PI
+
+        for i_subcell in range(4):
+            if counts[i_subcell] >= hitcounts_subcells:
+                continue
+
+            child_parallel1 = submesh[i_subcell][0]
+            child_parallel2 = submesh[i_subcell][1]
+            child_meridian1 = submesh[i_subcell][2]
+            child_meridian2 = submesh[i_subcell][3]
+            if child_parallel1 > latmax or child_parallel2 < latmin:
+                continue
+            if dlon_lessthan_pi:
+                if child_meridian1 > lonmax or child_meridian2 < lonmin:
+                    continue
+            else:
+                if child_meridian1 > lonmin and child_meridian2 < lonmax:
+                    continue
+
+            gc_pixel_intersections(latlon_1,
+                                   latlon_2,
+                                   gc_plane,
+                                   intersections,
+                                   child_parallel1,
+                                   child_meridian1,
+                                   child_parallel2,
+                                   child_meridian2,
+                                   lon_intersections,
+                                   midpoint,
+                                   midpoint_distance,
+                                   tmp_2d)
+            coeff = gc_fraction(latlon_1,
+                                latlon_2,
+                                intersections,
+                                i_subcell,
+                                ipixel_start,
+                                ipixel_end,
+                                gc_distance,
+                                distances,
+                                sorted_idx)
+            if coeff > 0:
+                counts[i_subcell] += 1
+                if counts[i_subcell] == hitcounts_subcells:
+                    enough_count += 1
+                    if enough_count == 4:
+                        return False
+
+    return True
+
+
 @cdivision(True)
 @boundscheck(False)
 @wraparound(False) 
 def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix, 
-                             int hitcounts=100, double[:] region_to_refine=None):
+                             int hitcounts=100, double[:] region_to_refine=None,
+                             double[:, ::1] data_coords=None,
+                             object hitcounts_subcells=None):
     cdef np.int32_t[::1] rays_count = _raypaths_per_pixel(coeff_matrix)
     cdef ssize_t data_size = coeff_matrix.shape[0]
     cdef ssize_t mesh_size = mesh.shape[0] #number of pixels
@@ -334,7 +469,20 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
     cdef double parallel1, parallel2, meridian1, meridian2
     cdef double coeff
     cdef double lat_pixel, lon_pixel
-    
+    cdef int subcell_hitcounts = -1
+    cdef np.int8_t[::1] split_pixels = np.zeros(mesh_size, dtype=np.int8)
+
+    if hitcounts_subcells is not None:
+        if isinstance(hitcounts_subcells, bool):
+            raise TypeError("hitcounts_subcells must be an integer or None, not bool")
+        if not isinstance(hitcounts_subcells, (int, np.integer)):
+            raise TypeError("hitcounts_subcells must be an integer or None")
+        subcell_hitcounts = hitcounts_subcells
+        if subcell_hitcounts <= 0:
+            raise ValueError("hitcounts_subcells must be a positive integer")
+        if data_coords is None:
+            raise ValueError("data_coords must be provided when hitcounts_subcells is set")
+
     if region_to_refine is not None:
         focus_on_a_region = True
     for i_pixel in range(mesh_size):
@@ -345,24 +493,21 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
                                              lon=lon_pixel,
                                              region=region_to_refine)
         if rays_count[i_pixel]>=hitcounts and inside_region:
+            if subcell_hitcounts > 0 and is_subcell_undersampled(mesh,
+                                                                 coeff_matrix,
+                                                                 data_coords,
+                                                                 i_pixel,
+                                                                 subcell_hitcounts):
+                continue
             # Remove one pixel and add 4 -- the pixels itself divided by four
+            split_pixels[i_pixel] = 1
             newmesh_size += 3
             
-    cdef double[:, ::1] newmesh = np.zeros((newmesh_size, 4), dtype=np.double)
+    cdef double[:, ::1] newmesh = np.empty((newmesh_size, 4), dtype=np.double)
     cdef double[:, ::1] newcoeff_matrix = np.zeros((data_size, newmesh_size), dtype=np.double)
-   
-    if region_to_refine is not None:
-        focus_on_a_region = True
     
     for i_pixel in range(mesh_size):
-        if focus_on_a_region:
-            lat_pixel = (mesh[i_pixel, 0] + mesh[i_pixel, 1]) / 2
-            lon_pixel = (mesh[i_pixel, 2] + mesh[i_pixel, 3]) / 2
-            inside_region = is_inside_region(lat=lat_pixel,
-                                             lon=lon_pixel,
-                                             region=region_to_refine)
-                
-        if rays_count[i_pixel]<hitcounts or not inside_region:
+        if not split_pixels[i_pixel]:
             newmesh[i_newpixel, 0] = mesh[i_pixel, 0]
             newmesh[i_newpixel, 1] = mesh[i_pixel, 1]
             newmesh[i_newpixel, 2] = mesh[i_pixel, 2]
@@ -370,7 +515,7 @@ def _refine_parameterization(double[:, ::1] mesh, double[:, ::1] coeff_matrix,
             for i_data in prange(data_size, nogil=True):
                 coeff = coeff_matrix[i_data, i_pixel]
                 if coeff > 0: # Does not access memory unnecessarily
-                    newcoeff_matrix[i_data, i_newpixel] += coeff
+                    newcoeff_matrix[i_data, i_newpixel] = coeff
             i_newpixel += 1
         else:
             parallel1 = mesh[i_pixel, 0]
@@ -558,6 +703,3 @@ def _derivatives_lat_lon(double[:, ::1] mesh):
             G_lat[ipixel, ipixel] = 0        
 
     return np.asarray(G_lat)/fundamental_size, np.asarray(G_lon)/fundamental_size
-
-
-
