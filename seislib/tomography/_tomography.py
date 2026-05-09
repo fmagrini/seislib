@@ -74,7 +74,6 @@ from seislib.tomography._ray_theory._tomography import _derivatives_lat_lon
 from seislib.tomography._ray_theory._tomography import _select_parameters
 eps = np.finfo(np.float64).eps
 
-
 class SeismicTomography:
     r""" 
     Class to obtain velocity maps using a linearized inversion based on the
@@ -139,7 +138,8 @@ class SeismicTomography:
         Norm damping operator, where m is the number of parameters (i.e., 
         number of rows in self.grid.mesh). Only available after function call 
         :meth:`solve`
-            
+    
+
     
     Examples
     --------
@@ -626,6 +626,7 @@ class SeismicTomography:
                              keep_empty_cells=True):
         """ 
         Compiles the matrix of coefficients (`A`) used to perform the inversion. 
+        The matrix is stored as an instance of `scipy.sparce.csr_matrix`.
         It calls the `_compile_coefficients` function, written in cython.
         
         
@@ -654,7 +655,7 @@ class SeismicTomography:
         mesh_lonmax = np.radians(self.grid.lonmax)
         mesh = np.radians(self.grid.mesh)
         data_coords = np.radians(self.data_coords)
-        self.A = _compile_coefficients(data_coords=data_coords,
+        A = _compile_coefficients(data_coords=data_coords,
                                        mesh=mesh, 
                                        mesh_latmax=mesh_latmax, 
                                        mesh_lonmax=mesh_lonmax,
@@ -663,10 +664,11 @@ class SeismicTomography:
         if not keep_empty_cells:
             raycounts = self.raypaths_per_pixel()
             keep_pixels = np.flatnonzero(raycounts > 0).astype(np.int32)
-            self.A = _select_parameters(self.A, keep_pixels)
+            A = _select_parameters(A, keep_pixels)
             self.grid.select_cells(indexes=keep_pixels)
-        
     
+        self.A = scipy.sparse.csr_matrix(A)
+
     def refine_parameterization(self, hitcounts=100, keep_empty_cells=True,
                                 latmin=None, latmax=None, lonmin=None, lonmax=None,
                                 hitcounts_subcells=None):
@@ -722,7 +724,7 @@ class SeismicTomography:
             region_to_refine = None
 
         newmesh, A = _refine_parameterization(mesh, 
-                                              self.A, 
+                                              self.A.toarray(), 
                                               hitcounts=hitcounts,
                                               region_to_refine=region_to_refine,
                                               data_coords=data_coords,
@@ -734,7 +736,6 @@ class SeismicTomography:
         if hasattr(self, 'R'):
             del self.R
 
-    
     def raypaths_per_pixel(self):
         """ 
         Calculates the number of raypaths in each pixel of the mesh stored in
@@ -746,9 +747,8 @@ class SeismicTomography:
         """
         if 'A' not in self.__dict__:
             self.compile_coefficients()
-        return np.asarray(_raypaths_per_pixel(self.A))
-                    
-    
+        return np.asarray(_raypaths_per_pixel(self.A.toarray()))
+
     def reduce_measurements(self, latmin=-90, latmax=90, lonmin=-180, lonmax=180):
         """
         Any measurement not intersecting the specified region is removed from
@@ -779,10 +779,12 @@ class SeismicTomography:
         ipixels = np.intersect1d(ilat, ilon)
         if 'A' not in self.__dict__:
             self.compile_coefficients(keep_empty_cells=True)
-        idata = [i for i in range(self.A.shape[0]) if np.any(self.A[i, ipixels])]
+        A = self.A.toarray()
+        idata = [i for i in range(A.shape[0]) if np.any(A[i, ipixels])]
         self.data_coords = self.data_coords[idata]
         self.velocity = self.velocity[idata]
         del self.A
+        del A
         self.update_data_info()
     
     
