@@ -540,7 +540,7 @@ class AmbientNoiseAttenuation:
             old_mesh = mesh.copy()
             for i in range(1, round(1 / (1 - overlap_north))):
                 new_lats = old_mesh[:, :2] + dlat.reshape(-1, 1) * i
-                mesh = np.row_stack(
+                mesh = np.vstack(
                     (mesh, np.column_stack((new_lats, old_mesh[:, 2:])))
                 )
 
@@ -548,7 +548,7 @@ class AmbientNoiseAttenuation:
             old_mesh = mesh.copy()
             for i in range(1, round(1 / (1 - overlap_east))):
                 new_lons = old_mesh[:, 2:] + dlon.reshape(-1, 1) * i
-                mesh = np.row_stack(
+                mesh = np.vstack(
                     (mesh, np.column_stack((old_mesh[:, :2], new_lons)))
                 )
             return sort_mesh(mesh)
@@ -1011,8 +1011,8 @@ class AmbientNoiseAttenuation:
             if common_times.size * window_length / 86400 < min_no_days:
                 return None
 
-            idx1 = np.in1d(times1, common_times).nonzero()[0]
-            idx2 = np.in1d(times2, common_times).nonzero()[0]
+            idx1 = np.isin(times1, common_times).nonzero()[0]
+            idx2 = np.isin(times2, common_times).nonzero()[0]
             common_times = times1[idx1]
 
             ft1 = ffts[sta1][idx1]

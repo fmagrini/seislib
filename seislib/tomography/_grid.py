@@ -460,7 +460,7 @@ class Grid:
             Mesh indexes falling outside the rectangular region.
         """
         idx_inside = self.indexes_in_region(latmin, latmax, lonmin, lonmax)
-        return np.flatnonzero(~np.in1d(np.arange(self.mesh.shape[0]), idx_inside))
+        return np.flatnonzero(~np.isin(np.arange(self.mesh.shape[0]), idx_inside))
 
     def indexes_in_polygon(self, poly):
         """

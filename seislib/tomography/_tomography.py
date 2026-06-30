@@ -505,7 +505,7 @@ class SeismicTomography:
                 if 'std' in self.__dict__:
                     self.std = np.concatenate((self.std, 
                                                np.zeros(self.velocity.shape)))
-            self.data_coords = np.row_stack((self.data_coords, data[:, :4]))
+            self.data_coords = np.vstack((self.data_coords, data[:, :4]))
             self.velocity = np.concatenate((self.velocity, data[:, 4]))
         
         self.update_data_info(refvel=refvel)

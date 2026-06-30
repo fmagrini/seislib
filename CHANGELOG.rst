@@ -1,3 +1,8 @@
+v1.2.1 (30/6/2026)
+------------------
+- Bug fix: replaced deprecated NumPy aliases (`np.row_stack` and `np.in1d`) with `np.vstack` and `np.isin` for compatibility with recent NumPy versions.
+
+
 v1.2.0 (4/5/2026)
 ------------------
 - Enhancement: added optional subcell ray-hit validation to `SeismicTomography.refine_parameterization`.

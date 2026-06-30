@@ -782,7 +782,7 @@ def extract_dispcurve(frequencies,
         if len(picks) > 0:
             idx0 = np.where(picks[0][0]==freqax_picks)[0][0]
             idxpick = np.where(frequency==freqax_picks)[0][0]
-            missing_indices = np.in1d(freqax_picks[idx0:idxpick],
+            missing_indices = np.isin(freqax_picks[idx0:idxpick],
                                       np.array(picks)[:,0],assume_unique=True,
                                       invert=True)
             total_picks_jumped = np.sum(missing_indices)
@@ -1535,5 +1535,4 @@ def extract_dispcurve(frequencies,
                 np.column_stack((smooth_picks_x, smooth_picks)))
     
     raise DispersionCurveException
-
 
